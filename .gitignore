@@ -1,0 +1,54 @@
+# ===== Java / Spring Boot =====
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+target/
+out/
+*.class
+*.jar
+*.war
+!gradle/wrapper/gradle-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+.gradle/
+bin/
+
+# ===== Node / React =====
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== 환경 변수 (비밀번호, 키가 들어감. 절대 올리지 말 것) =====
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.properties
+application-secret.yml
+
+# ===== IDE =====
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+!.vscode/extensions.json
+.settings/
+.project
+.classpath
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== 업로드 파일, 로그 =====
+uploads/
+logs/
+*.log
