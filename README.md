@@ -32,9 +32,43 @@ git clone https://github.com/PNUFeedbackBoard/feedback-board.git
 자세한 건 `docs/setup-guide.md`
 
 ## 브랜치 규칙
-- `main` 에 직접 push 하지 않는다
-- 작업할 때 브랜치를 만든다: `feature/내작업이름`
-- PR 올리고 2명이 확인하면 합친다
+
+```
+main      배포된 것만. 직접 push 금지
+develop   평소 작업이 모이는 곳
+feature/  각자 작업 브랜치
+```
+
+### 흐름
+```
+feature/내작업  ->  develop  ->  main
+                   PR         배포할 때만
+```
+
+### 작업할 때
+```bash
+git checkout develop
+git pull
+git checkout -b feature/feedback-write   # 본인 작업 이름
+# ... 작업 ...
+git add .
+git commit -m "feat: 피드백 작성 화면"
+git push -u origin feature/feedback-write
+```
+그다음 GitHub에서 PR 올린다. **받는 쪽(base)을 `develop`으로** 둔다.
+2명이 확인하면 합친다.
+
+### 브랜치 이름
+- `feature/영문-소문자-하이픈` 예: `feature/admin-page`
+- 한글, 띄어쓰기 안 씁니다
+
+### 커밋 메시지
+```
+feat: 새 기능
+fix: 버그 수정
+docs: 문서
+chore: 설정, 잡일
+```
 
 ## 팀
 5명. 문진혁, (팀장), (팀원 3명)
