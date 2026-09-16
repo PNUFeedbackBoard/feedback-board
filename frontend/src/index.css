@@ -1,29 +1,39 @@
-:root {
-  font-family: Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #172033;
-  background: #f7f8fb;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+/*
+ * 전역 스타일. 0-1단계에서는 최소한의 리셋만 둔다.
+ *
+ * TODO(D, 0-2단계): 색상과 타이포그래피 토큰을 여기(또는 components/common)에 정의한다.
+ *                   값은 한 곳에만 두고 화면에서 색상을 직접 지정하지 않는다.
+ * 0-1단계에서 팔레트를 미리 만들지 않는 이유는 D의 결정과 어긋나면 전부 다시 고쳐야 하기 때문이다.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
+img,
+svg {
+  display: block;
+  max-width: 100%;
 }
 
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
-}
-
-#root {
-  display: flex;
-  min-height: 100vh;
-}
-
-h1,
-p {
-  margin-top: 0;
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
 }

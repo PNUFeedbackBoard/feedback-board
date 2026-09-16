@@ -23,7 +23,7 @@ class ProductionProfileTests {
 	void demoLoginDoesNotExistOutsideDevelopmentProfile() throws Exception {
 		mockMvc.perform(post("/api/dev/login")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"email\":\"dev@demo.local\"}"))
+						.content("{\"account\":\"dev\"}"))
 				.andExpect(status().isNotFound());
 	}
 }

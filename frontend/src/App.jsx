@@ -1,56 +1,22 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
-import { ROUTES } from './routes.js'
-import './App.css'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import AccountSwitcher from './dev/AccountSwitcher.jsx'
+import { routes } from './routes.jsx'
 
-function EmptyRoute({ eyebrow, title }) {
+// 라우터는 모듈 로드 시점에 한 번만 만든다. 컴포넌트 안에서 만들면 렌더마다 새로 생겨 화면이 초기화된다.
+const router = createBrowserRouter(routes)
+
+/**
+ * 애플리케이션 껍데기.
+ *
+ * 여기에 화면 내용을 넣지 않는다. 경로별 화면은 routes.jsx 가 연결한다.
+ * 공통 헤더 같은 요소가 필요하면 App 이 아니라 routes.jsx 의 레이아웃 라우트에 붙인다.
+ */
+export default function App() {
   return (
-    <main className="route-placeholder">
-      <p className="route-placeholder__eyebrow">{eyebrow}</p>
-      <h1>{title}</h1>
-      <p>0-1단계에서 경로만 선언한 화면입니다.</p>
-    </main>
+    <>
+      <RouterProvider router={router} />
+      {/* 개발 모드에서만 보이는 계정 전환 위젯. 운영 화면에는 나오지 않는다. */}
+      <AccountSwitcher />
+    </>
   )
 }
-
-function App() {
-  return (
-    <Routes>
-      <Route
-        path={ROUTES.login}
-        element={<EmptyRoute eyebrow="사용자" title="로그인" />}
-      />
-      <Route
-        path={ROUTES.home}
-        element={<EmptyRoute eyebrow="사용자" title="내 문의" />}
-      />
-      <Route
-        path={ROUTES.newFeedback}
-        element={<EmptyRoute eyebrow="사용자" title="새 질문 적기" />}
-      />
-      <Route
-        path={ROUTES.feedbackDetail}
-        element={<EmptyRoute eyebrow="사용자" title="문의 상세" />}
-      />
-      <Route
-        path={ROUTES.adminDashboard}
-        element={<EmptyRoute eyebrow="관리" title="전체 현황 대시보드" />}
-      />
-      <Route
-        path={ROUTES.adminBoard}
-        element={<EmptyRoute eyebrow="관리" title="개발 보드" />}
-      />
-      <Route
-        path={ROUTES.adminAnswers}
-        element={<EmptyRoute eyebrow="관리" title="답변" />}
-      />
-      <Route
-        path={ROUTES.adminAccounts}
-        element={<EmptyRoute eyebrow="관리" title="계정 관리" />}
-      />
-      <Route path="/admin/dashboard" element={<Navigate to={ROUTES.adminDashboard} replace />} />
-      <Route path="*" element={<Navigate to={ROUTES.login} replace />} />
-    </Routes>
-  )
-}
-
-export default App

@@ -53,56 +53,58 @@ class ApiContractIntegrationTests {
 
 		assertThat(operationCount).isEqualTo(12);
 		assertThat(paths.has("/api/dev/login")).isFalse();
+		assertThat(paths.has("/api/me")).isFalse();
 	}
 
 	@Test
-	void allTwelveStubOperationsReturnOkForDeveloper() throws Exception {
-		MockHttpSession session = login("dev@demo.local");
+	void allTwelveStubOperationsReturnOkWithRequiredRoles() throws Exception {
+		MockHttpSession user = login("user");
+		MockHttpSession viewer = login("viewer");
+		MockHttpSession developer = login("dev");
 
-		mockMvc.perform(get("/api/auth/me").session(session))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.role").value("DEVELOPER"));
-
+		mockMvc.perform(get("/api/projects")).andExpect(status().isOk());
 		mockMvc.perform(post("/api/feedbacks")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
 								  "projectCode": "aipms",
+								  "category": "BUG",
+								  "reportedPriority": "HIGH",
 								  "title": "검색 오류",
-								  "content": "검색 결과가 표시되지 않습니다.",
-								  "type": "BUG_REPORT",
-								  "reportedPriority": "HIGH"
+								  "content": "검색 결과가 화면에 표시되지 않습니다."
 								}
 								"""))
 				.andExpect(status().isOk());
-		mockMvc.perform(get("/api/feedbacks/my").session(session)).andExpect(status().isOk());
-		mockMvc.perform(get("/api/feedbacks/my/1").session(session)).andExpect(status().isOk());
-		mockMvc.perform(post("/api/feedbacks/1/priority-request").session(session)).andExpect(status().isOk());
+		mockMvc.perform(get("/api/me/feedbacks").session(user)).andExpect(status().isOk());
+		mockMvc.perform(get("/api/me/feedbacks/1").session(user)).andExpect(status().isOk());
 
-		mockMvc.perform(get("/api/admin/feedbacks").session(session)).andExpect(status().isOk());
-		mockMvc.perform(get("/api/admin/feedbacks/1").session(session)).andExpect(status().isOk());
+		mockMvc.perform(get("/api/admin/dashboard").session(viewer)).andExpect(status().isOk());
+		mockMvc.perform(get("/api/admin/feedbacks").session(viewer)).andExpect(status().isOk());
+		mockMvc.perform(get("/api/admin/feedbacks/1").session(viewer)).andExpect(status().isOk());
+		mockMvc.perform(post("/api/admin/feedbacks/1/priority-request").session(viewer))
+				.andExpect(status().isOk());
+
 		mockMvc.perform(patch("/api/admin/feedbacks/1")
-						.session(session)
+						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"status\":\"IN_PROGRESS\"}"))
 				.andExpect(status().isOk());
 		mockMvc.perform(put("/api/admin/feedbacks/1/answer")
-						.session(session)
+						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"content\":\"확인했습니다.\"}"))
+						.content("{\"content\":\"확인했습니다.\",\"markDone\":false}"))
 				.andExpect(status().isOk());
-		mockMvc.perform(get("/api/admin/dashboard").session(session)).andExpect(status().isOk());
-		mockMvc.perform(get("/api/admin/accounts").session(session)).andExpect(status().isOk());
-		mockMvc.perform(patch("/api/admin/accounts/4")
-						.session(session)
+		mockMvc.perform(get("/api/admin/users").session(developer)).andExpect(status().isOk());
+		mockMvc.perform(patch("/api/admin/users/4")
+						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"role\":\"VIEWER\",\"approved\":true}"))
+						.content("{\"role\":\"VIEWER\",\"status\":\"ACTIVE\"}"))
 				.andExpect(status().isOk());
 	}
 
 	@Test
-	void viewerCanReadAdminApiButCannotModifyIt() throws Exception {
-		MockHttpSession session = login("viewer@demo.local");
+	void viewerCanReadAdminApiButCannotModifyFeedback() throws Exception {
+		MockHttpSession session = login("viewer");
 
 		mockMvc.perform(get("/api/admin/feedbacks").session(session))
 				.andExpect(status().isOk());
@@ -110,13 +112,23 @@ class ApiContractIntegrationTests {
 						.session(session)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"status\":\"DONE\"}"))
-				.andExpect(status().isForbidden());
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
 	}
 
-	private MockHttpSession login(String email) throws Exception {
+	@Test
+	void currentUserResponseComesFromServerSession() throws Exception {
+		MockHttpSession session = login("dev");
+
+		mockMvc.perform(get("/api/me").session(session))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.role").value("DEVELOPER"));
+	}
+
+	private MockHttpSession login(String account) throws Exception {
 		return (MockHttpSession) mockMvc.perform(post("/api/dev/login")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"email\":\"" + email + "\"}"))
+						.content("{\"account\":\"" + account + "\"}"))
 				.andExpect(status().isOk())
 				.andReturn()
 				.getRequest()
