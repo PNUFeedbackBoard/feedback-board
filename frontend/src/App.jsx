@@ -1,121 +1,55 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { ROUTES } from './routes.js'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
-
+function EmptyRoute({ eyebrow, title }) {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <main className="route-placeholder">
+      <p className="route-placeholder__eyebrow">{eyebrow}</p>
+      <h1>{title}</h1>
+      <p>0-1단계에서 경로만 선언한 화면입니다.</p>
+    </main>
+  )
+}
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+function App() {
+  return (
+    <Routes>
+      <Route
+        path={ROUTES.login}
+        element={<EmptyRoute eyebrow="사용자" title="로그인" />}
+      />
+      <Route
+        path={ROUTES.home}
+        element={<EmptyRoute eyebrow="사용자" title="내 문의" />}
+      />
+      <Route
+        path={ROUTES.newFeedback}
+        element={<EmptyRoute eyebrow="사용자" title="새 질문 적기" />}
+      />
+      <Route
+        path={ROUTES.feedbackDetail}
+        element={<EmptyRoute eyebrow="사용자" title="문의 상세" />}
+      />
+      <Route
+        path={ROUTES.adminDashboard}
+        element={<EmptyRoute eyebrow="관리" title="전체 현황 대시보드" />}
+      />
+      <Route
+        path={ROUTES.adminBoard}
+        element={<EmptyRoute eyebrow="관리" title="개발 보드" />}
+      />
+      <Route
+        path={ROUTES.adminAnswers}
+        element={<EmptyRoute eyebrow="관리" title="답변" />}
+      />
+      <Route
+        path={ROUTES.adminAccounts}
+        element={<EmptyRoute eyebrow="관리" title="계정 관리" />}
+      />
+      <Route path="/admin/dashboard" element={<Navigate to={ROUTES.adminDashboard} replace />} />
+      <Route path="*" element={<Navigate to={ROUTES.login} replace />} />
+    </Routes>
   )
 }
 

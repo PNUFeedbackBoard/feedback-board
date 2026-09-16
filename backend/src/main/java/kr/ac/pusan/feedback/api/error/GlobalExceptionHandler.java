@@ -68,6 +68,14 @@ public class GlobalExceptionHandler {
 		return error(HttpStatus.CONFLICT, "DATA_CONFLICT", "요청이 현재 데이터 상태와 충돌합니다.", request, List.of());
 	}
 
+	@ExceptionHandler(IllegalArgumentException.class)
+	ResponseEntity<ApiErrorResponse> handleIllegalArgument(
+			IllegalArgumentException exception,
+			HttpServletRequest request
+	) {
+		return error(HttpStatus.BAD_REQUEST, "INVALID_ARGUMENT", exception.getMessage(), request, List.of());
+	}
+
 	@ExceptionHandler(Exception.class)
 	ResponseEntity<ApiErrorResponse> handleUnexpected(
 			Exception exception,
