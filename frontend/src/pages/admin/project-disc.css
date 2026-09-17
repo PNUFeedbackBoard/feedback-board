@@ -1,0 +1,199 @@
+/**
+ * 하단 프로젝트 전환 디스크. 기획 6-1
+ *
+ * 좌표의 기준점은 **화면 아래 끝의 가운데**다. 원의 중심을 거기서 --disc-depth 만큼 더 내리면
+ * 위쪽 호만 화면에 남는다. 반지름이 클수록 그 호가 완만해진다.
+ * 접혀 있을 때는 --disc-sink 만큼 더 내려 봉우리만 남긴다.
+ */
+
+.disc {
+	/*
+	 * 원판의 반지름과, 중심이 화면 아래 끝보다 얼마나 밑에 있는지.
+	 * --disc-depth 는 ProjectDisc.jsx 의 CENTER_DEPTH 와 짝이고,
+	 * 로고는 그보다 48 안쪽(같은 파일의 RADIUS = 412)에 앉는다.
+	 */
+	--disc-radius: 200px;
+	--disc-depth: 60px;
+	--disc-sink: 60px;
+
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	height: 200px;
+	/* 접혀 있을 때 보드의 아래쪽을 막지 않도록 통째로 통과시킨다.
+	   실제로 눌러야 하는 원판과 슬롯에만 다시 켜 준다. */
+	pointer-events: none;
+	z-index: 20;
+}
+
+/* ── 마우스 감지 영역 — 떠오르고 가라앉아도 이것만은 움직이지 않는다 ── */
+
+.disc__zone {
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	width: 340px;
+	height: 86px;
+	transform: translateX(-50%);
+	pointer-events: auto;
+	transition:
+		width var(--duration-base) var(--ease-spring),
+		height var(--duration-base) var(--ease-spring);
+}
+
+/* 펼쳐지면 호 전체를 덮어, 슬롯 사이를 지나가도 감지가 끊기지 않는다. */
+.disc.is-open .disc__zone {
+	width: 460px;
+	height: 170px;
+}
+
+/* ── 화면 아래로 잘리는 원 ────────────────────────────────── */
+
+.disc__surface {
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	width: calc(var(--disc-radius) * 2);
+	height: calc(var(--disc-radius) * 2);
+	/* bottom:0 에서 자기 높이의 절반만큼 내리면 원의 중심이 화면 아래 끝에 걸린다.
+	   거기서 --disc-depth 만큼 더 내린 것이 펼친 상태고, --disc-sink 를 더한 것이 접힌 상태다. */
+	transform: translate(-50%, 50%) translateY(calc(var(--disc-depth) + var(--disc-sink)));
+	border: 1px solid var(--color-border);
+	border-radius: 50%;
+	background: var(--color-surface-raised);
+	backdrop-filter: var(--blur-veil);
+	/* 본문 위로 떠 있다는 것이 그림자로 읽혀야 한다. 없으면 배경에 눌어붙어 보인다. */
+	box-shadow: 0 -2px 24px rgb(0 0 0 / 8%), 0 -1px 3px rgb(0 0 0 / 4%);
+	transition: transform var(--duration-base) var(--ease-spring);
+}
+
+.disc.is-open .disc__surface {
+	transform: translate(-50%, 50%) translateY(var(--disc-depth));
+}
+
+/* ── 호 위의 슬롯 ─────────────────────────────────────────── */
+
+.disc__slots {
+	position: absolute;
+	inset: 0;
+	translate: 0 var(--disc-sink);
+	transition: translate var(--duration-base) var(--ease-spring);
+}
+
+.disc.is-open .disc__slots {
+	translate: 0;
+}
+
+.disc__slot {
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 5px;
+	width: 60px;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--color-text-muted);
+	font-family: var(--font-family);
+	cursor: pointer;
+	pointer-events: auto;
+	/* 마우스를 따라 계속 바뀌는 값이라 길게 주면 끌려다닌다. */
+	transition:
+		transform 220ms var(--ease-spring),
+		color var(--duration-fast) ease;
+}
+
+.disc__logo {
+	display: grid;
+	place-items: center;
+	width: 42px;
+	height: 42px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-sm);
+	color: var(--color-text);
+	font-size: var(--font-size-body);
+	font-weight: var(--font-weight-bold);
+	letter-spacing: 0;
+	transition:
+		transform var(--duration-fast) var(--ease-spring),
+		box-shadow var(--duration-fast) ease;
+}
+
+/* 로고 이미지가 없는 동안 항목을 색으로 구분한다. 이름 첫 글자만으로는 'A' 가 셋이다. */
+.disc__logo[data-slot='home'] { background: var(--color-surface); color: var(--color-text-muted); }
+.disc__logo[data-slot='1'] { background: var(--color-project-0-bg); color: var(--color-project-0-fg); }
+.disc__logo[data-slot='2'] { background: var(--color-project-1-bg); color: var(--color-project-1-fg); }
+.disc__logo[data-slot='3'] { background: var(--color-project-2-bg); color: var(--color-project-2-fg); }
+.disc__logo[data-slot='4'] { background: var(--color-project-3-bg); color: var(--color-project-3-fg); }
+.disc__logo[data-slot='0'] { background: var(--color-project-4-bg); color: var(--color-project-4-fg); }
+
+/* 가라앉아 있는 동안에는 지금 머무는 곳의 로고 하나만 남는다. */
+.disc:not(.is-open) .disc__slot:not(.is-selected) {
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* 커서가 올라간 것만 커진다. 어느 것을 고르는 중인지 바로 읽힌다. */
+.disc__slot:hover .disc__logo {
+	transform: scale(1.18) translateY(-2px);
+	box-shadow: var(--shadow-md);
+}
+
+.disc__slot:hover {
+	color: var(--color-text);
+}
+
+/* 이름은 로고를 읽는 보조 수단이다. 작게 두고 로고가 주인공이 되게 한다. */
+.disc__name {
+	max-width: 60px;
+	overflow: hidden;
+	font-size: 10px;
+	letter-spacing: 0;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	opacity: 0;
+	transition: opacity var(--duration-fast) ease;
+}
+
+/* 슬롯이 촘촘해 이름을 전부 띄우면 서로 겹친다. 꼭대기와 커서가 올라간 것만 보인다. */
+.disc.is-open .disc__slot.is-selected .disc__name,
+.disc.is-open .disc__slot:hover .disc__name {
+	opacity: 1;
+}
+
+.disc__slot.is-selected {
+	color: var(--color-selected);
+	font-weight: var(--font-weight-medium);
+}
+
+/* 꼭대기에 박힌 것은 한 눈에 커 보여야 한다. 지금 어디에 있는지가 이걸로 읽힌다. */
+.disc__slot.is-selected .disc__logo {
+	width: 54px;
+	height: 54px;
+	border-color: var(--color-selected);
+	border-radius: var(--radius-lg);
+	box-shadow: inset 0 0 0 2px var(--color-selected), var(--shadow-md);
+	font-size: var(--font-size-title);
+}
+
+.disc__slot.is-selected .disc__name {
+	font-size: 11px;
+}
+
+/* 움직임을 줄여 달라고 설정한 사용자에게는 회전과 확대를 끈다. */
+@media (prefers-reduced-motion: reduce) {
+	.disc__zone,
+	.disc__surface,
+	.disc__slots,
+	.disc__slot,
+	.disc__logo,
+	.disc__name {
+		transition: none;
+	}
+}
