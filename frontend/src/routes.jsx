@@ -1,6 +1,7 @@
 import AccountsPage from './pages/admin/AccountsPage.jsx'
 import AdminLayout from './pages/admin/AdminLayout.jsx'
 import AnswersPage from './pages/admin/AnswersPage.jsx'
+import IntakePage from './pages/admin/IntakePage.jsx'
 import BoardPage from './pages/admin/BoardPage.jsx'
 import DashboardPage from './pages/admin/DashboardPage.jsx'
 import PendingPage from './pages/admin/PendingPage.jsx'
@@ -44,6 +45,11 @@ export const routes = [
       { path: '/admin/accounts', element: <AccountsPage /> },
       // :projectCode 는 projects 의 code 값이다. codeplace | aipms | aicms | aicap | srvadm
       // 경로가 2단이라 위의 /admin/pending, /admin/accounts 와 겹치지 않는다.
+      //
+      // intake 는 0-1단계에 없던 경로다. **팀 확인이 필요한 기획 변경이다.**
+      // 기획 6-1 은 상단 탭을 개발 보드·답변 두 개로 정했는데, 접수를 개발 보드에서 떼어
+      // 세 번째 탭으로 만들면서 경로가 하나 늘었다. 기존 경로 문자열은 바꾸지 않았다.
+      { path: '/admin/:projectCode/intake', element: <IntakePage /> },
       { path: '/admin/:projectCode/board', element: <BoardPage /> },
       { path: '/admin/:projectCode/answers', element: <AnswersPage /> },
     ],

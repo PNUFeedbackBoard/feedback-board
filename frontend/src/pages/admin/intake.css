@@ -1,0 +1,81 @@
+/**
+ * 접수 · 답변 목록 화면. 색과 간격은 admin-tokens.temp.css 의 변수만 쓴다.
+ */
+
+.intake {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+.intake__count {
+	margin: 0;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+}
+
+.intake__count strong {
+	color: var(--color-text);
+	font-weight: var(--font-weight-bold);
+}
+
+.intake__sub {
+	color: var(--color-text-subtle);
+}
+
+/* 카드가 한 줄씩 늘어서는 대신 폭에 맞춰 접힌다. 접수가 쌓여도 세로로만 길어지지 않는다. */
+.intake__list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: var(--space-3);
+	align-items: start;
+}
+
+.intake__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-2);
+	width: 100%;
+	margin-top: var(--space-1);
+}
+
+.intake__start {
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-selected);
+	font-family: var(--font-family);
+	font-size: var(--font-size-small);
+	font-weight: var(--font-weight-medium);
+	cursor: pointer;
+	transition:
+		background var(--duration-fast) ease,
+		border-color var(--duration-fast) ease;
+}
+
+.intake__start:hover {
+	border-color: var(--color-selected);
+	background: var(--color-status-received-bg);
+}
+
+.intake__muted {
+	color: var(--color-text-subtle);
+	font-size: var(--font-size-label);
+}
+
+/* 비회원처럼 손댈 수 없는 항목. 목록에는 남기되 지금 할 일이 아님을 드러낸다. */
+.card.is-dimmed {
+	background: var(--color-surface-sunken);
+	box-shadow: none;
+}
+
+.card.is-dimmed .card__title {
+	color: var(--color-text-muted);
+}
+
+.card.is-dimmed:hover {
+	transform: none;
+	box-shadow: none;
+}

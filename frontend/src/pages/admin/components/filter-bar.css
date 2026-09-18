@@ -1,0 +1,69 @@
+/**
+ * 접수 목록의 필터. 색과 간격은 admin-tokens.temp.css 의 변수만 쓴다.
+ */
+
+.filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: var(--space-3);
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-sm);
+}
+
+.filters__field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+}
+
+.filters__label {
+	color: var(--color-text-muted);
+	font-size: var(--font-size-label);
+	font-weight: var(--font-weight-medium);
+}
+
+.filters__control {
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-family: var(--font-family);
+	font-size: var(--font-size-small);
+}
+
+.filters__control:focus {
+	border-color: var(--color-selected);
+	outline: 2px solid var(--color-selected);
+	outline-offset: -2px;
+}
+
+.filters__range {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.filters__tilde {
+	color: var(--color-text-subtle);
+}
+
+.filters__reset {
+	padding: var(--space-2) var(--space-3);
+	border: none;
+	border-radius: var(--radius-sm);
+	background: none;
+	color: var(--color-selected);
+	font-family: var(--font-family);
+	font-size: var(--font-size-small);
+	font-weight: var(--font-weight-medium);
+	cursor: pointer;
+}
+
+.filters__reset:hover {
+	background: var(--color-status-received-bg);
+}

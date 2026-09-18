@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useOutletContext, useParams } from 'react-router-dom'
 import {
 	DndContext,
 	DragOverlay,
@@ -10,39 +10,35 @@ import {
 	useSensors,
 } from '@dnd-kit/core'
 import { getAdminFeedbacks, updateAdminFeedback } from '../../api/endpoints.js'
-import { AUTHOR_TYPE, BOARD_COLUMN_STATUSES, FEEDBACK_STATUS, labelOf } from '../../constants/enums.js'
-import AssigneeDialog from './AssigneeDialog.jsx'
-import CategoryTag from './components/CategoryTag.jsx'
-import PriorityChip from './components/PriorityChip.jsx'
-import PriorityRequestBadge from './components/PriorityRequestBadge.jsx'
+import { FEEDBACK_STATUS, labelOf } from '../../constants/enums.js'
+import FeedbackCard from './components/FeedbackCard.jsx'
 import StatusBadge from './components/StatusBadge.jsx'
 import './board.css'
 
 /**
- * 개발 보드 — 칸반. 기획 6-3
+ * 개발 보드 — 진행 중인 일만 보는 칸반이다. 기획 6-3
+ *
+ * **팀 확인이 필요한 기획 변경이다.** 기획의 칸반은 진행 전·진행 중·완료 세 열인데
+ * 진행 전(접수)을 별도 탭으로 떼어 두 열로 줄였다. 이유는 IntakePage 의 주석에 적었다.
  *
  * 카드를 다른 열로 끌어다 놓으면 상태가 바뀐다.
  * **0-1단계 스텁은 PATCH 를 받아도 저장하지 않으므로 새로고침하면 되돌아간다.**
  * B 의 변경 API 가 준비되면 화면 수정 없이 그대로 남는다.
  *
- * 접수에서 처리 중으로 넘어갈 때만 담당자를 묻는다. 일이 시작되는 시점이라
- * 그때 적어 두면 보드에서 누가 무엇을 잡고 있는지 한눈에 보인다.
- * 담당자는 기획에 없는 기능이라 아직 화면 안에서만 유지된다. AssigneeDialog 의 주석 참고.
- *
  * TODO(C, 3단계): 카드 상세 패널(전체 내용, 유형·중요도 변경, 답변 화면 이동)을 붙인다.
- * TODO(C, 5단계): 상단에 정렬·유형·기간 필터를 배치한다. 정렬은 각 열 내부에 적용한다.
  */
+
+/** 이 보드가 열로 쓰는 상태. 접수는 별도 탭이라 빠졌고 반영 불가는 하단 접힘이다. */
+const BOARD_COLUMNS = ['IN_PROGRESS', 'DONE']
+
 export default function BoardPage() {
 	const { projectCode } = useParams()
+	const { assignees } = useOutletContext()
 	// 응답이 어느 프로젝트의 것인지 함께 담아 둔다. 그래야 프로젝트를 옮긴 직후에
 	// effect 안에서 상태를 되돌리지 않고도 이전 응답을 화면에서 걸러 낼 수 있다.
 	const [state, setState] = useState({ projectCode: null, items: [], message: '' })
-	/** 화면 안에서만 유지되는 담당자. { [피드백 번호]: 이름 } */
-	const [assignees, setAssignees] = useState({})
 	/** 끌고 있는 카드. 손에 들린 모습을 따로 그리는 데 쓴다. */
 	const [dragging, setDragging] = useState(null)
-	/** 담당자 입력을 기다리는 이동. 창에서 확인을 눌러야 실제로 옮긴다. */
-	const [pending, setPending] = useState(null)
 	/** 저장에 실패했을 때의 안내. 보드는 그대로 두고 한 줄만 띄운다. */
 	const [notice, setNotice] = useState('')
 
@@ -71,15 +67,12 @@ export default function BoardPage() {
 	 * 먼저 화면을 옮기고 서버에 알린다. 실패하면 되돌리고 이유를 띄운다.
 	 * 끌어다 놓은 손맛이 서버 응답을 기다리느라 끊기지 않게 하기 위한 순서다.
 	 */
-	function commitMove(id, status, assignee) {
+	function commitMove(id, status) {
 		const before = state.items
 		setState((prev) => ({
 			...prev,
 			items: prev.items.map((item) => (item.id === id ? { ...item, status } : item)),
 		}))
-		if (assignee !== undefined) {
-			setAssignees((prev) => ({ ...prev, [id]: assignee }))
-		}
 		setNotice('')
 
 		updateAdminFeedback(id, { status }).catch((error) => {
@@ -95,12 +88,6 @@ export default function BoardPage() {
 
 		const card = state.items.find((item) => item.id === active.id)
 		if (!card || card.status === over.id) return
-
-		// 접수에서 처리 중으로 넘어가는 순간이 일이 시작되는 시점이다. 그때만 담당자를 묻는다.
-		if (card.status === 'RECEIVED' && over.id === 'IN_PROGRESS') {
-			setPending({ id: card.id, status: over.id, title: card.title })
-			return
-		}
 		commitMove(card.id, over.id)
 	}
 
@@ -108,6 +95,7 @@ export default function BoardPage() {
 	if (state.message) return <p className="board__notice">{state.message}</p>
 
 	const rejected = state.items.filter((item) => item.status === 'REJECTED')
+	const waiting = state.items.filter((item) => item.status === 'RECEIVED').length
 
 	return (
 		<DndContext
@@ -119,8 +107,14 @@ export default function BoardPage() {
 			<div className="board">
 				{notice && <p className="board__alert">{notice}</p>}
 
-				<div className="board__columns">
-					{BOARD_COLUMN_STATUSES.map((status) => (
+				{waiting > 0 && (
+					<p className="board__waiting">
+						접수 탭에 {waiting}건이 기다리고 있습니다. 담당자를 지정하면 여기로 올라옵니다.
+					</p>
+				)}
+
+				<div className="board__columns board__columns--two">
+					{BOARD_COLUMNS.map((status) => (
 						<Column
 							key={status}
 							status={status}
@@ -144,17 +138,6 @@ export default function BoardPage() {
 					</div>
 				)}
 			</DragOverlay>
-
-			{pending && (
-				<AssigneeDialog
-					feedbackTitle={pending.title}
-					onCancel={() => setPending(null)}
-					onConfirm={(name) => {
-						commitMove(pending.id, pending.status, name)
-						setPending(null)
-					}}
-				/>
-			)}
 		</DndContext>
 	)
 }
@@ -214,43 +197,4 @@ function DraggableCard({ item, assignee }) {
 			<FeedbackCard item={item} assignee={assignee} />
 		</div>
 	)
-}
-
-/**
- * 카드 표시 항목은 기획 6-3 이 정한 7가지다.
- * 우선 처리 요청 배지 · 중요도 · 제목 · 유형 · 경과일 · 회원 여부 · 답변 여부
- * 담당자는 그 위에 얹은 항목이며 지정된 카드에만 나온다.
- */
-function FeedbackCard({ item, assignee }) {
-	return (
-		<article className="card" data-priority-requested={item.priorityRequested}>
-			{item.priorityRequested && <PriorityRequestBadge />}
-
-			<h3 className="card__title">{item.title}</h3>
-
-			<div className="card__tags">
-				<PriorityChip priority={item.priority} />
-				<CategoryTag category={item.category} />
-			</div>
-
-			<footer className="card__meta">
-				<span>{daysSince(item.createdAt)}일 경과</span>
-				<span>{labelOf(AUTHOR_TYPE, item.authorType)}</span>
-				<span>{item.answered ? '답변 완료' : '답변 없음'}</span>
-			</footer>
-
-			{assignee !== undefined && (
-				<p className="card__assignee">{assignee ? `담당 ${assignee}` : '담당 미지정'}</p>
-			)}
-		</article>
-	)
-}
-
-/**
- * 등록일로부터 며칠 지났는지. 기획 6-3 의 "경과일" 이다.
- * createdAt 은 시간대 없는 LocalDateTime 문자열이라 브라우저 현지 시각으로 해석된다.
- */
-function daysSince(createdAt) {
-	const MS_PER_DAY = 24 * 60 * 60 * 1000
-	return Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / MS_PER_DAY))
 }

@@ -100,3 +100,61 @@
 .dialog__button--primary:hover {
 	filter: brightness(0.94);
 }
+
+/* ── 답변 창 — 본문과 입력이 들어가 더 넓다 ──────────────── */
+
+.dialog--wide {
+	width: min(560px, 100%);
+}
+
+/* 문의 전문. 길면 안에서 스크롤한다. 창이 화면 밖으로 자라지 않게 한다. */
+.dialog__body {
+	max-height: 140px;
+	margin: 0;
+	overflow-y: auto;
+	padding: var(--space-3);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+	line-height: 1.6;
+	white-space: pre-wrap;
+}
+
+.dialog__textarea {
+	padding: var(--space-3);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-family: var(--font-family);
+	font-size: var(--font-size-body);
+	line-height: 1.6;
+	resize: vertical;
+}
+
+.dialog__textarea:focus {
+	border-color: var(--color-selected);
+	outline: 2px solid var(--color-selected);
+	outline-offset: -2px;
+}
+
+.dialog__check {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+	cursor: pointer;
+}
+
+.dialog__error {
+	margin: 0;
+	color: var(--color-accent);
+	font-size: var(--font-size-small);
+}
+
+.dialog__button:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}

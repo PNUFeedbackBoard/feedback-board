@@ -211,3 +211,18 @@
 	color: var(--color-accent);
 	font-size: var(--font-size-small);
 }
+
+/* 접수를 별도 탭으로 뺐으므로 보드는 두 열이다. */
+.board__columns--two {
+	grid-template-columns: repeat(2, 1fr);
+}
+
+/* 접수 탭에 남아 있는 건수를 알린다. 보드만 보다가 접수를 놓치지 않게 한다. */
+.board__waiting {
+	margin: 0;
+	padding: var(--space-3) var(--space-4);
+	border-radius: var(--radius-md);
+	background: var(--color-status-received-bg);
+	color: var(--color-status-received-fg);
+	font-size: var(--font-size-small);
+}
