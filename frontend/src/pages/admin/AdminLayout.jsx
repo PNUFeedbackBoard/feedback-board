@@ -26,6 +26,8 @@ export default function AdminLayout() {
 
 	const [me, setMe] = useState(null)
 	const [projects, setProjects] = useState([])
+	/** 화면 안에서만 유지되는 담당자. { [피드백 번호]: 이름 } */
+	const [assignees, setAssignees] = useState({})
 
 	useEffect(() => {
 		// 로그인하지 않았으면 401 이 온다. 화면을 막지 않고 헤더에만 안내를 띄운다.
@@ -56,6 +58,9 @@ export default function AdminLayout() {
 
 			{projectCode && (
 				<nav className="admin-tabs" aria-label="프로젝트 메뉴">
+					<NavLink to={`/admin/${projectCode}/intake`} className="admin-tabs__tab">
+						접수
+					</NavLink>
 					<NavLink to={`/admin/${projectCode}/board`} className="admin-tabs__tab">
 						개발 보드
 					</NavLink>
@@ -66,7 +71,14 @@ export default function AdminLayout() {
 			)}
 
 			<main className="admin-body">
-				<Outlet />
+				{/*
+				 * 담당자를 레이아웃이 들고 있다가 화면들에 내려 준다.
+				 * 접수 탭에서 지정하고 개발 보드 탭에서 확인하는 흐름이라
+				 * 화면 하나에 두면 탭을 옮기는 순간 사라진다.
+				 *
+				 * 기획에 없는 기능이라 아직 서버에 남지 않는다. AssigneeDialog 의 주석 참고.
+				 */}
+				<Outlet context={{ assignees, setAssignees }} />
 			</main>
 
 			<ProjectDisc projects={projects} projectCode={projectCode} />

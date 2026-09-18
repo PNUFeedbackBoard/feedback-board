@@ -26,6 +26,18 @@
 	--color-surface-veil: rgb(255 255 255 / 72%);
 	/* 디스크처럼 본문 위로 떠오르는 면. 헤더보다 진해야 경계가 읽힌다. */
 	--color-surface-raised: rgb(255 255 255 / 88%);
+	/*
+	 * 유리 면. 뒤가 비쳐 보이도록 옅게 깔고 흐림을 세게 준다.
+	 * 위가 밝고 아래로 갈수록 옅어져야 빛이 위에서 드는 것처럼 보인다.
+	 */
+	--glass-fill: linear-gradient(
+		180deg,
+		rgb(255 255 255 / 62%) 0%,
+		rgb(255 255 255 / 38%) 38%,
+		rgb(255 255 255 / 24%) 100%
+	);
+	--glass-blur: saturate(190%) blur(26px);
+	--glass-edge: rgb(255 255 255 / 75%);
 	--blur-veil: saturate(180%) blur(20px);
 
 	/* 글자 — label / secondaryLabel / tertiaryLabel */
