@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext, useParams } from 'react-router-dom'
 import { getAdminFeedbacks, updateAdminFeedback } from '../../api/endpoints.js'
+import { FEEDBACK_STATUS, labelOf } from '../../constants/enums.js'
 import AssigneeDialog from './AssigneeDialog.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
 import FilterBar from './components/FilterBar.jsx'
@@ -14,14 +15,25 @@ import './intake.css'
  * 접수는 훑고 거르는 일이고 개발 보드는 진행 상황을 보는 일이라 성격이 다르며,
  * 한 화면에 두면 접수가 쌓일수록 진행 중인 일이 밀려난다.
  *
+ * 상태를 바꾸는 길이 둘이다.
+ *   - 여러 건을 체크해 한꺼번에 처리 시작. 훑고 골라내는 주 동선이다.
+ *   - 카드마다의 선택 박스. 한 건을 반영 불가로 바로 보내는 것처럼 예외를 처리한다.
+ *
  * 필터 항목은 기획 4-5 를 따른다. 사이트는 하단 디스크가, 진행 상태는 이 탭 자체가 정하므로
  * 유형·기간·회원 여부와 정렬만 둔다.
  */
+
+/** 접수에서 곧바로 보낼 수 있는 곳. 접수는 지금 자리이므로 빠진다. */
+const MOVE_TARGETS = ['IN_PROGRESS', 'DONE', 'REJECTED']
+
 export default function IntakePage() {
 	const { projectCode } = useParams()
 	const { assignees, setAssignees } = useOutletContext()
 	const [filters, setFilters] = useState({ sort: 'PRIORITY' })
 	const [state, setState] = useState({ projectCode: null, items: [], message: '' })
+	/** 체크한 피드백 번호들. 일괄 처리의 대상이다. */
+	const [picked, setPicked] = useState([])
+	/** 담당자 입력을 기다리는 이동. 한 건일 수도 여러 건일 수도 있다. */
 	const [pending, setPending] = useState(null)
 	const [notice, setNotice] = useState('')
 
@@ -31,7 +43,10 @@ export default function IntakePage() {
 		// 계약대로 필터를 서버에 보낸다. B 의 1단계 작업이 끝나면 서버가 걸러서 내려준다.
 		getAdminFeedbacks({ ...filters, project: projectCode, status: 'RECEIVED' })
 			.then((page) => {
-				if (!cancelled) setState({ projectCode, items: page.items, message: '' })
+				if (!cancelled) {
+					setState({ projectCode, items: page.items, message: '' })
+					setPicked([])
+				}
 			})
 			.catch((error) => {
 				if (!cancelled) setState({ projectCode, items: [], message: error.message })
@@ -42,25 +57,43 @@ export default function IntakePage() {
 		}
 	}, [projectCode, filters])
 
-	/** 처리 중으로 넘긴다. 담당자를 함께 적어 두면 개발 보드에서 누가 맡았는지 보인다. */
-	function startWork(id, assignee) {
+	/**
+	 * 골라낸 건들을 다른 상태로 보낸다. 먼저 화면에서 빼고 서버에 알린다.
+	 * 하나라도 실패하면 전부 되돌린다. 일부만 옮겨진 채로 두면 무엇이 남았는지 알 수 없다.
+	 */
+	function moveAll(ids, status, assignee) {
 		const before = state.items
-		setState((prev) => ({ ...prev, items: prev.items.filter((item) => item.id !== id) }))
-		setAssignees((prev) => ({ ...prev, [id]: assignee }))
+		setState((prev) => ({ ...prev, items: prev.items.filter((item) => !ids.includes(item.id)) }))
+		setPicked((prev) => prev.filter((id) => !ids.includes(id)))
+		if (assignee !== undefined) {
+			setAssignees((prev) => ({ ...prev, ...Object.fromEntries(ids.map((id) => [id, assignee])) }))
+		}
 		setNotice('')
 
-		updateAdminFeedback(id, { status: 'IN_PROGRESS' }).catch((error) => {
+		Promise.all(ids.map((id) => updateAdminFeedback(id, { status }))).catch((error) => {
 			setState((prev) => ({ ...prev, items: before }))
-			setNotice(`처리 중으로 옮기지 못했습니다. ${error.message}`)
+			setNotice(`옮기지 못했습니다. ${error.message}`)
 		})
+	}
+
+	/** 처리 중으로 갈 때만 담당자를 묻는다. 일이 시작되는 시점이기 때문이다. */
+	function requestMove(ids, status) {
+		if (status === 'IN_PROGRESS') {
+			const title =
+				ids.length === 1
+					? state.items.find((item) => item.id === ids[0])?.title
+					: `${ids.length}건을 한꺼번에 옮깁니다`
+			setPending({ ids, status, title })
+			return
+		}
+		moveAll(ids, status)
 	}
 
 	if (state.projectCode !== projectCode) return <p className="board__notice">불러오는 중…</p>
 	if (state.message) return <p className="board__notice">{state.message}</p>
 
-	// TODO(C, 2단계): B 의 필터·정렬이 붙으면 이 두 줄을 지운다.
-	//                 0-1단계 스텁이 파라미터를 무시하고 14건을 그대로 내려주기 때문에 둔 임시 처리다.
-	//                 서버가 이미 걸러 보내면 같은 조건이라 결과가 달라지지 않는다.
+	// TODO(C, 2단계): B 의 필터·정렬이 붙으면 이 줄을 지운다.
+	//                 0-1단계 스텁이 파라미터를 무시하고 모든 상태를 내려주기 때문에 둔 임시 처리다.
 	const visible = sortItems(state.items.filter((item) => matches(item, filters)), filters.sort)
 
 	return (
@@ -68,6 +101,27 @@ export default function IntakePage() {
 			<FilterBar value={filters} onChange={setFilters} />
 
 			{notice && <p className="board__alert">{notice}</p>}
+
+			{/* 고른 것이 있을 때만 나타난다. 평소에는 자리를 차지하지 않는다. */}
+			{picked.length > 0 && (
+				<div className="intake__bulk">
+					<span>
+						<strong>{picked.length}건</strong> 선택됨
+					</span>
+					<div className="intake__bulk-actions">
+						<button type="button" className="intake__ghost" onClick={() => setPicked([])}>
+							선택 해제
+						</button>
+						<button
+							type="button"
+							className="intake__primary"
+							onClick={() => requestMove(picked, 'IN_PROGRESS')}
+						>
+							처리 시작
+						</button>
+					</div>
+				</div>
+			)}
 
 			<p className="intake__count">
 				접수 <strong>{visible.length}</strong>건
@@ -82,14 +136,30 @@ export default function IntakePage() {
 							key={item.id}
 							item={item}
 							assignee={assignees[item.id]}
+							selected={picked.includes(item.id)}
+							onSelect={(next) =>
+								setPicked((prev) =>
+									next ? [...prev, item.id] : prev.filter((id) => id !== item.id),
+								)
+							}
 							action={
-								<button
-									type="button"
-									className="intake__start"
-									onClick={() => setPending({ id: item.id, title: item.title })}
-								>
-									처리 시작
-								</button>
+								<label className="intake__row">
+									<span className="intake__muted">상태 변경</span>
+									<select
+										className="intake__select"
+										value=""
+										onChange={(event) => requestMove([item.id], event.target.value)}
+									>
+										<option value="" disabled>
+											고르세요
+										</option>
+										{MOVE_TARGETS.map((status) => (
+											<option key={status} value={status}>
+												{labelOf(FEEDBACK_STATUS, status)}
+											</option>
+										))}
+									</select>
+								</label>
 							}
 						/>
 					))}
@@ -101,7 +171,7 @@ export default function IntakePage() {
 					feedbackTitle={pending.title}
 					onCancel={() => setPending(null)}
 					onConfirm={(name) => {
-						startWork(pending.id, name)
+						moveAll(pending.ids, pending.status, name)
 						setPending(null)
 					}}
 				/>

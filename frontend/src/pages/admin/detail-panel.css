@@ -1,0 +1,145 @@
+/**
+ * 카드 상세 패널. 기획 6-3
+ * 오른쪽에서 밀려 들어온다. 보드를 가리지 않고 옆에 붙어 있어야 카드와 대조하며 볼 수 있다.
+ */
+
+.panel {
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 30;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+	width: min(380px, 100%);
+	overflow-y: auto;
+	padding: var(--space-5);
+	border-left: 1px solid var(--color-border);
+	background: var(--color-surface);
+	box-shadow: -8px 0 32px rgb(0 0 0 / 10%);
+	font-family: var(--font-family);
+	animation: panel-in var(--duration-base) var(--ease-spring);
+}
+
+@keyframes panel-in {
+	from {
+		transform: translateX(16px);
+		opacity: 0;
+	}
+}
+
+.panel__head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--space-3);
+}
+
+.panel__title {
+	margin: 0;
+	font-size: var(--font-size-title);
+	font-weight: var(--font-weight-bold);
+	line-height: 1.4;
+}
+
+.panel__close {
+	display: grid;
+	flex-shrink: 0;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	border: none;
+	border-radius: var(--radius-sm);
+	background: none;
+	color: var(--color-text-muted);
+	cursor: pointer;
+}
+
+.panel__close:hover {
+	background: var(--color-surface-sunken);
+	color: var(--color-text);
+}
+
+.panel__facts {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: var(--space-3);
+	margin: 0;
+}
+
+.panel__facts dt {
+	color: var(--color-text-subtle);
+	font-size: var(--font-size-label);
+}
+
+.panel__facts dd {
+	margin: 0;
+	font-size: var(--font-size-small);
+}
+
+.panel__content {
+	padding: var(--space-4);
+	border-radius: var(--radius-md);
+	background: var(--color-surface-sunken);
+	font-size: var(--font-size-small);
+	line-height: 1.7;
+	white-space: pre-wrap;
+}
+
+.panel__loading {
+	color: var(--color-text-subtle);
+}
+
+.panel__fields {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.panel__field {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+}
+
+.panel__field-label {
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+}
+
+.panel__select {
+	min-width: 140px;
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-family: var(--font-family);
+	font-size: var(--font-size-small);
+}
+
+.panel__select:focus {
+	border-color: var(--color-selected);
+	outline: 2px solid var(--color-selected);
+	outline-offset: -2px;
+}
+
+.panel__link {
+	margin-top: auto;
+	padding: var(--space-3);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-selected);
+	font-family: var(--font-family);
+	font-size: var(--font-size-small);
+	font-weight: var(--font-weight-medium);
+	cursor: pointer;
+}
+
+.panel__link:hover {
+	border-color: var(--color-selected);
+	background: var(--color-status-received-bg);
+}

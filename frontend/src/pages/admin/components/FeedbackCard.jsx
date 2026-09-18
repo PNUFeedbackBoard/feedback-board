@@ -15,13 +15,38 @@ import PriorityRequestBadge from './PriorityRequestBadge.jsx'
  * @param {string} [props.assignee] 담당자 이름. undefined 면 줄 자체가 나오지 않는다
  * @param {boolean} [props.dimmed] 비회원처럼 손댈 수 없는 항목을 흐리게 표시한다
  * @param {import('react').ReactNode} [props.action] 카드 아래에 붙는 버튼
+ * @param {boolean} [props.selected] 체크 상태. onSelect 를 함께 주어야 체크칸이 나온다
+ * @param {(next: boolean) => void} [props.onSelect] 체크칸을 누를 때 호출된다
+ * @param {() => void} [props.onOpen] 카드를 누를 때 호출된다. 상세 패널을 여는 데 쓴다
  */
-export default function FeedbackCard({ item, assignee, dimmed = false, action }) {
+export default function FeedbackCard({
+	item,
+	assignee,
+	dimmed = false,
+	action,
+	selected,
+	onSelect,
+	onOpen,
+}) {
 	return (
 		<article
-			className={dimmed ? 'card is-dimmed' : 'card'}
+			className={cardClassName(dimmed, selected)}
 			data-priority-requested={item.priorityRequested}
+			// 열 수 있는 카드만 눌리게 한다. onOpen 이 없으면 그냥 보는 카드다.
+			onClick={onOpen}
 		>
+			{onSelect && (
+				// 카드를 누르면 패널이 열리는 자리도 있으므로 체크칸까지 번지지 않게 막는다.
+				<label className="card__check" onClick={(event) => event.stopPropagation()}>
+					<input
+						type="checkbox"
+						checked={selected ?? false}
+						onChange={(event) => onSelect(event.target.checked)}
+					/>
+					<span className="card__check-label">선택</span>
+				</label>
+			)}
+
 			{item.priorityRequested && <PriorityRequestBadge />}
 
 			<h3 className="card__title">{item.title}</h3>
@@ -41,9 +66,17 @@ export default function FeedbackCard({ item, assignee, dimmed = false, action })
 				<p className="card__assignee">{assignee ? `담당 ${assignee}` : '담당 미지정'}</p>
 			)}
 
-			{action}
+			{/* 선택 박스 같은 조작은 카드를 여는 동작과 겹치지 않게 막는다. */}
+			{action && <div onClick={(event) => event.stopPropagation()}>{action}</div>}
 		</article>
 	)
+}
+
+function cardClassName(dimmed, selected) {
+	const names = ['card']
+	if (dimmed) names.push('is-dimmed')
+	if (selected) names.push('is-picked')
+	return names.join(' ')
 }
 
 /**
