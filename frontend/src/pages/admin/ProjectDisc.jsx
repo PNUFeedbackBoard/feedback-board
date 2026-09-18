@@ -28,7 +28,7 @@ import './project-disc.css'
  * **원판 가장자리가 아니라 안쪽에 앉히는 것이 중요하다.** 경계선에 정확히 걸치게 두었더니
  * 로고가 반은 흰 면, 반은 페이지 배경 위에 떠서 미완성으로 보였다.
  */
-const RADIUS = 152
+const RADIUS = 192
 /**
  * 슬롯 사이 각도. 호가 휘어 보이는 정도는 반지름이 아니라 이 각도 폭이 정한다.
  * (드롭 ÷ 가로폭 = tan(각도/2) 라 반지름은 약분된다. 반지름은 전체 크기만 바꾼다.)
@@ -36,17 +36,27 @@ const RADIUS = 152
  * 원판이 작아 호를 따라 잰 간격도 좁다. 로고가 서로 닿지 않으려면 이만큼 벌려야 하고,
  * 그 대가로 세 칸 너머는 화면 아래로 돌아 나간다. 실제 다이얼도 그렇게 돈다.
  */
-const STEP = 20
+const STEP = 22
 /** 펼쳤을 때 꼭대기 슬롯이 화면 아래 끝에서 뜨는 높이(px). */
-const LIFT_OPEN = 92
+const LIFT_OPEN = 132
 /**
  * 원의 중심이 화면 아래 끝보다 얼마나 밑에 있는지. 펼친 상태 기준이다.
  * 가라앉은 상태는 CSS 의 --disc-sink 가 여기서 더 내리므로 이 파일에는 값이 없다.
  */
 const CENTER_DEPTH = RADIUS - LIFT_OPEN
+/**
+ * 커서 각도를 회전으로 옮길 때의 비율. 1 이면 가리킨 로고가 정확히 꼭대기로 온다.
+ * 그러면 고르려던 로고가 커서 밑에서 빠져나가 클릭할 수 없으므로 절반쯤으로 낮춘다.
+ * 원판은 눈에 띄게 돌면서도 로고는 커서가 따라잡을 수 있는 값이다.
+ */
+const TURN_GAIN = 0.55
+/** 회전 한계(도). 한 번에 두 칸 남짓까지만 돌아간다. */
+const TURN_LIMIT = 48
+
 export default function ProjectDisc({ projects, projectCode }) {
 	const navigate = useNavigate()
 	const [open, setOpen] = useState(false)
+	const [turn, setTurn] = useState(0)
 
 	/**
 	 * 홈도 슬롯 하나다. 기획 6-1 의 "슬롯 하나는 홈 진입점으로 사용한다".
@@ -76,6 +86,7 @@ export default function ProjectDisc({ projects, projectCode }) {
 
 	function close() {
 		setOpen(false)
+		setTurn(0)
 	}
 
 	// pointerover/out 은 자식에서 위로 전달된다. enter/leave 와 달리 바깥으로 나갔는지
@@ -84,11 +95,30 @@ export default function ProjectDisc({ projects, projectCode }) {
 		if (!event.currentTarget.contains(event.relatedTarget)) close()
 	}
 
+	/**
+	 * 커서가 원 중심에서 몇 도에 있는지를 재어 그만큼 원판을 돌린다.
+	 *
+	 * 어느 요소 위에 있는지가 아니라 **좌표만** 보기 때문에, 돌아간 결과가 다시 입력이 되는
+	 * 되먹임이 없다. 커서를 세워 두면 원판도 그 자리에 멈춰 선다.
+	 */
+	function handlePointerMove(event) {
+		if (!open) return
+		const bounds = event.currentTarget.getBoundingClientRect()
+		const centerX = bounds.left + bounds.width / 2
+		const centerY = bounds.bottom + CENTER_DEPTH
+		const degrees =
+			(Math.atan2(event.clientX - centerX, centerY - event.clientY) * 180) / Math.PI
+		const next = Math.max(-TURN_LIMIT, Math.min(TURN_LIMIT, -degrees * TURN_GAIN))
+		// 0.5도 단위로 끊어 커서가 미세하게 떨릴 때마다 다시 그리지 않게 한다.
+		setTurn(Math.round(next * 2) / 2)
+	}
+
 	return (
 		<div
 			className={open ? 'disc is-open' : 'disc'}
 			onPointerOver={() => setOpen(true)}
 			onPointerOut={handlePointerOut}
+			onPointerMove={handlePointerMove}
 			onFocus={() => setOpen(true)}
 			onBlur={(event) => {
 				if (!event.currentTarget.contains(event.relatedTarget)) close()
@@ -109,7 +139,7 @@ export default function ProjectDisc({ projects, projectCode }) {
 					// 감지 않는다. 감으면 끝의 로고가 반대편으로 순간이동해 디스크에 붙어 있지 않게 보인다.
 					// 고른 것이 꼭대기로 오도록 원 전체가 돌 뿐, 로고끼리의 순서는 그대로다.
 					const offset = index - selectedIndex
-					const radian = (offset * STEP * Math.PI) / 180
+					const radian = ((offset * STEP + turn) * Math.PI) / 180
 
 					return (
 						<button
