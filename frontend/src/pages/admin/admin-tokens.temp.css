@@ -1,0 +1,107 @@
+/**
+ * 관리용 화면 임시 토큰. **D 의 0-2단계 산출물이 올라오면 이 파일을 지운다.**
+ *
+ * 왜 여기 있나
+ *   기획 13-4 "기다리지 않는다" 에 따라 C 가 D 의 tokens.css 를 기다리지 않고 화면을 만든다.
+ *   대신 색을 화면에 직접 쓰지 않기 위해 변수로 한 번 감싸 두었다.
+ *
+ * 지우는 방법 (2단계 통합)
+ *   1. frontend/src/styles/tokens.css 가 develop 에 올라오면
+ *   2. 이 파일의 import 를 지우고 D 의 tokens.css 를 import 한다
+ *   3. 변수 이름이 다르면 이 파일의 이름 쪽을 D 것에 맞춘다. 화면 코드는 고치지 않는다
+ *
+ * 톤은 요즘 운영체제 UI 에서 흔한 방식을 따랐다 — 옅은 회색 바탕, 흰 카드, 반투명과 흐림,
+ * 넉넉한 곡률, 얕은 그림자. 특정 제품의 값을 그대로 가져오지 않고 우리 화면에 맞춰 잡은 값이다.
+ * 상태 4색 계열(접수=파랑, 처리 중=주황, 처리 완료=초록, 반영 불가=회색)은 기획 4-2 가 정한 제약이다.
+ */
+
+:root {
+	/* 표면 */
+	--color-bg: #f4f4f8;
+	--color-surface: #ffffff;
+	--color-surface-sunken: #e9e9ef;
+	--color-border: rgb(60 60 67 / 12%);
+
+	/* 반투명 표면 — 헤더와 디스크처럼 뒤가 비쳐야 하는 곳에 쓴다 */
+	--color-surface-veil: rgb(255 255 255 / 72%);
+	/* 디스크처럼 본문 위로 떠오르는 면. 헤더보다 진해야 경계가 읽힌다. */
+	--color-surface-raised: rgb(255 255 255 / 88%);
+	--blur-veil: saturate(180%) blur(20px);
+
+	/* 글자 — label / secondaryLabel / tertiaryLabel */
+	--color-text: #1b1c1f;
+	--color-text-muted: rgb(60 60 67 / 60%);
+	--color-text-subtle: rgb(60 60 67 / 38%);
+
+	/* 상태 — 글자색과 배경색 한 쌍. 배경은 시스템 색의 옅은 틴트다 */
+	--color-status-received-fg: #0b4f9e;
+	--color-status-received-bg: rgb(18 108 222 / 12%);
+	--color-status-in-progress-fg: #9c5405;
+	--color-status-in-progress-bg: rgb(240 138 0 / 16%);
+	--color-status-done-fg: #1c7a3e;
+	--color-status-done-bg: rgb(47 184 90 / 16%);
+	--color-status-rejected-fg: rgb(60 60 67 / 60%);
+	--color-status-rejected-bg: rgb(120 120 128 / 12%);
+
+	/* 강조 — 우선 처리 요청과 중요도 '높음' 에만 쓴다 */
+	--color-accent: #e5372c;
+	--color-accent-bg: rgb(229 55 44 / 10%);
+
+	/*
+	 * 프로젝트 자리색. 로고 이미지가 준비되기 전까지 다섯 항목을 구분하는 임시 수단이다.
+	 * 이름 첫 글자만으로는 AIPMS · AICMS · AI역량지원시스템이 모두 'A' 로 겹친다.
+	 * TODO(C, 5단계): 실제 로고(logoUrl)가 들어오면 이 색은 지운다.
+	 */
+	--color-project-0-bg: #e3edfd;
+	--color-project-0-fg: #1a5bb8;
+	--color-project-1-bg: #e6f4ea;
+	--color-project-1-fg: #1c7a3e;
+	--color-project-2-bg: #fdeede;
+	--color-project-2-fg: #9c5405;
+	--color-project-3-bg: #efe7fb;
+	--color-project-3-fg: #6340ad;
+	--color-project-4-bg: #fce7ec;
+	--color-project-4-fg: #b02a4a;
+
+	/* 선택 — 탭과 디스크의 현재 항목 */
+	--color-selected: #126cde;
+
+	/* 서체 — 기기에 이미 깔린 시스템 서체를 부른다. 웹폰트를 내려받지 않아 표시가 빠르다 */
+	--font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Apple SD Gothic Neo',
+		'Pretendard', system-ui, sans-serif;
+
+	/* 글자 크기 */
+	--font-size-title: 1.0625rem;
+	--font-size-body: 0.9375rem;
+	--font-size-small: 0.8125rem;
+	--font-size-label: 0.6875rem;
+
+	/* 글자 굵기 */
+	--font-weight-normal: 400;
+	--font-weight-medium: 590;
+	--font-weight-bold: 700;
+
+	/* 간격 — 4px 배수 */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 24px;
+	--space-6: 32px;
+
+	/* 모서리 — 요소 크기에 따라 곡률을 달리 준다. 작은 칩에 큰 곡률을 주면 뭉개진다 */
+	--radius-sm: 8px;
+	--radius-md: 12px;
+	--radius-lg: 18px;
+	--radius-pill: 999px;
+
+	/* 그림자 — 얕고 넓게. 진한 그림자는 쓰지 않는다 */
+	--shadow-sm: 0 1px 2px rgb(0 0 0 / 5%), 0 1px 1px rgb(0 0 0 / 4%);
+	--shadow-md: 0 4px 16px rgb(0 0 0 / 8%), 0 1px 3px rgb(0 0 0 / 6%);
+	--shadow-lg: 0 12px 40px rgb(0 0 0 / 14%), 0 2px 8px rgb(0 0 0 / 6%);
+
+	/* 움직임 — 끝에서 부드럽게 멎는 감속 곡선 */
+	--ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+	--duration-fast: 180ms;
+	--duration-base: 320ms;
+}

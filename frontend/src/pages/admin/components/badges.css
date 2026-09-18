@@ -1,0 +1,67 @@
+/**
+ * 임시 공용 컴포넌트 4종의 스타일. D 의 components/common 이 올라오면 이 폴더째 지운다.
+ * 색과 간격은 admin-tokens.temp.css 의 변수만 쓴다. #hex 를 직접 쓰지 않는다.
+ */
+
+.badge {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	padding: 3px var(--space-2);
+	border-radius: var(--radius-pill);
+	font-size: var(--font-size-label);
+	font-weight: var(--font-weight-medium);
+	line-height: 1.45;
+	letter-spacing: 0;
+	white-space: nowrap;
+}
+
+/* 상태 배지 — 색만으로 구분하지 않고 글자를 함께 둔다. 색 계열은 기획 4-2 의 제약이다. */
+.badge--status[data-status='RECEIVED'] {
+	color: var(--color-status-received-fg);
+	background: var(--color-status-received-bg);
+}
+
+.badge--status[data-status='IN_PROGRESS'] {
+	color: var(--color-status-in-progress-fg);
+	background: var(--color-status-in-progress-bg);
+}
+
+.badge--status[data-status='DONE'] {
+	color: var(--color-status-done-fg);
+	background: var(--color-status-done-bg);
+}
+
+.badge--status[data-status='REJECTED'] {
+	color: var(--color-status-rejected-fg);
+	background: var(--color-status-rejected-bg);
+}
+
+/*
+ * 중요도 칩 — 상태가 이미 4색을 쓰고 있어 중요도까지 색을 쓰면 카드가 혼잡해진다.
+ * 높음만 강조색으로 드러내고 보통·낮음은 조용하게 둔다. (0-2 결정 사항 후보)
+ */
+.badge--priority {
+	color: var(--color-text-muted);
+	background: transparent;
+	box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.badge--priority[data-priority='HIGH'] {
+	color: var(--color-accent);
+	font-weight: var(--font-weight-bold);
+	box-shadow: inset 0 0 0 1px currentcolor;
+}
+
+/* 유형 태그 */
+.badge--category {
+	color: var(--color-text-muted);
+	background: var(--color-surface-sunken);
+}
+
+/* 우선 처리 요청 — 목록 최상단 고정 항목에 붙는다. 기획 4-4 */
+.badge--priority-request {
+	color: var(--color-accent);
+	background: var(--color-accent-bg);
+	font-weight: var(--font-weight-bold);
+}

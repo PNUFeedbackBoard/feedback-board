@@ -1,4 +1,5 @@
 import AccountsPage from './pages/admin/AccountsPage.jsx'
+import AdminLayout from './pages/admin/AdminLayout.jsx'
 import AnswersPage from './pages/admin/AnswersPage.jsx'
 import BoardPage from './pages/admin/BoardPage.jsx'
 import DashboardPage from './pages/admin/DashboardPage.jsx'
@@ -31,13 +32,22 @@ export const routes = [
   { path: '/my/:id', element: <MyFeedbackDetailPage /> },
 
   // ── 관리용 ──────────────────────────────────────────────────────
-  { path: '/admin', element: <DashboardPage /> },
+  // 승인 대기 안내는 레이아웃 바깥에 둔다. 아직 승인되지 않은 계정에게
+  // 상단 탭과 프로젝트 전환을 보여 줄 이유가 없다. (기획 3-2)
   { path: '/admin/pending', element: <PendingPage /> },
-  { path: '/admin/accounts', element: <AccountsPage /> },
-  // :projectCode 는 projects 의 code 값이다. codeplace | aipms | aicms | aicap | srvadm
-  // 경로가 2단이라 위의 /admin/pending, /admin/accounts 와 겹치지 않는다.
-  { path: '/admin/:projectCode/board', element: <BoardPage /> },
-  { path: '/admin/:projectCode/answers', element: <AnswersPage /> },
+  {
+    // 위 TODO(C, 1단계) 대로 추가한 레이아웃 부모 라우트다.
+    // **경로 문자열은 하나도 바꾸지 않았고 경로가 늘지도 않았다.** 감싸기만 한다.
+    element: <AdminLayout />,
+    children: [
+      { path: '/admin', element: <DashboardPage /> },
+      { path: '/admin/accounts', element: <AccountsPage /> },
+      // :projectCode 는 projects 의 code 값이다. codeplace | aipms | aicms | aicap | srvadm
+      // 경로가 2단이라 위의 /admin/pending, /admin/accounts 와 겹치지 않는다.
+      { path: '/admin/:projectCode/board', element: <BoardPage /> },
+      { path: '/admin/:projectCode/answers', element: <AnswersPage /> },
+    ],
+  },
 
   // ── 나머지 ──────────────────────────────────────────────────────
   { path: '*', element: <NotFoundPage /> },

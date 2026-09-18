@@ -1,0 +1,109 @@
+/**
+ * 관리용 공통 레이아웃 스타일. 기획 6-1
+ * 색과 간격은 admin-tokens.temp.css 의 변수만 쓴다.
+ */
+
+.admin-shell {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font-family);
+	font-size: var(--font-size-body);
+	/* 시스템 서체는 이 두 줄이 있어야 제 모양으로 그려진다. */
+	-webkit-font-smoothing: antialiased;
+	letter-spacing: -0.01em;
+}
+
+/* ── 공통 헤더 ────────────────────────────────────────────── */
+
+.admin-header {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	padding: var(--space-3) var(--space-5);
+	border-bottom: 1px solid var(--color-border);
+	/* 스크롤하면 카드가 뒤로 비쳐 지나간다. */
+	background: var(--color-surface-veil);
+	backdrop-filter: var(--blur-veil);
+}
+
+.admin-header__title {
+	font-size: var(--font-size-title);
+	font-weight: var(--font-weight-bold);
+}
+
+.admin-header__account {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+}
+
+.admin-header__role {
+	padding: 3px var(--space-2);
+	border-radius: var(--radius-pill);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-size: var(--font-size-label);
+	font-weight: var(--font-weight-medium);
+}
+
+/* ── 상단 탭 — 기획이 정한 '브라우저 탭 형태' 다 ──────────── */
+
+.admin-tabs {
+	position: sticky;
+	top: 49px;
+	z-index: 9;
+	display: flex;
+	gap: var(--space-1);
+	padding: var(--space-3) var(--space-5) 0;
+	border-bottom: 1px solid var(--color-border);
+	background: var(--color-surface-veil);
+	backdrop-filter: var(--blur-veil);
+}
+
+.admin-tabs__tab {
+	padding: var(--space-2) var(--space-5);
+	border: 1px solid transparent;
+	border-bottom: none;
+	border-radius: var(--radius-md) var(--radius-md) 0 0;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+	font-weight: var(--font-weight-medium);
+	text-decoration: none;
+	/* 선택된 탭이 아래 경계선을 덮어 본문과 이어져 보이게 한다. */
+	margin-bottom: -1px;
+	transition:
+		background var(--duration-fast) ease,
+		color var(--duration-fast) ease;
+}
+
+.admin-tabs__tab:hover {
+	background: var(--color-surface-sunken);
+	color: var(--color-text);
+}
+
+.admin-tabs__tab.active {
+	border-color: var(--color-border);
+	border-bottom: 1px solid var(--color-surface);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-weight: var(--font-weight-bold);
+}
+
+/* ── 본문 ─────────────────────────────────────────────────── */
+
+.admin-body {
+	flex: 1;
+	min-height: 0;
+	padding: var(--space-5);
+	/* 접힌 디스크가 마지막 카드를 가리지 않도록 아래를 비워 둔다. */
+	padding-bottom: 96px;
+}
