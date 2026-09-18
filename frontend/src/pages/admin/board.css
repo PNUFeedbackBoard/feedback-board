@@ -95,6 +95,11 @@
 	gap: var(--space-2);
 	align-items: flex-start;
 	padding: var(--space-3) var(--space-4);
+	/*
+	 * 우선 처리 요청 띠 자리를 모든 카드가 미리 비워 둔다. 색만 나중에 채우므로
+	 * 띠가 있는 카드와 없는 카드의 내용 위치가 어긋나지 않는다.
+	 */
+	border-left: var(--space-1) solid transparent;
 	border-radius: var(--radius-md);
 	background: var(--color-surface);
 	box-shadow: var(--shadow-sm);
@@ -108,9 +113,12 @@
  * 우선 처리 요청은 왼쪽 띠로 표시한다.
  * 카드에 이미 배지가 여러 개 올라가는데 테두리까지 쓰면 어느 것이 급한지 읽히지 않는다.
  * (0-2 결정 사항 후보 — D 와 맞춘 뒤 확정한다)
+ *
+ * **box-shadow 로 그리지 않는다.** :hover 가 box-shadow 를 통째로 바꾸기 때문에
+ * 커서를 올리는 순간 띠가 같이 사라진다. border 는 그림자와 별개라 영향을 받지 않는다.
  */
 .card[data-priority-requested='true'] {
-	box-shadow: inset var(--space-1) 0 0 var(--color-accent), var(--shadow-sm);
+	border-left-color: var(--color-accent);
 }
 
 .card:hover {
@@ -137,4 +145,69 @@
 	gap: var(--space-1) var(--space-3);
 	color: var(--color-text-subtle);
 	font-size: var(--font-size-label);
+}
+
+/* ── 끌어다 놓기 ──────────────────────────────────────────── */
+
+.card-slot {
+	/* 카드를 끄는 동작이 글자 선택으로 새지 않게 한다. */
+	touch-action: none;
+	cursor: grab;
+	user-select: none;
+}
+
+.card-slot:active {
+	cursor: grabbing;
+}
+
+/* 끄는 동안 원래 자리는 자국만 남는다. 실제 카드는 손을 따라다닌다. */
+.card-slot.is-dragging .card {
+	opacity: 0.35;
+	box-shadow: none;
+}
+
+/* 손에 들린 카드. 살짝 기울고 떠 있어야 집어 든 것처럼 보인다. */
+.card-held {
+	width: 260px;
+	transform: rotate(-2deg);
+	cursor: grabbing;
+}
+
+.card-held .card {
+	box-shadow: 0 16px 32px rgb(0 0 0 / 18%), 0 4px 8px rgb(0 0 0 / 10%);
+}
+
+/* 지금 놓으면 여기로 간다는 표시 */
+.board__column.is-over {
+	background: var(--color-status-received-bg);
+	outline: 2px dashed var(--color-selected);
+	outline-offset: -2px;
+}
+
+.board__rejected.is-over {
+	border-color: var(--color-selected);
+	background: var(--color-surface-sunken);
+}
+
+/* ── 담당자 ───────────────────────────────────────────────── */
+
+.card__assignee {
+	margin: 0;
+	padding: var(--space-1) var(--space-2);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-size: var(--font-size-label);
+	font-weight: var(--font-weight-medium);
+}
+
+/* ── 저장 실패 안내 ───────────────────────────────────────── */
+
+.board__alert {
+	margin: 0;
+	padding: var(--space-3) var(--space-4);
+	border-radius: var(--radius-md);
+	background: var(--color-accent-bg);
+	color: var(--color-accent);
+	font-size: var(--font-size-small);
 }

@@ -1,0 +1,102 @@
+/**
+ * 담당자 입력 창. 색과 간격은 admin-tokens.temp.css 의 변수만 쓴다.
+ */
+
+.dialog-veil {
+	position: fixed;
+	inset: 0;
+	z-index: 40;
+	display: grid;
+	place-items: center;
+	padding: var(--space-5);
+	background: rgb(28 28 30 / 28%);
+	backdrop-filter: blur(3px);
+}
+
+.dialog {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	width: min(380px, 100%);
+	padding: var(--space-5);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-lg);
+	font-family: var(--font-family);
+}
+
+.dialog__title {
+	margin: 0;
+	font-size: var(--font-size-title);
+	font-weight: var(--font-weight-bold);
+}
+
+/* 어느 건을 옮기는 중인지. 제목이 길 수 있으므로 두 줄까지만 보인다. */
+.dialog__subject {
+	display: -webkit-box;
+	margin: 0;
+	overflow: hidden;
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-sunken);
+	font-size: var(--font-size-small);
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+.dialog__help {
+	margin: 0;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+	line-height: 1.5;
+}
+
+.dialog__input {
+	padding: var(--space-3);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-family: var(--font-family);
+	font-size: var(--font-size-body);
+}
+
+.dialog__input:focus {
+	border-color: var(--color-selected);
+	outline: 2px solid var(--color-selected);
+	outline-offset: -2px;
+}
+
+.dialog__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--space-2);
+	margin-top: var(--space-1);
+}
+
+.dialog__button {
+	padding: var(--space-2) var(--space-4);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-family: var(--font-family);
+	font-size: var(--font-size-small);
+	font-weight: var(--font-weight-medium);
+	cursor: pointer;
+}
+
+.dialog__button:hover {
+	background: var(--color-surface-sunken);
+}
+
+.dialog__button--primary {
+	border-color: transparent;
+	background: var(--color-selected);
+	color: var(--color-surface);
+}
+
+.dialog__button--primary:hover {
+	filter: brightness(0.94);
+}
