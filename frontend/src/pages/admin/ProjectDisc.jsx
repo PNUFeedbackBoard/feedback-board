@@ -30,19 +30,18 @@ const SURFACE_OPEN = 240
 const CLOSED_SCALE = 0.46
 
 /** 접혔을 때 로고 한 변의 길이(px). **CSS 의 --disc-logo-closed 와 같아야 한다.** */
-const LOGO_CLOSED = 44
+const LOGO_CLOSED = 53
 /**
- * 로고가 걸치는 비율. 0.3 이면 위쪽 3할이 원 밖으로 나오고 7할이 면 위에 남는다.
- * 중심을 둘레선에 두면 반반이 되므로, 그보다 로고 높이의 0.2 만큼 안쪽으로 들인다.
- * (밖으로 나온 길이 = 높이/2 − 들인 길이 = 0.3 × 높이)
+ * 로고가 걸치는 비율. 0.2 면 위쪽 2할만 원 밖으로 나오고 8할이 면 위에 남는다.
+ * 중심을 둘레선에 두면 반반이 되므로, 그보다 로고 높이의 (0.5 − 이 값)만큼 안쪽으로 들인다.
  */
-const OVERHANG = 0.3
+const OVERHANG = 0.2
 
 /**
  * 로고가 놓이는 반지름. 두 상태에서 뜻이 다르다.
  *
  *   펼침 — 원판 가장자리(240)보다 48 안쪽. 로고가 면 위에 온전히 앉는다.
- *   접힘 — 둘레선(110)에서 살짝 안쪽. **위쪽 3할만 원 밖으로 나온다.**
+ *   접힘 — 둘레선(110)에서 안쪽으로 들어간다. **위쪽 2할만 원 밖으로 나온다.**
  */
 const RADIUS_OPEN = 192
 const RADIUS_CLOSED = SURFACE_OPEN * CLOSED_SCALE - LOGO_CLOSED * (0.5 - OVERHANG)
@@ -67,12 +66,15 @@ const STEP = 22
 
 /**
  * 커서 각도를 회전으로 옮길 때의 비율. 1 이면 가리킨 로고가 정확히 꼭대기로 온다.
- * 그러면 고르려던 로고가 커서 밑에서 빠져나가 클릭할 수 없으므로 절반쯤으로 낮춘다.
- * 원판은 눈에 띄게 돌면서도 로고는 커서가 따라잡을 수 있는 값이다.
+ * 절반쯤(0.55)으로 뒀더니 커서를 조금만 움직여도 원판이 크게 돌아 어지러웠다.
+ * 0.3 이면 손을 따라 기우는 정도로만 반응한다.
  */
-const TURN_GAIN = 0.55
-/** 회전 한계(도). 한 번에 두 칸 남짓까지만 돌아간다. */
-const TURN_LIMIT = 48
+const TURN_GAIN = 0.3
+/**
+ * 회전 한계(도). 한 칸(STEP)보다 작게 두어, 마우스만으로는 옆 칸이 꼭대기로 넘어오지 않는다.
+ * 칸을 옮기는 것은 클릭의 몫이고 이 기울임은 원판이 살아 있다는 신호일 뿐이다.
+ */
+const TURN_LIMIT = 16
 
 export default function ProjectDisc({ projects, projectCode }) {
 	const navigate = useNavigate()
@@ -83,22 +85,22 @@ export default function ProjectDisc({ projects, projectCode }) {
 	 * 홈도 슬롯 하나다. 기획 6-1 의 "슬롯 하나는 홈 진입점으로 사용한다".
 	 *
 	 * **순서는 고정이다.** 로고는 디스크에 붙어 있고, 무엇을 고르든 서로의 좌우 관계가 바뀌지 않는다.
-	 * 홈은 목록 한가운데에 둔다. 처음 들어오면 홈이 꼭대기에 있고 프로젝트가 양옆으로 갈라진다.
+	 * 홈이 맨 왼쪽이고 프로젝트가 그 오른쪽으로 sortOrder 순서대로 늘어선다.
+	 *
+	 * 홈에 있는 동안에는 오른쪽 이웃만 보인다. 왼쪽에 아무것도 없기 때문이다.
+	 * 끝쪽 프로젝트는 가까운 것을 한 번 거쳐 가야 닿는다.
 	 */
-	const slots = useMemo(() => {
-		const middle = Math.floor(projects.length / 2)
-		const toSlot = (project) => ({
-			key: project.code,
-			name: project.name,
-			to: `/admin/${project.code}/board`,
-		})
-
-		return [
-			...projects.slice(0, middle).map(toSlot),
+	const slots = useMemo(
+		() => [
 			{ key: '', name: '전체 현황', to: '/admin', home: true },
-			...projects.slice(middle).map(toSlot),
-		]
-	}, [projects])
+			...projects.map((project) => ({
+				key: project.code,
+				name: project.name,
+				to: `/admin/${project.code}/board`,
+			})),
+		],
+		[projects],
+	)
 
 	const selectedIndex = Math.max(
 		0,
@@ -130,8 +132,8 @@ export default function ProjectDisc({ projects, projectCode }) {
 		const degrees =
 			(Math.atan2(event.clientX - centerX, centerY - event.clientY) * 180) / Math.PI
 		const next = Math.max(-TURN_LIMIT, Math.min(TURN_LIMIT, -degrees * TURN_GAIN))
-		// 0.5도 단위로 끊어 커서가 미세하게 떨릴 때마다 다시 그리지 않게 한다.
-		setTurn(Math.round(next * 2) / 2)
+		// 1도 단위로 끊어 커서가 미세하게 떨릴 때마다 다시 그리지 않게 한다.
+		setTurn(Math.round(next))
 	}
 
 	// 두 상태의 기하가 다르다. 접히면 원이 0.6배로 줄고 로고는 그 둘레선에 얹힌다.
