@@ -158,6 +158,49 @@
 	transform: translate(-50%, 50%) translateY(var(--disc-depth));
 }
 
+/*
+ * 접힌 원은 통째로 0.46배가 된다. 테두리도 반사도 같이 줄어들기 때문에
+ * 큰 원 기준으로 잡아 둔 값들을 여기서 다시 잡는다.
+ */
+.disc:not(.is-open) .disc__surface {
+	/*
+	 * 위쪽 하이라이트를 뺀다. 큰 원에서는 꼭대기 언저리를 밝히는 타원이지만
+	 * 작은 원에서는 그 타원이 곧 보이는 영역 전체라, 면이 흰 덩어리가 된다.
+	 * 몸통만 아주 옅게 남겨 뒤가 그대로 비치게 한다.
+	 */
+	background: radial-gradient(
+		circle at 50% 36%,
+		rgb(255 255 255 / 14%) 0%,
+		rgb(226 233 250 / 5%) 100%
+	);
+	border-width: 3px;
+	box-shadow:
+		/* 테두리 안쪽 그늘. 줄어드는 만큼 크게 잡아야 같은 두께로 보인다 */
+		inset 0 28px 34px -24px rgb(52 60 105 / 22%),
+		inset 0 -60px 70px -50px rgb(255 255 255 / 45%),
+		0 -20px 50px rgb(38 42 72 / 14%),
+		0 -5px 12px rgb(38 42 72 / 9%);
+}
+
+/* 색수차 테도 배율만큼 두껍게 잡는다. 3px 로 두면 1.4px 로 보인다. */
+.disc:not(.is-open) .disc__surface::before {
+	-webkit-mask: radial-gradient(
+		circle at center,
+		transparent calc(var(--disc-radius) - 12px),
+		#000 calc(var(--disc-radius) - 7px)
+	);
+	mask: radial-gradient(
+		circle at center,
+		transparent calc(var(--disc-radius) - 12px),
+		#000 calc(var(--disc-radius) - 7px)
+	);
+}
+
+/* 작은 원에 테를 두 겹 두면 복잡하다. 색수차 테 하나만 남긴다. */
+.disc:not(.is-open) .disc__surface::after {
+	opacity: 0;
+}
+
 /* ── 호 위의 슬롯 ─────────────────────────────────────────── */
 
 .disc__slots {
