@@ -75,6 +75,31 @@
 	--color-project-4-bg: #fce7ec;
 	--color-project-4-fg: #b02a4a;
 
+	/*
+	 * 차트에 칠하는 색. 배지의 옅은 틴트와 달리 면을 가득 채우므로 따로 둔다.
+	 *
+	 * 색각 이상 검증을 돌려 고른 값이다(OKLab ΔE, 흰 배경 기준).
+	 *   인접 쌍 최악 11.3(목표 8 이상) · 일반 시야 최악 21.8(기준 15 이상) · 명암 전부 3:1 이상
+	 * 처리 완료를 어두운 초록으로 내린 것은 주황과 붙어 있을 때 적록색약에서 구분되지 않아서다.
+	 * 반영 불가의 회색은 채도 검사에 걸리지만 기획 4-2 가 회색으로 정한 값이라 그대로 둔다.
+	 */
+	--color-chart-received: #2a78d6;
+	--color-chart-in-progress: #eb6834;
+	--color-chart-done: #00693c;
+	--color-chart-rejected: #8f8f8a;
+
+	/*
+	 * 유형 3종. 상태 색과 겹치면 도넛의 파란 조각을 '접수' 로 읽게 되므로
+	 * 파랑·주황·초록·회색을 피해 고르고 전 쌍 검증을 통과시켰다.
+	 */
+	--color-chart-category-bug: #4a3aa7;
+	--color-chart-category-feature: #e87ba4;
+	--color-chart-category-etc: #eda100;
+
+	/* 차트의 눈금선과 축. 데이터보다 뒤로 물러나야 한다 */
+	--color-chart-grid: #e9e9ee;
+	--color-chart-axis: #a8a8b0;
+
 	/* 선택 — 탭과 디스크의 현재 항목 */
 	--color-selected: #126cde;
 

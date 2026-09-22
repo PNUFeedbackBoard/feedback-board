@@ -1,0 +1,247 @@
+/**
+ * 홈 — 전체 현황 대시보드. 기획 6-2
+ * 색과 간격은 admin-tokens.temp.css 의 변수만 쓴다.
+ */
+
+.dash {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+/* ── 지표 타일 ────────────────────────────────────────────── */
+
+.dash__tiles {
+	display: grid;
+	/* 여섯 칸이 고르게 선다. 좁아지면 줄이 접히되 칸 너비는 유지된다. */
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: var(--space-3);
+}
+
+.tile {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--space-2);
+	min-height: 116px;
+	padding: var(--space-4);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-sm);
+}
+
+/* 지표 이름과 단서는 위아래로 벌려 숫자를 가운데 띄운다. */
+.tile__note {
+	margin-top: auto;
+}
+
+.tile__label {
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+	font-weight: var(--font-weight-medium);
+}
+
+/* 숫자와 단위는 한 줄에 붙는다. 단위가 아래로 내려가면 숫자가 떠 보인다. */
+.tile__figure {
+	display: flex;
+	align-items: baseline;
+	gap: var(--space-1);
+	margin: 0;
+}
+
+/* 숫자가 주인공이다. 나머지는 그 옆에서 작게 받친다. */
+.tile__value {
+	font-size: 1.75rem;
+	font-weight: var(--font-weight-bold);
+	line-height: 1.1;
+	letter-spacing: -0.02em;
+	/* 자릿수가 바뀌어도 숫자 폭이 흔들리지 않게 한다. */
+	font-variant-numeric: tabular-nums;
+}
+
+.tile__unit,
+.tile__note {
+	color: var(--color-text-subtle);
+	font-size: var(--font-size-label);
+}
+
+/* ── 차트 판 ──────────────────────────────────────────────── */
+
+.dash__charts {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	gap: var(--space-3);
+	align-items: start;
+}
+
+.panel-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-sm);
+}
+
+/* 시계열은 가로로 길어야 오르내림이 읽힌다. 한 줄을 통째로 쓴다. */
+.panel-card--wide {
+	grid-column: 1 / -1;
+}
+
+.panel-card__head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-2);
+}
+
+.panel-card__title {
+	margin: 0;
+	font-size: var(--font-size-body);
+	font-weight: var(--font-weight-bold);
+}
+
+.panel-card__caption {
+	color: var(--color-text-subtle);
+	font-size: var(--font-size-label);
+}
+
+/* ── 범례와 색 조각 ───────────────────────────────────────── */
+
+.dash__legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-1) var(--space-3);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-label);
+}
+
+.dash__legend li {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.dash__swatch {
+	display: inline-block;
+	flex-shrink: 0;
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+}
+
+/* ── 도넛과 그 옆의 숫자 ──────────────────────────────────── */
+
+.dash__donut {
+	display: grid;
+	grid-template-columns: minmax(160px, 1fr) auto;
+	gap: var(--space-3);
+	align-items: center;
+}
+
+.dash__breakdown {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: var(--font-size-small);
+}
+
+.dash__breakdown li {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.dash__breakdown-name {
+	color: var(--color-text-muted);
+}
+
+.dash__breakdown-value {
+	color: var(--color-text);
+	font-weight: var(--font-weight-medium);
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── 차트 위 설명 상자 ────────────────────────────────────── */
+
+.dash__tip {
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-md);
+	font-size: var(--font-size-label);
+}
+
+.dash__tip-head {
+	margin: 0 0 var(--space-1);
+	color: var(--color-text-muted);
+	font-weight: var(--font-weight-medium);
+}
+
+.dash__tip-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	margin: 0;
+	color: var(--color-text-muted);
+}
+
+.dash__tip-row strong {
+	margin-left: auto;
+	color: var(--color-text);
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── 하단 목록 ────────────────────────────────────────────── */
+
+.dash__lists {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	gap: var(--space-3);
+	align-items: start;
+}
+
+.dash__rows {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.dash__row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2);
+	border-radius: var(--radius-sm);
+}
+
+.dash__row:hover {
+	background: var(--color-surface-sunken);
+}
+
+.dash__row-title {
+	flex: 1;
+	overflow: hidden;
+	font-size: var(--font-size-small);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dash__row-meta {
+	flex-shrink: 0;
+	color: var(--color-text-subtle);
+	font-size: var(--font-size-label);
+}
