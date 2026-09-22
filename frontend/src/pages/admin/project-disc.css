@@ -18,10 +18,10 @@
 	 */
 	--disc-radius: 240px;
 	--disc-depth: 60px;
-	--disc-depth-closed: 50px;
+	--disc-depth-closed: 46px;
 	--disc-closed-scale: 0.46;
 	/* 접혔을 때의 로고 크기. ProjectDisc.jsx 의 LOGO_CLOSED 와 짝이다. */
-	--disc-logo-closed: 53px;
+	--disc-logo-closed: 48px;
 
 	position: fixed;
 	right: 0;
@@ -138,8 +138,10 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 5px;
-	width: 72px;
+	/*
+	 * 흐름에 남는 것은 로고뿐이다(이름은 아래에서 absolute 로 뺐다).
+	 * 그래야 JS 가 계산한 좌표가 슬롯 상자가 아니라 **로고의 중심**을 가리킨다.
+	 */
 	padding: 0;
 	border: none;
 	background: none;
@@ -216,10 +218,18 @@
 		color var(--duration-fast) ease;
 }
 
-/* 이름은 로고를 읽는 보조 수단이다. 작게 두고 로고가 주인공이 되게 한다. */
+/*
+ * 이름은 로고를 읽는 보조 수단이다. 작게 두고 로고가 주인공이 되게 한다.
+ * 흐름에서 빼 두어야 슬롯 높이가 로고 높이로 남고 좌표가 로고 중심을 가리킨다.
+ */
 .disc__name {
+	position: absolute;
+	top: 100%;
+	left: 50%;
 	max-width: 72px;
+	margin-top: 5px;
 	overflow: hidden;
+	transform: translateX(-50%);
 	font-size: 10px;
 	letter-spacing: 0;
 	text-overflow: ellipsis;
@@ -231,6 +241,17 @@
 /* 슬롯이 촘촘해 이름을 전부 띄우면 서로 겹친다. 꼭대기와 커서가 올라간 것만 보인다. */
 .disc.is-open .disc__slot.is-selected .disc__name,
 .disc.is-open .disc__slot:hover .disc__name {
+	opacity: 1;
+}
+
+/*
+ * 접혀 있을 때는 지금 머무는 곳의 이름을 로고 바로 아래, 원 안쪽에 남긴다.
+ * 로고만으로는 어느 프로젝트인지 첫 글자밖에 알 수 없다.
+ */
+.disc:not(.is-open) .disc__slot.is-selected .disc__name {
+	max-width: 132px;
+	font-size: var(--font-size-label);
+	font-weight: var(--font-weight-medium);
 	opacity: 1;
 }
 

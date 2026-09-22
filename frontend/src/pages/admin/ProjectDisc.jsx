@@ -30,7 +30,7 @@ const SURFACE_OPEN = 240
 const CLOSED_SCALE = 0.46
 
 /** 접혔을 때 로고 한 변의 길이(px). **CSS 의 --disc-logo-closed 와 같아야 한다.** */
-const LOGO_CLOSED = 53
+const LOGO_CLOSED = 48
 /**
  * 로고가 걸치는 비율. 0.2 면 위쪽 2할만 원 밖으로 나오고 8할이 면 위에 남는다.
  * 중심을 둘레선에 두면 반반이 되므로, 그보다 로고 높이의 (0.5 − 이 값)만큼 안쪽으로 들인다.
@@ -53,7 +53,7 @@ const RADIUS_CLOSED = SURFACE_OPEN * CLOSED_SCALE - LOGO_CLOSED * (0.5 - OVERHAN
  * 지금은 반지름 110 에 높이 60, 너비 197 이라 눈에 띄게 둥근 봉우리가 된다.
  */
 const DEPTH_OPEN = 60
-const DEPTH_CLOSED = 50
+const DEPTH_CLOSED = 46
 
 /**
  * 슬롯 사이 각도. 호가 휘어 보이는 정도는 반지름이 아니라 이 각도 폭이 정한다.
