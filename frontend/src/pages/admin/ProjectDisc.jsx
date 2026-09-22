@@ -27,23 +27,34 @@ import './project-disc.css'
  * 접히면 그 0.6배로 줄어든다. CSS 의 --disc-closed-scale 과 짝이다.
  */
 const SURFACE_OPEN = 240
-const CLOSED_SCALE = 0.6
+const CLOSED_SCALE = 0.46
+
+/** 접혔을 때 로고 한 변의 길이(px). **CSS 의 --disc-logo-closed 와 같아야 한다.** */
+const LOGO_CLOSED = 44
+/**
+ * 로고가 걸치는 비율. 0.3 이면 위쪽 3할이 원 밖으로 나오고 7할이 면 위에 남는다.
+ * 중심을 둘레선에 두면 반반이 되므로, 그보다 로고 높이의 0.2 만큼 안쪽으로 들인다.
+ * (밖으로 나온 길이 = 높이/2 − 들인 길이 = 0.3 × 높이)
+ */
+const OVERHANG = 0.3
 
 /**
  * 로고가 놓이는 반지름. 두 상태에서 뜻이 다르다.
  *
  *   펼침 — 원판 가장자리(240)보다 48 안쪽. 로고가 면 위에 온전히 앉는다.
- *   접힘 — 원판 반지름(144)과 같다. **로고가 둘레선에 걸쳐 반은 원 밖으로 나온다.**
+ *   접힘 — 둘레선(110)에서 살짝 안쪽. **위쪽 3할만 원 밖으로 나온다.**
  */
 const RADIUS_OPEN = 192
-const RADIUS_CLOSED = SURFACE_OPEN * CLOSED_SCALE
+const RADIUS_CLOSED = SURFACE_OPEN * CLOSED_SCALE - LOGO_CLOSED * (0.5 - OVERHANG)
 
 /**
  * 원의 중심이 화면 아래 끝보다 얼마나 밑에 있는지.
- * 접힘 값은 둘레선(= 로고 중심)이 화면 아래 끝에서 44px 위에 오도록 잡았다.
+ * 접힘 값은 작은 원을 깊이 묻지 않고 얕게 걸쳐 두어 곡률이 드러나게 잡았다.
+ * 반지름에 비해 드러나는 높이가 클수록 호가 급하게 휜다 —
+ * 지금은 반지름 110 에 높이 60, 너비 197 이라 눈에 띄게 둥근 봉우리가 된다.
  */
 const DEPTH_OPEN = 60
-const DEPTH_CLOSED = 100
+const DEPTH_CLOSED = 50
 
 /**
  * 슬롯 사이 각도. 호가 휘어 보이는 정도는 반지름이 아니라 이 각도 폭이 정한다.

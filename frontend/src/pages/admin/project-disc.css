@@ -13,12 +13,15 @@
 	 *
 	 * 두 상태의 원이 다르다.
 	 *   펼침 — 반지름 240. 로고는 그보다 48 안쪽(192)에 앉아 면 위에 온전히 올라간다.
-	 *   접힘 — 반지름 144(0.6배). 로고는 둘레선(144)에 걸쳐 반은 원 밖으로 나온다.
+	 *   접힘 — 반지름 110(0.46배). 로고는 둘레선 살짝 안쪽에 얹혀 위쪽 3할만 밖으로 나온다.
+	 *          반지름에 비해 드러나는 높이가 커서 호가 급하게 휜다.
 	 */
 	--disc-radius: 240px;
 	--disc-depth: 60px;
-	--disc-depth-closed: 100px;
-	--disc-closed-scale: 0.6;
+	--disc-depth-closed: 50px;
+	--disc-closed-scale: 0.46;
+	/* 접혔을 때의 로고 크기. ProjectDisc.jsx 의 LOGO_CLOSED 와 짝이다. */
+	--disc-logo-closed: 44px;
 
 	position: fixed;
 	right: 0;
@@ -180,6 +183,16 @@
 .disc:not(.is-open) .disc__slot:not(.is-selected) {
 	opacity: 0;
 	pointer-events: none;
+}
+
+/*
+ * 접히면 로고도 작아진다. 원이 0.6배로 줄었는데 로고가 그대로면 원 위에 얹힌 것이 아니라
+ * 원을 뒤덮은 것처럼 보인다. 위치는 JS 가 이 크기에 맞춰 계산한다.
+ */
+.disc:not(.is-open) .disc__slot.is-selected .disc__logo {
+	width: var(--disc-logo-closed);
+	height: var(--disc-logo-closed);
+	font-size: var(--font-size-body);
 }
 
 /* 커서가 올라간 것만 커지고 나머지는 물러난다. 고르는 중인 것에 시선이 모인다. */
