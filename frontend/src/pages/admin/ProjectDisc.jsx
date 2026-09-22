@@ -23,12 +23,28 @@ import './project-disc.css'
  */
 
 /**
- * 로고가 놓이는 반지름(px). 원판의 반지름(CSS 의 --disc-radius = 200)보다 48 작다.
- *
- * **원판 가장자리가 아니라 안쪽에 앉히는 것이 중요하다.** 경계선에 정확히 걸치게 두었더니
- * 로고가 반은 흰 면, 반은 페이지 배경 위에 떠서 미완성으로 보였다.
+ * 원판의 반지름(px). **project-disc.css 의 --disc-radius 와 같은 값이어야 한다.**
+ * 접히면 그 0.6배로 줄어든다. CSS 의 --disc-closed-scale 과 짝이다.
  */
-const RADIUS = 192
+const SURFACE_OPEN = 240
+const CLOSED_SCALE = 0.6
+
+/**
+ * 로고가 놓이는 반지름. 두 상태에서 뜻이 다르다.
+ *
+ *   펼침 — 원판 가장자리(240)보다 48 안쪽. 로고가 면 위에 온전히 앉는다.
+ *   접힘 — 원판 반지름(144)과 같다. **로고가 둘레선에 걸쳐 반은 원 밖으로 나온다.**
+ */
+const RADIUS_OPEN = 192
+const RADIUS_CLOSED = SURFACE_OPEN * CLOSED_SCALE
+
+/**
+ * 원의 중심이 화면 아래 끝보다 얼마나 밑에 있는지.
+ * 접힘 값은 둘레선(= 로고 중심)이 화면 아래 끝에서 44px 위에 오도록 잡았다.
+ */
+const DEPTH_OPEN = 60
+const DEPTH_CLOSED = 100
+
 /**
  * 슬롯 사이 각도. 호가 휘어 보이는 정도는 반지름이 아니라 이 각도 폭이 정한다.
  * (드롭 ÷ 가로폭 = tan(각도/2) 라 반지름은 약분된다. 반지름은 전체 크기만 바꾼다.)
@@ -37,13 +53,7 @@ const RADIUS = 192
  * 그 대가로 세 칸 너머는 화면 아래로 돌아 나간다. 실제 다이얼도 그렇게 돈다.
  */
 const STEP = 22
-/** 펼쳤을 때 꼭대기 슬롯이 화면 아래 끝에서 뜨는 높이(px). */
-const LIFT_OPEN = 132
-/**
- * 원의 중심이 화면 아래 끝보다 얼마나 밑에 있는지. 펼친 상태 기준이다.
- * 가라앉은 상태는 CSS 의 --disc-sink 가 여기서 더 내리므로 이 파일에는 값이 없다.
- */
-const CENTER_DEPTH = RADIUS - LIFT_OPEN
+
 /**
  * 커서 각도를 회전으로 옮길 때의 비율. 1 이면 가리킨 로고가 정확히 꼭대기로 온다.
  * 그러면 고르려던 로고가 커서 밑에서 빠져나가 클릭할 수 없으므로 절반쯤으로 낮춘다.
@@ -105,13 +115,17 @@ export default function ProjectDisc({ projects, projectCode }) {
 		if (!open) return
 		const bounds = event.currentTarget.getBoundingClientRect()
 		const centerX = bounds.left + bounds.width / 2
-		const centerY = bounds.bottom + CENTER_DEPTH
+		const centerY = bounds.bottom + DEPTH_OPEN
 		const degrees =
 			(Math.atan2(event.clientX - centerX, centerY - event.clientY) * 180) / Math.PI
 		const next = Math.max(-TURN_LIMIT, Math.min(TURN_LIMIT, -degrees * TURN_GAIN))
 		// 0.5도 단위로 끊어 커서가 미세하게 떨릴 때마다 다시 그리지 않게 한다.
 		setTurn(Math.round(next * 2) / 2)
 	}
+
+	// 두 상태의 기하가 다르다. 접히면 원이 0.6배로 줄고 로고는 그 둘레선에 얹힌다.
+	const radius = open ? RADIUS_OPEN : RADIUS_CLOSED
+	const depth = open ? DEPTH_OPEN : DEPTH_CLOSED
 
 	return (
 		<div
@@ -147,8 +161,8 @@ export default function ProjectDisc({ projects, projectCode }) {
 							type="button"
 							className={offset === 0 ? 'disc__slot is-selected' : 'disc__slot'}
 							style={{
-								// 원의 중심은 화면 아래 끝 가운데에서 CENTER_DEPTH 만큼 더 내려간 곳이다.
-								transform: `translate(-50%, 50%) translate(${RADIUS * Math.sin(radian)}px, ${-(RADIUS * Math.cos(radian) - CENTER_DEPTH)}px)`,
+								// 원의 중심은 화면 아래 끝 가운데에서 depth 만큼 더 내려간 곳이다.
+								transform: `translate(-50%, 50%) translate(${radius * Math.sin(radian)}px, ${-(radius * Math.cos(radian) - depth)}px)`,
 							}}
 							onClick={() => {
 								navigate(slot.to)

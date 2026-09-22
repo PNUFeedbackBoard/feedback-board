@@ -3,18 +3,22 @@
  *
  * 좌표의 기준점은 **화면 아래 끝의 가운데**다. 원의 중심을 거기서 --disc-depth 만큼 더 내리면
  * 위쪽 호만 화면에 남는다. 반지름이 클수록 그 호가 완만해진다.
- * 접혀 있을 때는 --disc-sink 만큼 더 내려 봉우리만 남긴다.
+ * 접히면 원이 --disc-closed-scale 배로 줄고, 로고는 그 둘레선에 걸친다.
  */
 
 .disc {
 	/*
 	 * 원판의 반지름과, 중심이 화면 아래 끝보다 얼마나 밑에 있는지.
-	 * --disc-depth 는 ProjectDisc.jsx 의 CENTER_DEPTH 와 짝이고,
-	 * 로고는 그보다 48 안쪽(같은 파일의 RADIUS = 412)에 앉는다.
+	 * ProjectDisc.jsx 의 SURFACE_OPEN · DEPTH_OPEN · DEPTH_CLOSED · CLOSED_SCALE 과 짝이다.
+	 *
+	 * 두 상태의 원이 다르다.
+	 *   펼침 — 반지름 240. 로고는 그보다 48 안쪽(192)에 앉아 면 위에 온전히 올라간다.
+	 *   접힘 — 반지름 144(0.6배). 로고는 둘레선(144)에 걸쳐 반은 원 밖으로 나온다.
 	 */
 	--disc-radius: 240px;
 	--disc-depth: 60px;
-	--disc-sink: 100px;
+	--disc-depth-closed: 100px;
+	--disc-closed-scale: 0.6;
 
 	position: fixed;
 	right: 0;
@@ -57,8 +61,10 @@
 	width: calc(var(--disc-radius) * 2);
 	height: calc(var(--disc-radius) * 2);
 	/* bottom:0 에서 자기 높이의 절반만큼 내리면 원의 중심이 화면 아래 끝에 걸린다.
-	   거기서 --disc-depth 만큼 더 내린 것이 펼친 상태고, --disc-sink 를 더한 것이 접힌 상태다. */
-	transform: translate(-50%, 50%) translateY(calc(var(--disc-depth) + var(--disc-sink)));
+	   거기서 --disc-depth 만큼 더 내린 곳이 원의 중심이다.
+	   scale 은 그 중심을 기준으로 줄어들므로 중심 위치는 그대로고 반지름만 작아진다. */
+	transform:
+		translate(-50%, 50%) translateY(var(--disc-depth-closed)) scale(var(--disc-closed-scale));
 	border: 1px solid var(--glass-edge);
 	border-radius: 50%;
 	background: var(--glass-fill);
@@ -120,12 +126,6 @@
 .disc__slots {
 	position: absolute;
 	inset: 0;
-	translate: 0 var(--disc-sink);
-	transition: translate var(--duration-base) var(--ease-spring);
-}
-
-.disc.is-open .disc__slots {
-	translate: 0;
 }
 
 .disc__slot {
