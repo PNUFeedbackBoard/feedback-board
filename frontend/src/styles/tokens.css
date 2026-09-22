@@ -28,6 +28,7 @@
   --radius-pill: 999rem;
   --size-priority-option-width: 4.75rem;
   --size-priority-option-height: 2rem;
+  --size-priority-request-badge: 2rem;
 
   --shadow-priority-track:
     inset 0 0.0625rem 0.125rem rgb(255 255 255 / 80%),
@@ -37,4 +38,5 @@
     inset 0 0.0625rem 0.125rem rgb(255 255 255 / 35%),
     inset 0 -0.125rem 0.25rem rgb(49 52 132 / 22%),
     0 0.25rem 0.5rem rgb(45 47 110 / 28%);
+  --shadow-priority-request-badge: 0 0.125rem 0.25rem rgb(49 52 132 / 24%);
 }
