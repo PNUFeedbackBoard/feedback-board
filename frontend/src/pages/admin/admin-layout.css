@@ -105,5 +105,5 @@
 	min-height: 0;
 	padding: var(--space-5);
 	/* 접힌 디스크가 마지막 카드를 가리지 않도록 아래를 비워 둔다. */
-	padding-bottom: 96px;
+	padding-bottom: 116px;
 }
