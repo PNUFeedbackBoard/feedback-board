@@ -1,6 +1,6 @@
 /**
- * 홈 — 전체 현황 대시보드. 기획 6-2
- * 색과 간격은 admin-tokens.temp.css 의 변수만 쓴다.
+ * Overall dashboard. It shares the restrained INI geometry with the board;
+ * colour is reserved for data and status, not decorative containers.
  */
 
 .dash {
@@ -9,156 +9,232 @@
 	gap: var(--space-4);
 }
 
-/* ── 지표 타일 ────────────────────────────────────────────── */
+/* ── Context header ───────────────────────────────────────── */
+
+.dash__intro {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: var(--space-6);
+	margin-bottom: var(--space-2);
+	padding: 8px 0 22px;
+	border-bottom: 1px solid var(--color-border-strong);
+}
+
+.dash__eyebrow {
+	margin: 0 0 10px;
+	color: var(--color-selected);
+	font-size: 9px;
+	font-weight: var(--font-weight-bold);
+	letter-spacing: 0.24em;
+}
+
+.dash__intro h1 {
+	margin: 0;
+	font-size: clamp(1.75rem, 3vw, 2.6rem);
+	font-weight: 680;
+	letter-spacing: -0.045em;
+	line-height: 1.1;
+}
+
+.dash__copy {
+	margin: 10px 0 0;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+}
+
+.dash__total {
+	flex: 0 0 auto;
+	min-width: 126px;
+	padding-left: var(--space-4);
+	border-left: 2px solid var(--color-selected);
+}
+
+.dash__total > span {
+	color: var(--color-text-subtle);
+	font-size: 9px;
+	font-weight: var(--font-weight-medium);
+	letter-spacing: 0.12em;
+}
+
+.dash__total p {
+	display: flex;
+	align-items: baseline;
+	gap: 5px;
+	margin: 3px 0 0;
+}
+
+.dash__total strong {
+	font-size: 2rem;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.04em;
+	line-height: 1;
+}
+
+.dash__total small {
+	color: var(--color-text-subtle);
+	font-size: var(--font-size-label);
+}
+
+/* ── Summary metrics ──────────────────────────────────────── */
 
 .dash__tiles {
 	display: grid;
-	/* 여섯 칸이 고르게 선다. 좁아지면 줄이 접히되 칸 너비는 유지된다. */
-	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-	gap: var(--space-3);
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	border: 1px solid var(--color-border);
+	background: var(--color-surface);
 }
 
-.tile {
+.dash-tile {
+	position: relative;
 	display: flex;
+	min-width: 0;
+	min-height: 118px;
 	flex-direction: column;
 	align-items: flex-start;
 	gap: var(--space-2);
-	min-height: 116px;
 	padding: var(--space-4);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-lg);
-	background: var(--color-surface);
-	box-shadow: var(--shadow-sm);
+	border-right: 1px solid var(--color-border);
 }
 
-/* 지표 이름과 단서는 위아래로 벌려 숫자를 가운데 띄운다. */
-.tile__note {
+.dash-tile:last-child {
+	border-right: 0;
+}
+
+.dash-tile::before {
+	content: '';
+	position: absolute;
+	top: -1px;
+	right: 16px;
+	left: 16px;
+	height: 2px;
+	background: var(--color-selected);
+	opacity: 0;
+	transition: opacity var(--duration-fast) ease;
+}
+
+.dash-tile:hover::before {
+	opacity: 0.7;
+}
+
+.dash-tile__note {
 	margin-top: auto;
 }
 
-.tile__label {
+.dash-tile__label {
 	color: var(--color-text-muted);
 	font-size: var(--font-size-small);
 	font-weight: var(--font-weight-medium);
 }
 
-/* 숫자와 단위는 한 줄에 붙는다. 단위가 아래로 내려가면 숫자가 떠 보인다. */
-.tile__figure {
+.dash-tile__figure {
 	display: flex;
 	align-items: baseline;
 	gap: var(--space-1);
 	margin: 0;
 }
 
-/* 숫자가 주인공이다. 나머지는 그 옆에서 작게 받친다. */
-.tile__value {
-	font-size: 1.75rem;
+.dash-tile__value {
+	font-size: clamp(1.35rem, 2vw, 1.75rem);
 	font-weight: var(--font-weight-bold);
-	line-height: 1.1;
-	letter-spacing: -0.02em;
-	/* 자릿수가 바뀌어도 숫자 폭이 흔들리지 않게 한다. */
 	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.035em;
+	line-height: 1.1;
 }
 
-.tile__unit,
-.tile__note {
+.dash-tile__unit,
+.dash-tile__note {
 	color: var(--color-text-subtle);
 	font-size: var(--font-size-label);
 }
 
-/* ── 차트 판 ──────────────────────────────────────────────── */
+/* ── Data panels ──────────────────────────────────────────── */
 
-.dash__charts {
+.dash__charts,
+.dash__lists {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-	gap: var(--space-3);
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-4);
 	align-items: start;
 }
 
-.panel-card {
+.dash-panel {
 	display: flex;
+	min-width: 0;
 	flex-direction: column;
-	gap: var(--space-3);
-	padding: var(--space-4);
+	gap: var(--space-4);
+	padding: 20px;
 	border: 1px solid var(--color-border);
-	border-radius: var(--radius-lg);
-	background: var(--color-surface);
-	box-shadow: var(--shadow-sm);
+	border-radius: var(--radius-md);
+	background: rgb(255 255 255 / 92%);
 }
 
-/* 시계열은 가로로 길어야 오르내림이 읽힌다. 한 줄을 통째로 쓴다. */
-.panel-card--wide {
+.dash-panel--wide {
 	grid-column: 1 / -1;
 }
 
-.panel-card__head {
+.dash-panel__head {
 	display: flex;
 	align-items: baseline;
 	justify-content: space-between;
 	gap: var(--space-2);
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--color-border);
 }
 
-.panel-card__title {
+.dash-panel__title {
 	margin: 0;
 	font-size: var(--font-size-body);
 	font-weight: var(--font-weight-bold);
 }
 
-.panel-card__caption {
+.dash-panel__caption {
 	color: var(--color-text-subtle);
 	font-size: var(--font-size-label);
 }
 
-/* ── 범례와 색 조각 ───────────────────────────────────────── */
+/* ── Legends and charts ───────────────────────────────────── */
 
 .dash__legend {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--space-1) var(--space-3);
-	margin: 0;
+	margin: -2px 0 0;
 	padding: 0;
 	list-style: none;
 	color: var(--color-text-muted);
 	font-size: var(--font-size-label);
 }
 
-.dash__legend li {
+.dash__legend li,
+.dash__breakdown li {
 	display: flex;
 	align-items: center;
-	gap: var(--space-1);
+	gap: var(--space-2);
 }
 
 .dash__swatch {
 	display: inline-block;
 	flex-shrink: 0;
-	width: 10px;
-	height: 10px;
-	border-radius: 3px;
+	width: 8px;
+	height: 8px;
 }
-
-/* ── 도넛과 그 옆의 숫자 ──────────────────────────────────── */
 
 .dash__donut {
 	display: grid;
-	grid-template-columns: minmax(160px, 1fr) auto;
-	gap: var(--space-3);
+	grid-template-columns: minmax(150px, 1fr) minmax(150px, auto);
+	gap: var(--space-4);
 	align-items: center;
 }
 
 .dash__breakdown {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-2);
+	gap: 10px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
 	font-size: var(--font-size-small);
-}
-
-.dash__breakdown li {
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
 }
 
 .dash__breakdown-name {
@@ -166,16 +242,15 @@
 }
 
 .dash__breakdown-value {
+	margin-left: auto;
 	color: var(--color-text);
 	font-weight: var(--font-weight-medium);
 	font-variant-numeric: tabular-nums;
 }
 
-/* ── 차트 위 설명 상자 ────────────────────────────────────── */
-
 .dash__tip {
 	padding: var(--space-2) var(--space-3);
-	border: 1px solid var(--color-border);
+	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
 	box-shadow: var(--shadow-md);
@@ -202,19 +277,11 @@
 	font-variant-numeric: tabular-nums;
 }
 
-/* ── 하단 목록 ────────────────────────────────────────────── */
-
-.dash__lists {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-	gap: var(--space-3);
-	align-items: start;
-}
+/* ── Feedback lists ───────────────────────────────────────── */
 
 .dash__rows {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-1);
 	margin: 0;
 	padding: 0;
 	list-style: none;
@@ -224,8 +291,13 @@
 	display: flex;
 	align-items: center;
 	gap: var(--space-2);
-	padding: var(--space-2);
-	border-radius: var(--radius-sm);
+	min-height: 42px;
+	padding: var(--space-2) 4px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.dash__row:last-child {
+	border-bottom: 0;
 }
 
 .dash__row:hover {
@@ -244,4 +316,72 @@
 	flex-shrink: 0;
 	color: var(--color-text-subtle);
 	font-size: var(--font-size-label);
+}
+
+@media (max-width: 1120px) {
+	.dash__tiles {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.dash-tile:nth-child(3) {
+		border-right: 0;
+	}
+
+	.dash-tile:nth-child(-n + 3) {
+		border-bottom: 1px solid var(--color-border);
+	}
+}
+
+@media (max-width: 760px) {
+	.dash__intro {
+		align-items: flex-start;
+	}
+
+	.dash__total {
+		min-width: auto;
+	}
+
+	.dash__charts,
+	.dash__lists {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.dash-panel--wide {
+		grid-column: auto;
+	}
+}
+
+@media (max-width: 560px) {
+	.dash__intro {
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.dash__tiles {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.dash-tile {
+		min-height: 108px;
+	}
+
+	.dash-tile:nth-child(3) {
+		border-right: 1px solid var(--color-border);
+	}
+
+	.dash-tile:nth-child(even) {
+		border-right: 0;
+	}
+
+	.dash-tile:nth-child(-n + 4) {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.dash__donut {
+		grid-template-columns: 1fr;
+	}
+
+	.dash-panel {
+		padding: var(--space-4);
+	}
 }

@@ -80,31 +80,46 @@ export default function DashboardPage() {
 
 	return (
 		<div className="dash">
+			<header className="dash__intro">
+				<div>
+					<p className="dash__eyebrow">ALL PROJECTS · OVERVIEW</p>
+					<h1>전체 현황</h1>
+					<p className="dash__copy">프로젝트 전반의 접수 흐름과 처리 현황을 한눈에 확인합니다.</p>
+				</div>
+				<div className="dash__total" aria-label={`전체 피드백 ${total}건`}>
+					<span>전체 피드백</span>
+					<p>
+						<strong>{total}</strong>
+						<small>건</small>
+					</p>
+				</div>
+			</header>
+
 			{/* ── 상태별 건수 ─────────────────────────────────────── */}
 			<section className="dash__tiles">
 				{STACK_ORDER.map((status) => (
-					<article key={status} className="tile">
+					<article key={status} className="dash-tile">
 						<StatusBadge status={status} />
-						<p className="tile__figure">
-							<strong className="tile__value">{data.statusCounts[status] ?? 0}</strong>
-							<span className="tile__unit">건</span>
+						<p className="dash-tile__figure">
+							<strong className="dash-tile__value">{data.statusCounts[status] ?? 0}</strong>
+							<span className="dash-tile__unit">건</span>
 						</p>
 					</article>
 				))}
-				<article className="tile">
-					<span className="tile__label">평균 처리 소요</span>
-					<p className="tile__figure">
-						<strong className="tile__value">{formatHours(data.averageProcessingHours)}</strong>
+				<article className="dash-tile">
+					<span className="dash-tile__label">평균 처리 소요</span>
+					<p className="dash-tile__figure">
+						<strong className="dash-tile__value">{formatHours(data.averageProcessingHours)}</strong>
 					</p>
-					<span className="tile__note">완료·반영 불가 기준</span>
+					<span className="dash-tile__note">완료·반영 불가 기준</span>
 				</article>
-				<article className="tile">
-					<span className="tile__label">이용자</span>
-					<p className="tile__figure">
-						<strong className="tile__value">{data.userCount.member + data.userCount.guest}</strong>
-						<span className="tile__unit">명</span>
+				<article className="dash-tile">
+					<span className="dash-tile__label">이용자</span>
+					<p className="dash-tile__figure">
+						<strong className="dash-tile__value">{data.userCount.member + data.userCount.guest}</strong>
+						<span className="dash-tile__unit">명</span>
 					</p>
-					<span className="tile__note">
+					<span className="dash-tile__note">
 						회원 {data.userCount.member} · 비회원 {data.userCount.guest}
 					</span>
 				</article>
@@ -203,7 +218,7 @@ export default function DashboardPage() {
 				<Panel title="우선 처리 요청" caption={`${data.priorityRequested.length}건`}>
 					<FeedbackRows items={data.priorityRequested} empty="요청된 항목이 없습니다." />
 				</Panel>
-				<Panel title="최근 접수" caption="10건">
+				<Panel title="최근 접수" caption={`${data.recent.length}건`}>
 					<FeedbackRows items={data.recent} empty="접수된 항목이 없습니다." />
 				</Panel>
 			</section>
@@ -216,10 +231,10 @@ const AXIS_TICK = { fill: 'var(--color-text-subtle)', fontSize: 11 }
 
 function Panel({ title, caption, wide = false, children }) {
 	return (
-		<section className={wide ? 'panel-card panel-card--wide' : 'panel-card'}>
-			<header className="panel-card__head">
-				<h2 className="panel-card__title">{title}</h2>
-				{caption && <span className="panel-card__caption">{caption}</span>}
+		<section className={wide ? 'dash-panel dash-panel--wide' : 'dash-panel'}>
+			<header className="dash-panel__head">
+				<h2 className="dash-panel__title">{title}</h2>
+				{caption && <span className="dash-panel__caption">{caption}</span>}
 			</header>
 			{children}
 		</section>
