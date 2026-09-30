@@ -23,12 +23,43 @@ import './project-disc.css'
  */
 
 /**
- * 로고가 놓이는 반지름(px). 원판의 반지름(CSS 의 --disc-radius = 200)보다 48 작다.
- *
- * **원판 가장자리가 아니라 안쪽에 앉히는 것이 중요하다.** 경계선에 정확히 걸치게 두었더니
- * 로고가 반은 흰 면, 반은 페이지 배경 위에 떠서 미완성으로 보였다.
+ * 원판의 반지름(px). **project-disc.css 의 --disc-radius 와 같은 값이어야 한다.**
+ * 접히면 그 0.6배로 줄어든다. CSS 의 --disc-closed-scale 과 짝이다.
  */
-const RADIUS = 192
+const SURFACE_OPEN = 240
+const CLOSED_SCALE = 0.552
+
+/** 접혔을 때 로고 한 변의 길이(px). **CSS 의 --disc-logo-closed 와 같아야 한다.** */
+const LOGO_CLOSED = 58
+/**
+ * 로고가 걸치는 비율. 0.35 면 위쪽 3.5할이 원 밖으로 나온다.
+ * 중심을 둘레선에 두면 반반이 되므로, 그보다 로고 높이의 (0.5 − 이 값)만큼 안쪽으로 들인다.
+ *
+ * 이 값을 키우면 로고가 테두리에 더 걸치고, **이름도 로고에 붙어 있어 함께 올라간다.**
+ * 로고와 이름의 위치를 따로 맞출 필요 없이 이 하나로 묶음 전체가 움직인다.
+ */
+const OVERHANG = 0.35
+
+/**
+ * 로고가 놓이는 반지름. 두 상태에서 뜻이 다르다.
+ *
+ *   펼침 — 원판 가장자리(240)보다 48 안쪽. 로고가 면 위에 온전히 앉는다.
+ *   접힘 — 둘레선(133)에서 살짝 안쪽. **위쪽 3.5할이 원 밖으로 나온다.**
+ */
+const RADIUS_OPEN = 192
+const RADIUS_CLOSED = SURFACE_OPEN * CLOSED_SCALE - LOGO_CLOSED * (0.5 - OVERHANG)
+
+/**
+ * 원의 중심이 화면 아래 끝보다 얼마나 밑에 있는지.
+ * 접힘 값은 작은 원을 깊이 묻지 않고 얕게 걸쳐 두어 곡률이 드러나게 잡았다.
+ * 반지름에 비해 드러나는 높이가 클수록 호가 급하게 휜다 —
+ * 지금은 반지름 133 에 높이 78, 너비 241 이라 눈에 띄게 둥근 봉우리가 된다.
+ * 세 값(CLOSED_SCALE · DEPTH_CLOSED · LOGO_CLOSED)을 같은 비율로 키우면
+ * 모양은 그대로 두고 크기만 커진다.
+ */
+const DEPTH_OPEN = 60
+const DEPTH_CLOSED = 55
+
 /**
  * 슬롯 사이 각도. 호가 휘어 보이는 정도는 반지름이 아니라 이 각도 폭이 정한다.
  * (드롭 ÷ 가로폭 = tan(각도/2) 라 반지름은 약분된다. 반지름은 전체 크기만 바꾼다.)
@@ -37,21 +68,18 @@ const RADIUS = 192
  * 그 대가로 세 칸 너머는 화면 아래로 돌아 나간다. 실제 다이얼도 그렇게 돈다.
  */
 const STEP = 22
-/** 펼쳤을 때 꼭대기 슬롯이 화면 아래 끝에서 뜨는 높이(px). */
-const LIFT_OPEN = 132
-/**
- * 원의 중심이 화면 아래 끝보다 얼마나 밑에 있는지. 펼친 상태 기준이다.
- * 가라앉은 상태는 CSS 의 --disc-sink 가 여기서 더 내리므로 이 파일에는 값이 없다.
- */
-const CENTER_DEPTH = RADIUS - LIFT_OPEN
+
 /**
  * 커서 각도를 회전으로 옮길 때의 비율. 1 이면 가리킨 로고가 정확히 꼭대기로 온다.
- * 그러면 고르려던 로고가 커서 밑에서 빠져나가 클릭할 수 없으므로 절반쯤으로 낮춘다.
- * 원판은 눈에 띄게 돌면서도 로고는 커서가 따라잡을 수 있는 값이다.
+ * 절반쯤(0.55)으로 뒀더니 커서를 조금만 움직여도 원판이 크게 돌아 어지러웠다.
+ * 0.3 이면 손을 따라 기우는 정도로만 반응한다.
  */
-const TURN_GAIN = 0.55
-/** 회전 한계(도). 한 번에 두 칸 남짓까지만 돌아간다. */
-const TURN_LIMIT = 48
+const TURN_GAIN = 0.3
+/**
+ * 회전 한계(도). 한 칸(STEP)보다 작게 두어, 마우스만으로는 옆 칸이 꼭대기로 넘어오지 않는다.
+ * 칸을 옮기는 것은 클릭의 몫이고 이 기울임은 원판이 살아 있다는 신호일 뿐이다.
+ */
+const TURN_LIMIT = 16
 
 export default function ProjectDisc({ projects, projectCode }) {
 	const navigate = useNavigate()
@@ -62,22 +90,22 @@ export default function ProjectDisc({ projects, projectCode }) {
 	 * 홈도 슬롯 하나다. 기획 6-1 의 "슬롯 하나는 홈 진입점으로 사용한다".
 	 *
 	 * **순서는 고정이다.** 로고는 디스크에 붙어 있고, 무엇을 고르든 서로의 좌우 관계가 바뀌지 않는다.
-	 * 홈은 목록 한가운데에 둔다. 처음 들어오면 홈이 꼭대기에 있고 프로젝트가 양옆으로 갈라진다.
+	 * 홈이 맨 왼쪽이고 프로젝트가 그 오른쪽으로 sortOrder 순서대로 늘어선다.
+	 *
+	 * 홈에 있는 동안에는 오른쪽 이웃만 보인다. 왼쪽에 아무것도 없기 때문이다.
+	 * 끝쪽 프로젝트는 가까운 것을 한 번 거쳐 가야 닿는다.
 	 */
-	const slots = useMemo(() => {
-		const middle = Math.floor(projects.length / 2)
-		const toSlot = (project) => ({
-			key: project.code,
-			name: project.name,
-			to: `/admin/${project.code}/board`,
-		})
-
-		return [
-			...projects.slice(0, middle).map(toSlot),
+	const slots = useMemo(
+		() => [
 			{ key: '', name: '전체 현황', to: '/admin', home: true },
-			...projects.slice(middle).map(toSlot),
-		]
-	}, [projects])
+			...projects.map((project) => ({
+				key: project.code,
+				name: project.name,
+				to: `/admin/${project.code}/board`,
+			})),
+		],
+		[projects],
+	)
 
 	const selectedIndex = Math.max(
 		0,
@@ -105,13 +133,17 @@ export default function ProjectDisc({ projects, projectCode }) {
 		if (!open) return
 		const bounds = event.currentTarget.getBoundingClientRect()
 		const centerX = bounds.left + bounds.width / 2
-		const centerY = bounds.bottom + CENTER_DEPTH
+		const centerY = bounds.bottom + DEPTH_OPEN
 		const degrees =
 			(Math.atan2(event.clientX - centerX, centerY - event.clientY) * 180) / Math.PI
 		const next = Math.max(-TURN_LIMIT, Math.min(TURN_LIMIT, -degrees * TURN_GAIN))
-		// 0.5도 단위로 끊어 커서가 미세하게 떨릴 때마다 다시 그리지 않게 한다.
-		setTurn(Math.round(next * 2) / 2)
+		// 1도 단위로 끊어 커서가 미세하게 떨릴 때마다 다시 그리지 않게 한다.
+		setTurn(Math.round(next))
 	}
+
+	// 두 상태의 기하가 다르다. 접히면 원이 0.6배로 줄고 로고는 그 둘레선에 얹힌다.
+	const radius = open ? RADIUS_OPEN : RADIUS_CLOSED
+	const depth = open ? DEPTH_OPEN : DEPTH_CLOSED
 
 	return (
 		<div
@@ -147,8 +179,8 @@ export default function ProjectDisc({ projects, projectCode }) {
 							type="button"
 							className={offset === 0 ? 'disc__slot is-selected' : 'disc__slot'}
 							style={{
-								// 원의 중심은 화면 아래 끝 가운데에서 CENTER_DEPTH 만큼 더 내려간 곳이다.
-								transform: `translate(-50%, 50%) translate(${RADIUS * Math.sin(radian)}px, ${-(RADIUS * Math.cos(radian) - CENTER_DEPTH)}px)`,
+								// 원의 중심은 화면 아래 끝 가운데에서 depth 만큼 더 내려간 곳이다.
+								transform: `translate(-50%, 50%) translate(${radius * Math.sin(radian)}px, ${-(radius * Math.cos(radian) - depth)}px)`,
 							}}
 							onClick={() => {
 								navigate(slot.to)
