@@ -151,7 +151,7 @@ export default function IntakePage() {
 										onChange={(event) => requestMove([item.id], event.target.value)}
 									>
 										<option value="" disabled>
-											고르세요
+											선택
 										</option>
 										{MOVE_TARGETS.map((status) => (
 											<option key={status} value={status}>

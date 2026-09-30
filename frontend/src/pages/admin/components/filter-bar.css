@@ -1,36 +1,33 @@
-/**
- * 접수 목록의 필터. 색과 간격은 admin-tokens.temp.css 의 변수만 쓴다.
- */
-
 .filters {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: flex-end;
-	gap: var(--space-3);
-	padding: var(--space-3) var(--space-4);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-lg);
-	background: var(--color-surface);
-	box-shadow: var(--shadow-sm);
+	gap: 14px 18px;
+	padding: 16px 0 18px;
+	border-top: 1px solid var(--color-border);
+	border-bottom: 1px solid var(--color-border);
+	background: transparent;
 }
 
 .filters__field {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-1);
+	gap: 6px;
 }
 
 .filters__label {
-	color: var(--color-text-muted);
-	font-size: var(--font-size-label);
-	font-weight: var(--font-weight-medium);
+	color: var(--color-text-subtle);
+	font-size: 9px;
+	font-weight: var(--font-weight-bold);
+	letter-spacing: 0.14em;
 }
 
 .filters__control {
-	padding: var(--space-2) var(--space-3);
-	border: 1px solid var(--color-border);
+	min-height: 34px;
+	padding: 7px 30px 7px 9px;
+	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
-	background: var(--color-surface);
+	background-color: var(--color-surface);
 	color: var(--color-text);
 	font-family: var(--font-family);
 	font-size: var(--font-size-small);
@@ -38,14 +35,18 @@
 
 .filters__control:focus {
 	border-color: var(--color-selected);
-	outline: 2px solid var(--color-selected);
-	outline-offset: -2px;
+	outline: 1px solid var(--color-selected);
+	outline-offset: 1px;
 }
 
 .filters__range {
 	display: flex;
 	align-items: center;
-	gap: var(--space-2);
+	gap: 8px;
+}
+
+.filters__range .filters__control {
+	padding-right: 9px;
 }
 
 .filters__tilde {
@@ -53,10 +54,12 @@
 }
 
 .filters__reset {
-	padding: var(--space-2) var(--space-3);
-	border: none;
-	border-radius: var(--radius-sm);
-	background: none;
+	min-height: 34px;
+	padding: 7px 10px;
+	border: 0;
+	border-bottom: 1px solid transparent;
+	border-radius: 0;
+	background: transparent;
 	color: var(--color-selected);
 	font-family: var(--font-family);
 	font-size: var(--font-size-small);
@@ -65,5 +68,21 @@
 }
 
 .filters__reset:hover {
-	background: var(--color-status-received-bg);
+	border-bottom-color: currentcolor;
+}
+
+@media (max-width: 620px) {
+	.filters,
+	.filters__range {
+		align-items: stretch;
+	}
+
+	.filters__field,
+	.filters__control {
+		flex: 1;
+	}
+
+	.filters__range {
+		flex-wrap: wrap;
+	}
 }

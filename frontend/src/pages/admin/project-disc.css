@@ -1,47 +1,30 @@
 /**
- * 하단 프로젝트 전환 디스크. 기획 6-1
- *
- * 좌표의 기준점은 **화면 아래 끝의 가운데**다. 원의 중심을 거기서 --disc-depth 만큼 더 내리면
- * 위쪽 호만 화면에 남는다. 반지름이 클수록 그 호가 완만해진다.
- * 접히면 원이 --disc-closed-scale 배로 줄고, 로고는 그 둘레선에 걸친다.
+ * Compact project dial. At rest only the neutral handle is exposed; opening the
+ * dial lifts it by 72px. Wide slot angles leave air between items; the outermost
+ * item may be clipped until the pointer gently turns the dial toward it.
  */
 
 .disc {
-	/*
-	 * 원판의 반지름과, 중심이 화면 아래 끝보다 얼마나 밑에 있는지.
-	 * ProjectDisc.jsx 의 SURFACE_OPEN · DEPTH_OPEN · DEPTH_CLOSED · CLOSED_SCALE 과 짝이다.
-	 *
-	 * 두 상태의 원이 다르다.
-	 *   펼침 — 반지름 240. 로고는 그보다 48 안쪽(192)에 앉아 면 위에 온전히 올라간다.
-	 *   접힘 — 반지름 133(0.552배). 로고는 둘레선에 걸쳐 위쪽 3.5할이 밖으로 나온다.
-	 *          반지름에 비해 드러나는 높이가 커서 호가 급하게 휜다.
-	 */
-	--disc-radius: 240px;
-	--disc-depth: 60px;
-	--disc-depth-closed: 55px;
-	--disc-closed-scale: 0.552;
-	/* 접혔을 때의 로고 크기. ProjectDisc.jsx 의 LOGO_CLOSED 와 짝이다. */
-	--disc-logo-closed: 58px;
+	--disc-radius: 230px;
+	--disc-depth: 66px;
+	--disc-sink: 72px;
 
 	position: fixed;
 	right: 0;
 	bottom: 0;
 	left: 0;
-	height: 240px;
-	/* 접혀 있을 때 보드의 아래쪽을 막지 않도록 통째로 통과시킨다.
-	   실제로 눌러야 하는 원판과 슬롯에만 다시 켜 준다. */
-	pointer-events: none;
 	z-index: 20;
+	height: 188px;
+	pointer-events: none;
 }
-
-/* ── 마우스 감지 영역 — 떠오르고 가라앉아도 이것만은 움직이지 않는다 ── */
 
 .disc__zone {
 	position: absolute;
 	bottom: 0;
 	left: 50%;
-	width: 440px;
-	height: 118px;
+	z-index: 1;
+	width: 250px;
+	height: 76px;
 	transform: translateX(-50%);
 	pointer-events: auto;
 	transition:
@@ -49,107 +32,73 @@
 		height var(--duration-base) var(--ease-spring);
 }
 
-/* 펼쳐지면 호 전체를 덮어, 슬롯 사이를 지나가도 감지가 끊기지 않는다. */
 .disc.is-open .disc__zone {
-	width: 560px;
-	height: 216px;
+	width: min(720px, 100vw);
+	height: 182px;
 }
 
-/* ── 화면 아래로 잘리는 원 ────────────────────────────────── */
+.disc__toggle {
+	position: absolute;
+	bottom: 4px;
+	left: 50%;
+	z-index: 3;
+	width: 112px;
+	height: 28px;
+	padding: 0;
+	transform: translateX(-50%);
+	border: 0;
+	background: transparent;
+	color: var(--color-text-muted);
+	cursor: pointer;
+	pointer-events: auto;
+}
 
+.disc__cue {
+	position: absolute;
+	bottom: 3px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 8px;
+	font-weight: var(--font-weight-bold);
+	letter-spacing: 0.22em;
+	opacity: 0.72;
+	transition: opacity var(--duration-fast) ease;
+}
+
+.disc.is-open .disc__cue {
+	opacity: 0;
+}
+
+/* The glass is intentionally thin: page colour should remain visible through it. */
 .disc__surface {
 	position: absolute;
 	bottom: 0;
 	left: 50%;
+	z-index: 0;
 	width: calc(var(--disc-radius) * 2);
 	height: calc(var(--disc-radius) * 2);
-	/* bottom:0 에서 자기 높이의 절반만큼 내리면 원의 중심이 화면 아래 끝에 걸린다.
-	   거기서 --disc-depth 만큼 더 내린 곳이 원의 중심이다.
-	   scale 은 그 중심을 기준으로 줄어들므로 중심 위치는 그대로고 반지름만 작아진다. */
-	transform:
-		translate(-50%, 50%) translateY(var(--disc-depth-closed)) scale(var(--disc-closed-scale));
+	transform: translate(-50%, 50%) translateY(calc(var(--disc-depth) + var(--disc-sink)));
 	border: 1px solid var(--glass-edge);
 	border-radius: 50%;
 	background: var(--glass-fill);
 	backdrop-filter: var(--glass-blur);
-	/*
-	 * 볼록한 유리를 만드는 다섯 겹이다.
-	 *   1) 위 테두리에 닿는 빛
-	 *   2) 아래에서 감겨 올라오는 반사광 — 평평한 원이 아니라 구면으로 읽히게 하는 핵심이다
-	 *   3) 테두리 안쪽을 한 바퀴 두르는 옅은 빛. 가장자리가 말려 있다는 신호
-	 *   4) 위쪽으로 드리우는 그림자. 판이 본문보다 앞에 떠 있다는 신호
-	 *   5) 경계에 닿는 얇은 그림자
-	 */
 	box-shadow:
-		/* 테두리 안쪽의 넓은 그늘. 가장자리가 솟고 가운데가 부푼 쿠션처럼 읽힌다 */
-		inset 0 14px 18px -12px rgb(52 60 105 / 24%),
-		/* 아래에서 감겨 올라오는 반사광 */
-		inset 0 -44px 56px -32px rgb(255 255 255 / 62%),
-		/* 유리 살 한 겹 */
-		inset 0 0 0 1px rgb(255 255 255 / 34%),
-		/* 본문보다 앞에 떠 있다는 신호 */
-		0 -12px 34px rgb(38 42 72 / 17%),
-		0 -3px 8px rgb(38 42 72 / 10%);
+		inset 0 1px 0 rgb(255 255 255 / 92%),
+		0 -1px 0 rgb(90 125 190 / 12%);
 	transition: transform var(--duration-base) var(--ease-spring);
 }
 
-/*
- * 바깥 테두리 — 빛이 갈라져 무지개가 지는 곳이다.
- * 왼쪽 위가 따뜻하고 오른쪽 위가 차다. 유리를 유리로 보이게 하는 것이 이 색번짐이다.
- */
-.disc__surface::before {
-	content: '';
-	position: absolute;
-	inset: 0;
-	border-radius: 50%;
-	background: var(--glass-prism);
-	/* 가장 바깥 3px 만 남긴다. */
-	-webkit-mask: radial-gradient(
-		circle at center,
-		transparent calc(var(--disc-radius) - 3.5px),
-		#000 calc(var(--disc-radius) - 2px)
-	);
-	mask: radial-gradient(
-		circle at center,
-		transparent calc(var(--disc-radius) - 3.5px),
-		#000 calc(var(--disc-radius) - 2px)
-	);
-	pointer-events: none;
-}
-
-/*
- * 안쪽으로 한 겹 더 도는 밝은 테. 바깥 테와 이 테 사이가 유리의 두께로 읽힌다.
- * 빛이 위에서 드므로 꼭대기가 가장 밝다.
- */
 .disc__surface::after {
 	content: '';
 	position: absolute;
 	inset: 0;
 	border-radius: 50%;
 	background: linear-gradient(
-		180deg,
-		rgb(255 255 255 / 92%) 0%,
-		rgb(255 255 255 / 52%) 10%,
-		rgb(255 255 255 / 14%) 30%,
-		transparent 52%
-	);
-	/*
-	 * 속을 도려내 테두리에만 남긴다.
-	 * 여기의 #000 은 화면에 칠하는 색이 아니라 마스크의 불투명 부분을 가리키는 값이다.
-	 */
-	-webkit-mask: radial-gradient(
-		circle at center,
-		transparent calc(var(--disc-radius) - 13px),
-		#000 calc(var(--disc-radius) - 10px),
-		#000 calc(var(--disc-radius) - 6px),
-		transparent calc(var(--disc-radius) - 4px)
-	);
-	mask: radial-gradient(
-		circle at center,
-		transparent calc(var(--disc-radius) - 13px),
-		#000 calc(var(--disc-radius) - 10px),
-		#000 calc(var(--disc-radius) - 6px),
-		transparent calc(var(--disc-radius) - 4px)
+		112deg,
+		rgb(255 255 255 / 36%) 3%,
+		transparent 28%,
+		transparent 72%,
+		rgb(255 255 255 / 14%) 100%
 	);
 	pointer-events: none;
 }
@@ -158,54 +107,16 @@
 	transform: translate(-50%, 50%) translateY(var(--disc-depth));
 }
 
-/*
- * 접힌 원은 통째로 0.46배가 된다. 테두리도 반사도 같이 줄어들기 때문에
- * 큰 원 기준으로 잡아 둔 값들을 여기서 다시 잡는다.
- */
-.disc:not(.is-open) .disc__surface {
-	/*
-	 * 위쪽 하이라이트를 뺀다. 큰 원에서는 꼭대기 언저리를 밝히는 타원이지만
-	 * 작은 원에서는 그 타원이 곧 보이는 영역 전체라, 면이 흰 덩어리가 된다.
-	 * 몸통만 아주 옅게 남겨 뒤가 그대로 비치게 한다.
-	 */
-	background: radial-gradient(
-		circle at 50% 36%,
-		rgb(255 255 255 / 14%) 0%,
-		rgb(226 233 250 / 5%) 100%
-	);
-	border-width: 2px;
-	box-shadow:
-		/* 테두리 안쪽 그늘. 줄어드는 만큼 크게 잡아야 같은 두께로 보인다 */
-		inset 0 28px 34px -24px rgb(52 60 105 / 22%),
-		inset 0 -60px 70px -50px rgb(255 255 255 / 45%),
-		0 -20px 50px rgb(38 42 72 / 14%),
-		0 -5px 12px rgb(38 42 72 / 9%);
-}
-
-/* 색수차 테도 배율만큼 두껍게 잡는다. 3px 로 두면 화면에서는 1.7px 로 보인다. */
-.disc:not(.is-open) .disc__surface::before {
-	-webkit-mask: radial-gradient(
-		circle at center,
-		transparent calc(var(--disc-radius) - 11px),
-		#000 calc(var(--disc-radius) - 7px)
-	);
-	mask: radial-gradient(
-		circle at center,
-		transparent calc(var(--disc-radius) - 11px),
-		#000 calc(var(--disc-radius) - 7px)
-	);
-}
-
-/* 작은 원에 테를 두 겹 두면 복잡하다. 색수차 테 하나만 남긴다. */
-.disc:not(.is-open) .disc__surface::after {
-	opacity: 0;
-}
-
-/* ── 호 위의 슬롯 ─────────────────────────────────────────── */
-
 .disc__slots {
 	position: absolute;
+	z-index: 2;
 	inset: 0;
+	translate: 0 var(--disc-sink);
+	transition: translate var(--duration-base) var(--ease-spring);
+}
+
+.disc.is-open .disc__slots {
+	translate: 0;
 }
 
 .disc__slot {
@@ -215,145 +126,117 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	/*
-	 * 흐름에 남는 것은 로고뿐이다(이름은 아래에서 absolute 로 뺐다).
-	 * 그래야 JS 가 계산한 좌표가 슬롯 상자가 아니라 **로고의 중심**을 가리킨다.
-	 */
+	gap: 6px;
+	width: 86px;
 	padding: 0;
-	border: none;
-	background: none;
+	border: 0;
+	background: transparent;
 	color: var(--color-text-muted);
 	font-family: var(--font-family);
 	cursor: pointer;
 	pointer-events: auto;
-	/* 마우스를 따라 계속 바뀌는 값이라 길게 주면 끌려다닌다. */
 	transition:
-		transform 220ms var(--ease-spring),
+		transform 300ms var(--ease-spring),
+		opacity var(--duration-fast) ease,
 		color var(--duration-fast) ease;
 }
 
 .disc__logo {
 	display: grid;
 	place-items: center;
-	width: 50px;
-	height: 50px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
-	background: var(--color-surface);
-	box-shadow: var(--shadow-sm);
+	width: 52px;
+	height: 52px;
+	border: 1px solid rgb(255 255 255 / 82%);
+	border-radius: 7px;
+	background: rgb(255 255 255 / 68%);
+	backdrop-filter: blur(10px);
 	color: var(--color-text);
 	font-size: var(--font-size-body);
 	font-weight: var(--font-weight-bold);
-	letter-spacing: 0;
 	transition:
 		transform var(--duration-fast) var(--ease-spring),
-		box-shadow var(--duration-fast) ease;
+		border-color var(--duration-fast) ease,
+		background var(--duration-fast) ease;
 }
 
-/* 로고 이미지가 없는 동안 항목을 색으로 구분한다. 이름 첫 글자만으로는 'A' 가 셋이다. */
-.disc__logo[data-slot='home'] { background: var(--color-surface); color: var(--color-text-muted); }
-.disc__logo[data-slot='1'] { background: var(--color-project-0-bg); color: var(--color-project-0-fg); }
-.disc__logo[data-slot='2'] { background: var(--color-project-1-bg); color: var(--color-project-1-fg); }
-.disc__logo[data-slot='3'] { background: var(--color-project-2-bg); color: var(--color-project-2-fg); }
-.disc__logo[data-slot='4'] { background: var(--color-project-3-bg); color: var(--color-project-3-fg); }
-.disc__logo[data-slot='0'] { background: var(--color-project-4-bg); color: var(--color-project-4-fg); }
+.disc__logo[data-slot='home'] { background: rgb(255 255 255 / 52%); color: var(--color-text-muted); }
+.disc__logo[data-slot='1'] { background: rgb(234 242 255 / 62%); color: var(--color-project-0-fg); }
+.disc__logo[data-slot='2'] { background: rgb(232 243 255 / 62%); color: var(--color-project-1-fg); }
+.disc__logo[data-slot='3'] { background: rgb(237 240 255 / 62%); color: var(--color-project-2-fg); }
+.disc__logo[data-slot='4'] { background: rgb(240 237 255 / 62%); color: var(--color-project-3-fg); }
+.disc__logo[data-slot='0'] { background: rgb(233 245 255 / 62%); color: var(--color-project-4-fg); }
 
-/* 가라앉아 있는 동안에는 지금 머무는 곳의 로고 하나만 남는다. */
-.disc:not(.is-open) .disc__slot:not(.is-selected) {
+.disc:not(.is-open) .disc__slot {
 	opacity: 0;
 	pointer-events: none;
 }
 
-/*
- * 접히면 로고도 작아진다. 원이 0.6배로 줄었는데 로고가 그대로면 원 위에 얹힌 것이 아니라
- * 원을 뒤덮은 것처럼 보인다. 위치는 JS 가 이 크기에 맞춰 계산한다.
- */
-.disc:not(.is-open) .disc__slot.is-selected .disc__logo {
-	width: var(--disc-logo-closed);
-	height: var(--disc-logo-closed);
-	font-size: var(--font-size-title);
-}
-
-/* 커서가 올라간 것만 커지고 나머지는 물러난다. 고르는 중인 것에 시선이 모인다. */
-.disc__slot:hover .disc__logo {
-	transform: scale(1.3) translateY(-5px);
-	box-shadow: 0 8px 20px rgb(0 0 0 / 14%), 0 2px 4px rgb(0 0 0 / 8%);
-}
-
-.disc__slot:hover {
+.disc__slot:hover,
+.disc__slot:focus-visible {
 	color: var(--color-text);
+	outline: none;
+}
+
+.disc__slot:hover .disc__logo,
+.disc__slot:focus-visible .disc__logo {
+	transform: translateY(-3px);
+	border-color: rgb(96 165 250 / 58%);
+	background: rgb(255 255 255 / 82%);
 }
 
 .disc.is-open .disc__slots:hover .disc__slot:not(:hover) {
-	opacity: 0.55;
+	opacity: 0.72;
 }
 
-.disc__slot {
-	transition:
-		transform 220ms var(--ease-spring),
-		opacity var(--duration-fast) ease,
-		color var(--duration-fast) ease;
-}
-
-/*
- * 이름은 로고를 읽는 보조 수단이다. 작게 두고 로고가 주인공이 되게 한다.
- * 흐름에서 빼 두어야 슬롯 높이가 로고 높이로 남고 좌표가 로고 중심을 가리킨다.
- */
 .disc__name {
-	position: absolute;
-	top: 100%;
-	left: 50%;
-	max-width: 72px;
-	margin-top: 5px;
+	max-width: 86px;
 	overflow: hidden;
-	transform: translateX(-50%);
 	font-size: 10px;
-	letter-spacing: 0;
+	font-weight: var(--font-weight-medium);
+	letter-spacing: -0.02em;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	opacity: 0;
 	transition: opacity var(--duration-fast) ease;
 }
 
-/* 슬롯이 촘촘해 이름을 전부 띄우면 서로 겹친다. 꼭대기와 커서가 올라간 것만 보인다. */
 .disc.is-open .disc__slot.is-selected .disc__name,
-.disc.is-open .disc__slot:hover .disc__name {
-	opacity: 1;
-}
-
-/*
- * 접혀 있을 때는 지금 머무는 곳의 이름을 로고 바로 아래, 원 안쪽에 남긴다.
- * 로고만으로는 어느 프로젝트인지 첫 글자밖에 알 수 없다.
- */
-.disc:not(.is-open) .disc__slot.is-selected .disc__name {
-	max-width: 132px;
-	font-size: var(--font-size-label);
-	font-weight: var(--font-weight-medium);
+.disc.is-open .disc__slot:hover .disc__name,
+.disc.is-open .disc__slot:focus-visible .disc__name {
 	opacity: 1;
 }
 
 .disc__slot.is-selected {
 	color: var(--color-selected);
-	font-weight: var(--font-weight-medium);
 }
 
-/* 꼭대기에 박힌 것은 한 눈에 커 보여야 한다. 지금 어디에 있는지가 이걸로 읽힌다. */
 .disc__slot.is-selected .disc__logo {
-	width: 64px;
-	height: 64px;
-	border-color: var(--color-selected);
-	border-radius: var(--radius-lg);
-	box-shadow: inset 0 0 0 2px var(--color-selected), var(--shadow-md);
+	width: 62px;
+	height: 62px;
+	border-color: rgb(37 99 235 / 42%);
+	background: rgb(234 242 255 / 66%);
+	box-shadow: inset 0 0 0 1px rgb(255 255 255 / 72%);
+	color: var(--color-selected);
 	font-size: var(--font-size-title);
 }
 
-.disc__slot.is-selected .disc__name {
-	font-size: 11px;
+@media (max-width: 620px) {
+	.disc {
+		--disc-radius: 210px;
+	}
+
+	.disc__slot {
+		width: 76px;
+	}
+
+	.disc__name {
+		max-width: 76px;
+	}
 }
 
-/* 움직임을 줄여 달라고 설정한 사용자에게는 회전과 확대를 끈다. */
 @media (prefers-reduced-motion: reduce) {
 	.disc__zone,
+	.disc__toggle,
 	.disc__surface,
 	.disc__slots,
 	.disc__slot,

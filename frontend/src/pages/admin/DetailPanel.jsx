@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { getAdminFeedback } from '../../api/endpoints.js'
@@ -51,7 +52,7 @@ export default function DetailPanel({ item, assignee, onChange, onClose }) {
 		return () => document.removeEventListener('keydown', onKeyDown)
 	}, [onClose])
 
-	return (
+	return createPortal(
 		<aside className="panel" aria-label="피드백 상세">
 			<header className="panel__head">
 				<h2 className="panel__title">{item.title}</h2>
@@ -122,7 +123,8 @@ export default function DetailPanel({ item, assignee, onChange, onClose }) {
 			>
 				답변 화면으로 이동
 			</button>
-		</aside>
+		</aside>,
+		document.body,
 	)
 }
 

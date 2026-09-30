@@ -5,10 +5,22 @@
 //                 데이터는 endpoints.js 의 getDashboard() 한 번으로 모두 받는다. 차트는 recharts 를 쓴다.
 export default function DashboardPage() {
   return (
-    <main>
-      <h1>전체 현황 대시보드</h1>
-      <p>5단계 · C 담당</p>
-      <p>5개 프로젝트를 합친 지표를 보는 조회 전용 화면이다.</p>
-    </main>
+		<section className="dashboard-intro">
+			<p className="dashboard-intro__eyebrow">ALL PROJECTS · OVERVIEW</p>
+			<h1>
+				더 나은 캠퍼스를 만드는 생각,
+				<br />
+				여기서 다음 개선으로 이어집니다.
+			</h1>
+			<p className="dashboard-intro__copy">
+				5개 프로젝트의 피드백 흐름을 한곳에서 살펴보세요. 아래 프로젝트 디스크에서
+				작업할 보드를 선택할 수 있습니다.
+			</p>
+			<div className="dashboard-intro__meta" aria-label="서비스 소개">
+				<span>INI</span>
+				<span>ISSUE &amp; IDEA</span>
+				<span>PUSAN NATIONAL UNIVERSITY</span>
+			</div>
+		</section>
   )
 }

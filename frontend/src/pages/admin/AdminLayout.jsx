@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useMatch } from 'react-router-dom'
 import { getMe, getProjects } from '../../api/endpoints.js'
+import iniLogo from '../../assets/ini-logo.png'
 import { ROLE, labelOf } from '../../constants/enums.js'
 import ProjectDisc from './ProjectDisc.jsx'
 import './admin-tokens.temp.css'
@@ -39,15 +40,26 @@ export default function AdminLayout() {
 			.catch(() => setProjects([]))
 	}, [])
 
+	const currentProject = projects.find((project) => project.code === projectCode)
+
 	return (
 		<div className="admin-shell">
 			<header className="admin-header">
-				<span className="admin-header__title">통합 피드백 게시판</span>
+				<NavLink to="/admin" className="admin-brand" aria-label="INI 전체 현황">
+					<img className="admin-brand__mark" src={iniLogo} alt="" aria-hidden="true" />
+					<span className="admin-brand__type">
+						<strong>INI</strong>
+						<span>ISSUE &amp; IDEA</span>
+					</span>
+				</NavLink>
+
+				<span className="admin-header__title">통합 피드백 보드</span>
 				{/* TODO(C, 6단계): 계정 메뉴를 열어 계정 관리(/admin/accounts) 진입점을 붙인다. */}
 				<span className="admin-header__account">
 					{me ? (
 						<>
-							{me.name}
+							<span className="admin-header__presence" aria-hidden="true" />
+							<span>{me.name}</span>
 							<span className="admin-header__role">{labelOf(ROLE, me.role)}</span>
 						</>
 					) : (
@@ -58,15 +70,23 @@ export default function AdminLayout() {
 
 			{projectCode && (
 				<nav className="admin-tabs" aria-label="프로젝트 메뉴">
-					<NavLink to={`/admin/${projectCode}/intake`} className="admin-tabs__tab">
-						접수
-					</NavLink>
-					<NavLink to={`/admin/${projectCode}/board`} className="admin-tabs__tab">
-						개발 보드
-					</NavLink>
-					<NavLink to={`/admin/${projectCode}/answers`} className="admin-tabs__tab">
-						답변
-					</NavLink>
+					<div className="admin-tabs__inner">
+						<span className="admin-tabs__project">
+							<span>PROJECT</span>
+							<strong>{currentProject?.name ?? projectCode}</strong>
+						</span>
+						<div className="admin-tabs__links">
+							<NavLink to={`/admin/${projectCode}/intake`} className="admin-tabs__tab">
+								접수
+							</NavLink>
+							<NavLink to={`/admin/${projectCode}/board`} className="admin-tabs__tab">
+								개발 보드
+							</NavLink>
+							<NavLink to={`/admin/${projectCode}/answers`} className="admin-tabs__tab">
+								답변
+							</NavLink>
+						</div>
+					</div>
 				</nav>
 			)}
 
