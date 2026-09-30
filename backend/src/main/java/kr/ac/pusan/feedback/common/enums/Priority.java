@@ -8,9 +8,9 @@ package kr.ac.pusan.feedback.common.enums;
  */
 public enum Priority {
 
-	HIGH("높음"),
+	HIGH("긴급"),
 	NORMAL("보통"),
-	LOW("낮음");
+	LOW("여유");
 
 	private final String label;
 
