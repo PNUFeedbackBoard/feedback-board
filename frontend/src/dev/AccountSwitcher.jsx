@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ApiError } from '../api/client.js'
-import { devLogin, devLogout } from '../api/endpoints.js'
+import { devLogin, devLogout, getMe } from '../api/endpoints.js'
+import { ROLE, USER_STATUS, labelOf } from '../constants/enums.js'
+import './account-switcher.css'
 
 /**
  * 개발용 계정 전환 위젯. 기획 13-2 참고.
@@ -13,50 +15,95 @@ import { devLogin, devLogout } from '../api/endpoints.js'
  * 0-2단계에서 D가 정할 색상 팔레트와 겹치지 않게 했다.
  */
 export default function AccountSwitcher() {
-  const [state, setState] = useState({ busy: false, message: '계정을 고르세요' })
+	const [state, setState] = useState({
+		busy: false,
+		current: null,
+		message: '현재 권한 확인 중…',
+	})
 
-  // 훅 호출 뒤에 검사한다. 순서가 바뀌면 rules-of-hooks 위반이다.
-  if (!import.meta.env.DEV) return null
+	useEffect(() => {
+		if (!import.meta.env.DEV) return undefined
+		let cancelled = false
 
-  async function run(label, action) {
-    setState({ busy: true, message: `${label} 처리 중…` })
-    try {
-      const result = await action()
-      // 로그아웃은 본문이 없어 null 이 온다.
-      setState({
-        busy: false,
-        message: result ? `${result.name} · ${result.role}` : '로그아웃됨',
-      })
-    } catch (error) {
-      const reason =
-        error instanceof ApiError && error.status === 404
-          ? 'dev 프로필로 백엔드를 켰는지 확인하세요'
-          : error.message
-      setState({ busy: false, message: `실패: ${reason}` })
-    }
-  }
+		getMe()
+			.then((me) => {
+				if (!cancelled) {
+					setState({
+						busy: false,
+						current: accountOf(me),
+						message: `${me.name} · ${labelOf(ROLE, me.role)}`,
+					})
+				}
+			})
+			.catch(() => {
+				if (!cancelled) setState({ busy: false, current: null, message: '로그아웃 상태' })
+			})
 
-  return (
-    <div style={PANEL_STYLE}>
-      <strong>DEV 계정 전환</strong>
-      <div style={ROW_STYLE}>
-        {ACCOUNTS.map(({ account, label }) => (
-          <button
-            key={account}
-            type="button"
-            disabled={state.busy}
-            onClick={() => run(label, () => devLogin(account))}
-          >
-            {label}
-          </button>
-        ))}
-        <button type="button" disabled={state.busy} onClick={() => run('로그아웃', devLogout)}>
-          로그아웃
-        </button>
-      </div>
-      <span>{state.message}</span>
-    </div>
-  )
+		return () => {
+			cancelled = true
+		}
+	}, [])
+
+	// 훅 호출 뒤에 검사한다. 순서가 바뀌면 rules-of-hooks 위반이다.
+	if (!import.meta.env.DEV) return null
+
+	async function run(account, label, action) {
+		setState((previous) => ({ ...previous, busy: true, message: `${label} 권한 적용 중…` }))
+		try {
+			const result = await action()
+			setState({
+				busy: false,
+				current: result ? account : null,
+				message: result ? `${result.name} · ${labelOf(ROLE, result.role)}` : '로그아웃됨',
+			})
+			// 레이아웃과 목록이 새 세션 권한으로 API 를 다시 읽도록 즉시 갱신한다.
+			window.setTimeout(() => window.location.reload(), 240)
+		} catch (error) {
+			const reason =
+				error instanceof ApiError && error.status === 404
+					? 'dev 프로필로 백엔드를 켰는지 확인하세요'
+					: error.message
+			setState((previous) => ({ ...previous, busy: false, message: `실패: ${reason}` }))
+		}
+	}
+
+	return (
+		<aside className="dev-switcher" aria-label="개발용 접근 권한 미리보기">
+			<header className="dev-switcher__head">
+				<span className="dev-switcher__tag">DEV TOOL</span>
+				<strong>접근 권한 미리보기</strong>
+			</header>
+			<p className="dev-switcher__help">
+				계정을 고르면 화면을 자동으로 새로고침해 해당 권한을 바로 확인합니다.
+			</p>
+			<div className="dev-switcher__roles" role="group" aria-label="테스트 계정 선택">
+				{ACCOUNTS.map(({ account, label }) => (
+					<button
+						key={account}
+						type="button"
+						className={state.current === account ? 'is-active' : ''}
+						aria-pressed={state.current === account}
+						disabled={state.busy}
+						onClick={() => run(account, label, () => devLogin(account))}
+					>
+						{label}
+					</button>
+				))}
+			</div>
+			<footer className="dev-switcher__status" aria-live="polite">
+				<span>
+					현재 <strong>{state.message}</strong>
+				</span>
+				<button
+					type="button"
+					disabled={state.busy}
+					onClick={() => run(null, '로그아웃', devLogout)}
+				>
+					로그아웃
+				</button>
+			</footer>
+		</aside>
+	)
 }
 
 /**
@@ -71,21 +118,10 @@ const ACCOUNTS = [
   { account: 'pending', label: '승인 대기' },
 ]
 
-const PANEL_STYLE = {
-  position: 'fixed',
-  right: '12px',
-  bottom: '12px',
-  zIndex: 9999,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '6px',
-  padding: '8px 10px',
-  fontSize: '12px',
-  lineHeight: 1.4,
-  background: 'Canvas',
-  color: 'CanvasText',
-  border: '1px solid GrayText',
-  borderRadius: '6px',
+function accountOf(me) {
+	if (me.status === 'PENDING') return 'pending'
+	if (me.role === 'DEVELOPER') return 'dev'
+	if (me.role === 'VIEWER') return 'viewer'
+	if (me.role === 'USER' && me.status === 'ACTIVE') return 'user'
+	return `${labelOf(ROLE, me.role)}-${labelOf(USER_STATUS, me.status)}`
 }
-
-const ROW_STYLE = { display: 'flex', gap: '4px' }
