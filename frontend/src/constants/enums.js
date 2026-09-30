@@ -24,9 +24,9 @@ export const FEEDBACK_STATUS = {
 
 /** 중요도. 백엔드 Priority */
 export const PRIORITY = {
-  HIGH: '높음',
+  HIGH: '긴급',
   NORMAL: '보통',
-  LOW: '낮음',
+  LOW: '여유',
 }
 
 /** 역할. 백엔드 Role */
