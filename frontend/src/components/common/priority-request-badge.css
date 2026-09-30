@@ -1,0 +1,14 @@
+.priority-request-badge {
+  display: inline-flex;
+  width: var(--size-priority-request-badge);
+  height: var(--size-priority-request-badge);
+  flex: none;
+  vertical-align: middle;
+  filter: drop-shadow(var(--shadow-priority-request-badge));
+}
+
+.priority-request-badge__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
