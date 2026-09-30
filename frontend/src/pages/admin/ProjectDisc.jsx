@@ -14,8 +14,9 @@ import './project-disc.css'
  *   키보드 포커스가 들어오면 짧게 솟아오른다. 본문을 많이 가리지 않으면서도
  *   프로젝트 전환 기능이라는 점은 알아볼 수 있는 높이만 사용한다.
  *
- * 열린 동안에는 포인터 위치를 따라 최대 10도만 기울어, 양끝에서 일부 가려진 항목을
- * 선택하기 쉽게 안쪽으로 당긴다. 선택 자체는 위치를 바꾸지 않고 강조 상태만 바꾼다.
+	 * 열린 동안에는 포인터가 원 중심을 가리키는 각도를 따라 부드럽게 기울어, 양끝에서
+	 * 일부 가려진 항목을 선택하기 쉽게 안쪽으로 당긴다. 선택 자체는 위치를 바꾸지 않고
+	 * 강조 상태만 바꾼다.
  */
 
 /**
@@ -35,10 +36,10 @@ const RADIUS = 190
 const STEP = 22
 /** 펼쳤을 때 꼭대기 슬롯이 화면 아래 끝에서 뜨는 높이(px). */
 const LIFT_OPEN = 124
-/** 포인터가 끝까지 움직였을 때 더해지는 최대 회전각. */
-const TURN_LIMIT = 10
-/** 회전 감도를 계산하는 실제 인터랙션 폭. 넓은 화면에서도 지나치게 둔해지지 않게 고정한다. */
-const TURN_TRACK_WIDTH = 720
+/** 커서 각도를 회전으로 옮길 때의 비율. 낮게 유지해 움직임이 지나치게 민감하지 않게 한다. */
+const TURN_GAIN = 0.3
+/** 마우스 움직임만으로 옆 슬롯이 꼭대기를 넘어가지 않도록 한 칸보다 작게 제한한다. */
+const TURN_LIMIT = 16
 /**
  * 원의 중심이 화면 아래 끝보다 얼마나 밑에 있는지. 펼친 상태 기준이다.
  * 가라앉은 상태는 CSS 의 --disc-sink 가 여기서 더 내리므로 이 파일에는 값이 없다.
@@ -92,17 +93,19 @@ export default function ProjectDisc({ projects, projectCode }) {
 	}
 
 	/**
-	 * 포인터가 좌우로 움직이면 원판도 같은 방향으로 아주 조금 기운다.
-	 * 열린 감지 영역 전체를 지나도 최대 10도뿐이고, 포인터 쪽의 숨은 항목을
-	 * 중앙으로 당기는 방향으로 움직여 가장자리 항목도 선택하기 쉽다.
+	 * 포인터가 원 중심에서 이루는 각도를 계산해 원판을 기울인다. 어느 슬롯 위에
+	 * 있는지가 아니라 좌표만 사용하므로, 회전한 슬롯이 다시 입력에 영향을 주지 않는다.
 	 */
 	function handlePointerMove(event) {
-		if (!open || event.pointerType === 'touch') return
+		if (!open) return
 		const bounds = event.currentTarget.getBoundingClientRect()
-		const trackWidth = Math.min(bounds.width, TURN_TRACK_WIDTH)
-		const progress = (event.clientX - (bounds.left + bounds.width / 2)) / (trackWidth / 2)
-		const next = Math.max(-TURN_LIMIT, Math.min(TURN_LIMIT, -progress * TURN_LIMIT))
-		setTurn(Math.round(next * 2) / 2)
+		const centerX = bounds.left + bounds.width / 2
+		const centerY = bounds.bottom + CENTER_DEPTH
+		const degrees =
+			(Math.atan2(event.clientX - centerX, centerY - event.clientY) * 180) / Math.PI
+		const next = Math.max(-TURN_LIMIT, Math.min(TURN_LIMIT, -degrees * TURN_GAIN))
+		// 1도 단위로 끊어 미세한 포인터 떨림마다 다시 그리지 않게 한다.
+		setTurn(Math.round(next))
 	}
 
 	return (

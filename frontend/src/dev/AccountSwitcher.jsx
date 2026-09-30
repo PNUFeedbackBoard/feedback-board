@@ -15,6 +15,9 @@ import './account-switcher.css'
  * 0-2단계에서 D가 정할 색상 팔레트와 겹치지 않게 했다.
  */
 export default function AccountSwitcher() {
+	const [collapsed, setCollapsed] = useState(
+		() => window.localStorage.getItem(COLLAPSED_STORAGE_KEY) === 'true',
+	)
 	const [state, setState] = useState({
 		busy: false,
 		current: null,
@@ -67,11 +70,43 @@ export default function AccountSwitcher() {
 		}
 	}
 
+	function setSwitcherCollapsed(next) {
+		setCollapsed(next)
+		window.localStorage.setItem(COLLAPSED_STORAGE_KEY, String(next))
+	}
+
+	if (collapsed) {
+		return (
+			<aside className="dev-switcher dev-switcher--collapsed" aria-label="개발용 접근 권한 미리보기">
+				<button
+					type="button"
+					className="dev-switcher__bubble"
+					onClick={() => setSwitcherCollapsed(false)}
+					aria-label="접근 권한 미리보기 열기"
+					title="접근 권한 미리보기 열기"
+				>
+					<span aria-hidden="true">DEV</span>
+				</button>
+			</aside>
+		)
+	}
+
 	return (
 		<aside className="dev-switcher" aria-label="개발용 접근 권한 미리보기">
 			<header className="dev-switcher__head">
-				<span className="dev-switcher__tag">DEV TOOL</span>
-				<strong>접근 권한 미리보기</strong>
+				<div className="dev-switcher__heading">
+					<span className="dev-switcher__tag">DEV TOOL</span>
+					<strong>접근 권한 미리보기</strong>
+				</div>
+				<button
+					type="button"
+					className="dev-switcher__collapse"
+					onClick={() => setSwitcherCollapsed(true)}
+					aria-label="접근 권한 미리보기 접기"
+					title="접기"
+				>
+					<span aria-hidden="true" />
+				</button>
 			</header>
 			<p className="dev-switcher__help">
 				계정을 고르면 화면을 자동으로 새로고침해 해당 권한을 바로 확인합니다.
@@ -117,6 +152,8 @@ const ACCOUNTS = [
   { account: 'user', label: '사용자' },
   { account: 'pending', label: '승인 대기' },
 ]
+
+const COLLAPSED_STORAGE_KEY = 'feedback-board:dev-switcher-collapsed'
 
 function accountOf(me) {
 	if (me.status === 'PENDING') return 'pending'
