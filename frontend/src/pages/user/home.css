@@ -1,0 +1,109 @@
+.home {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.home__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.home__title {
+	margin: 0;
+	font-size: 1.375rem;
+	font-weight: 650;
+	letter-spacing: -0.02em;
+}
+
+.home__write {
+	padding: 9px 16px;
+	border: 1px solid var(--color-brand-primary);
+	border-radius: var(--radius-md);
+	background: var(--color-brand-primary);
+	color: var(--color-on-brand);
+	font-size: var(--font-size-small);
+	font-weight: var(--font-weight-medium);
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.home__write:hover {
+	background: var(--color-brand-primary-deep);
+}
+
+.home__notice,
+.home__empty {
+	margin: 0;
+	padding: 28px 0;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+	text-align: center;
+}
+
+.home__list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.home__row {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 15px 17px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: inherit;
+	text-decoration: none;
+	transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.home__row:hover {
+	transform: translateY(-1px);
+	border-color: var(--color-border-strong);
+}
+
+.home__row-main {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.home__site {
+	color: var(--color-brand-primary);
+	font-size: 11px;
+	font-weight: var(--font-weight-medium);
+	letter-spacing: 0.04em;
+}
+
+.home__row-title {
+	margin: 0;
+	color: var(--color-text);
+	font-size: var(--font-size-body);
+	font-weight: var(--font-weight-medium);
+}
+
+.home__row-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	padding-top: 10px;
+	border-top: 1px solid var(--color-border);
+	color: var(--color-text-subtle);
+	font-size: 12px;
+}
+
+.home__category {
+	padding: 2px 8px;
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+}

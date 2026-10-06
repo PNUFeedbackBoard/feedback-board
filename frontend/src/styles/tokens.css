@@ -6,6 +6,46 @@
   --color-brand-primary-pale: #e5e6ff;
   --color-on-brand: #ffffff;
 
+  /* 표면·글자·테두리. 관리용 화면(admin-tokens.temp.css)과 같은 값으로 맞췄다 —
+     그쪽은 임시 파일이고 이쪽이 정식 위치라, 이후 관리용 화면이 이 파일로 옮겨오면
+     값이 똑같아서 화면이 안 바뀐다. */
+  --color-bg: #f7f9fd;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #eef3fb;
+  --color-border: #dce3ef;
+  --color-border-strong: #c8d2e1;
+  --color-text: #18233a;
+  --color-text-muted: #647087;
+  --color-text-subtle: #8b96a9;
+
+  /* 진행 상태 4종(기획 4-2) */
+  --color-status-received-fg: #1d56bb;
+  --color-status-received-bg: #eaf2ff;
+  --color-status-in-progress-fg: #9b5c0d;
+  --color-status-in-progress-bg: #fff3df;
+  --color-status-done-fg: #267150;
+  --color-status-done-bg: #e9f6ef;
+  --color-status-rejected-fg: #626d7e;
+  --color-status-rejected-bg: #eef1f5;
+
+  --color-accent: #d33c37;
+  --color-accent-bg: #fff0ef;
+
+  --font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-size-title: 1.0625rem;
+  --font-size-body: 0.9375rem;
+  --font-size-small: 0.8125rem;
+  --font-weight-medium: 600;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
   /* 중요도 표시 */
   --color-priority-track-start: #f1f1f3;
   --color-priority-track-end: #d5d5d9;

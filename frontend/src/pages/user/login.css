@@ -1,0 +1,190 @@
+.login {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 560px) 1fr;
+	min-height: 100vh;
+	overflow: hidden;
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font-family);
+}
+
+.login__panel {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: var(--space-5);
+	padding: clamp(32px, 6vw, 96px);
+}
+
+.login__brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 11px;
+}
+
+.login__mark {
+	width: 34px;
+	height: 36px;
+	object-fit: contain;
+	mix-blend-mode: multiply;
+}
+
+.login__brand-type {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	line-height: 1;
+}
+
+.login__brand-type strong {
+	font-size: 15px;
+	font-weight: 760;
+	letter-spacing: 0.32em;
+}
+
+.login__brand-type span {
+	color: var(--color-text-muted);
+	font-size: 7px;
+	letter-spacing: 0.25em;
+}
+
+.login__title {
+	max-width: 440px;
+	margin: 0;
+	font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+	font-weight: 650;
+	letter-spacing: -0.03em;
+	line-height: 1.28;
+}
+
+.login__copy {
+	max-width: 440px;
+	margin: 0;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-body);
+	line-height: 1.75;
+}
+
+.login__error {
+	margin: 0;
+	padding: 10px 12px;
+	border: 1px solid #e9b9b6;
+	border-radius: var(--radius-sm);
+	background: var(--color-accent-bg);
+	color: var(--color-accent);
+	font-size: var(--font-size-small);
+}
+
+.login__actions {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	max-width: 320px;
+}
+
+.login__button {
+	padding: 13px 20px;
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-family: var(--font-family);
+	font-size: var(--font-size-body);
+	font-weight: var(--font-weight-medium);
+	cursor: pointer;
+	transition:
+		background 160ms ease,
+		border-color 160ms ease,
+		transform 160ms ease;
+}
+
+.login__button:hover {
+	border-color: var(--color-border-strong);
+	background: var(--color-surface-sunken);
+}
+
+.login__button:disabled {
+	cursor: not-allowed;
+	opacity: 0.6;
+}
+
+.login__button--primary {
+	border-color: var(--color-brand-primary);
+	background: var(--color-brand-primary);
+	color: var(--color-on-brand);
+}
+
+.login__button--primary:hover {
+	background: var(--color-brand-primary-deep);
+}
+
+.login__hero {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	background: radial-gradient(circle at 60% 40%, var(--color-brand-primary-pale), var(--color-bg) 72%);
+}
+
+.login__hero img {
+	width: min(60%, 420px);
+	filter: drop-shadow(0 24px 48px rgb(68 71 159 / 24%));
+}
+
+/* ── 비회원 경고 팝업 ─────────────────────────────────────── */
+
+.login__veil {
+	position: fixed;
+	inset: 0;
+	z-index: 40;
+	display: grid;
+	place-items: center;
+	padding: var(--space-5);
+	background: rgb(24 35 58 / 34%);
+	backdrop-filter: blur(4px);
+}
+
+.login__dialog {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	width: min(420px, 100%);
+	padding: 28px;
+	border: 1px solid var(--color-border-strong);
+	border-top: 3px solid var(--color-brand-primary);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	box-shadow: 0 24px 64px rgb(24 35 58 / 18%);
+}
+
+.login__dialog-title {
+	margin: 0;
+	font-size: 1.125rem;
+	font-weight: var(--font-weight-bold, 700);
+}
+
+.login__dialog-copy {
+	margin: 0;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-small);
+	line-height: 1.65;
+}
+
+.login__dialog-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 4px;
+}
+
+@media (max-width: 880px) {
+	.login {
+		grid-template-columns: 1fr;
+	}
+
+	.login__hero {
+		display: none;
+	}
+}
