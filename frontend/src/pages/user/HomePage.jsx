@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getMyFeedbacks } from '../../api/endpoints.js'
 import CategoryTag from '../../components/common/CategoryTag.jsx'
+import PriorityChip from '../../components/common/PriorityChip.jsx'
 import StatusBadge from '../../components/common/StatusBadge.jsx'
 import '../page-shell.css'
 
@@ -44,6 +45,7 @@ export default function HomePage() {
 										<span>{item.projectName}</span>
 										<CategoryTag category={item.category} />
 										<StatusBadge status={item.status} />
+										<PriorityChip priority={item.reportedPriority} />
 										<span>{item.answered ? '답변 완료' : '답변 대기'}</span>
 										<time>{formatDay(item.createdAt)}</time>
 									</span>
