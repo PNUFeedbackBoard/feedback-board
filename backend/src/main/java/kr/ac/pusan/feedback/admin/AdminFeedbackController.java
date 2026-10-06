@@ -22,12 +22,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackDetail;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackPage;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackSummary;
 import kr.ac.pusan.feedback.admin.dto.AnswerUpsertRequest;
 import kr.ac.pusan.feedback.admin.dto.FeedbackUpdateRequest;
 import kr.ac.pusan.feedback.admin.dto.PriorityRequestResponse;
+import kr.ac.pusan.feedback.auth.AppUserPrincipal;
+import kr.ac.pusan.feedback.auth.CurrentUser;
 import kr.ac.pusan.feedback.common.StubData;
 import kr.ac.pusan.feedback.common.enums.AuthorType;
 import kr.ac.pusan.feedback.common.enums.FeedbackCategory;
@@ -158,15 +161,54 @@ public class AdminFeedbackController {
 						HttpStatus.BAD_REQUEST, "담당자로 지정할 수 없는 계정입니다."));
 	}
 
-	// TODO(A, 3단계): 실제 답변 등록·수정으로 교체한다.
-	//                 피드백 1건당 답변 1건이므로 있으면 수정하고 없으면 만든다.
-	//                 첫 등록이면 firstAnsweredAt 을 기록하고 작성자에게 알림을 보낸다. 수정 시에는 보내지 않는다(기획안 7장).
-	//                 비회원(AuthorType.GUEST) 피드백은 답변 대상이 아니므로 거부한다.
 	@Operation(summary = "답변 등록·수정",
-			description = "개발자 전용이다. 피드백 1건당 답변 1건이다. markDone 이 true 면 상태를 DONE 으로 함께 바꾼다.")
+			description = "개발자 전용이다. 피드백 1건당 답변 1건이다. markDone 이 true 면 상태를 DONE 으로 함께 바꾼다. "
+					+ "비회원 피드백은 답변 대상이 아니라 400 이다.")
 	@PutMapping("/{id}/answer")
-	public AnswerResponse upsertAnswer(@PathVariable Long id, @RequestBody AnswerUpsertRequest request) {
-		return StubData.answer(id);
+	public AnswerResponse upsertAnswer(
+			@PathVariable Long id,
+			@Valid @RequestBody AnswerUpsertRequest request,
+			@CurrentUser AppUserPrincipal currentUser) {
+		Feedback feedback = feedbackRepository.findDetailById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+
+		// 비회원(AuthorType.GUEST) 피드백은 답변 대상이 아니다(기획안 6-4).
+		if (feedback.getAuthorType() == AuthorType.GUEST) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비회원 피드백은 답변 대상이 아닙니다.");
+		}
+
+		// 이 엔드포인트는 DEVELOPER 전용이라(SecurityConfig) currentUser 가 null 일 수 없다.
+		User author = userRepository.findByEmail(currentUser.getEmail())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."));
+
+		LocalDateTime now = LocalDateTime.now();
+		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
+		boolean firstAnswer = answer == null;
+
+		if (firstAnswer) {
+			// 알림(이메일) 발송은 6단계에서 붙인다(기획안 7장) — 첫 등록에서만 보내고 수정 시에는 안 보낸다는
+			// 규칙이라, 여기 firstAnswer 분기가 나중에 알림을 추가할 자리다.
+			answer = Answer.builder()
+					.feedback(feedback)
+					.author(author)
+					.content(request.content())
+					.createdAt(now)
+					.updatedAt(now)
+					.build();
+		} else {
+			answer.changeContent(request.content(), now);
+		}
+		answer = answerRepository.save(answer);
+
+		if (firstAnswer) {
+			feedback.recordFirstAnswerIfAbsent(now);
+		}
+		if (request.markDone()) {
+			feedback.applyAdminUpdate(FeedbackStatus.DONE, null, null, null, false, now);
+		}
+		feedbackRepository.save(feedback);
+
+		return new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
 	}
 
 	// TODO(A, 5단계): 실제 토글로 교체한다.
