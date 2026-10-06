@@ -13,7 +13,6 @@ import jakarta.validation.constraints.Size;
  * "확인했습니다"처럼 짧은 답도 정상적인 답변이라 10자 이상 같은 제약을 걸 이유가 없었다.
  */
 public record AnswerUpsertRequest(
-
 		@NotBlank(message = "답변 내용을 입력해 주세요.")
 		@Size(max = 2000, message = "답변은 2,000자 이하로 입력해 주세요.")
 		String content,

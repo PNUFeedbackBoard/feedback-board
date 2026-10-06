@@ -21,9 +21,7 @@ import WritePage from './pages/user/WritePage.jsx'
  * 권한 검사는 화면이 아니라 API 에서 한다. (기획 2장)
  * 관리용 주소를 직접 입력해도 서버가 데이터를 주지 않으므로, 여기서 경로를 막지 않는다.
  *
- * TODO(C, 1단계): 관리용 공통 레이아웃(상단 탭 · 하단 디스크)이 필요하면
- *                 /admin 계열 4개를 children 으로 묶은 부모 라우트를 이 파일에 하나 추가한다.
- *                 부모 element 안에서 <Outlet /> 을 렌더하면 된다. 경로 문자열은 바꾸지 않는다.
+ * 관리용 경로는 AdminLayout의 children으로 묶여 공통 상단 탭과 프로젝트 전환을 공유한다.
  */
 export const routes = [
   // ── 사용자용 ────────────────────────────────────────────────────
@@ -37,7 +35,7 @@ export const routes = [
   // 상단 탭과 프로젝트 전환을 보여 줄 이유가 없다. (기획 3-2)
   { path: '/admin/pending', element: <PendingPage /> },
   {
-    // 위 TODO(C, 1단계) 대로 추가한 레이아웃 부모 라우트다.
+    // 관리 화면이 공통 UI를 공유하도록 추가한 레이아웃 부모 라우트다.
     // **경로 문자열은 하나도 바꾸지 않았고 경로가 늘지도 않았다.** 감싸기만 한다.
     element: <AdminLayout />,
     children: [

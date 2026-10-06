@@ -15,9 +15,8 @@ import './admin-layout.css'
  *   본문      (<Outlet />)
  *   하단      (프로젝트 전환)
  *
- * 규칙 두 가지를 지킨다.
- *   - **화면이 역할을 판단하지 않는다.** getMe() 가 내려준 값을 표시만 한다. (기획 13-2)
- *   - 권한 검사는 API 가 한다. 여기서 경로를 막지 않는다. (routes.jsx 주석)
+ * 권한의 기준은 getMe() 응답이다. 하위 화면은 Outlet context 로 같은 값을 받아
+ * 서버에서 거부될 조작을 애초에 버튼이나 드래그 대상으로 보여 주지 않는다.
  */
 export default function AdminLayout() {
 	// 상단 탭은 "선택된 프로젝트 안의 메뉴"라 프로젝트가 정해진 경로에서만 나온다.
@@ -27,8 +26,6 @@ export default function AdminLayout() {
 
 	const [me, setMe] = useState(null)
 	const [projects, setProjects] = useState([])
-	/** 화면 안에서만 유지되는 담당자. { [피드백 번호]: 이름 } */
-	const [assignees, setAssignees] = useState({})
 
 	useEffect(() => {
 		// 로그인하지 않았으면 401 이 온다. 화면을 막지 않고 헤더에만 안내를 띄운다.
@@ -54,13 +51,13 @@ export default function AdminLayout() {
 				</NavLink>
 
 				<span className="admin-header__title">통합 피드백 보드</span>
-				{/* TODO(C, 6단계): 계정 메뉴를 열어 계정 관리(/admin/accounts) 진입점을 붙인다. */}
 				<span className="admin-header__account">
 					{me ? (
 						<>
 							<span className="admin-header__presence" aria-hidden="true" />
 							<span>{me.name}</span>
 							<span className="admin-header__role">{labelOf(ROLE, me.role)}</span>
+							{me.role === 'DEVELOPER' && <NavLink to="/admin/accounts">계정 관리</NavLink>}
 						</>
 					) : (
 						'로그인이 필요합니다'
@@ -90,16 +87,7 @@ export default function AdminLayout() {
 				</nav>
 			)}
 
-			<main className="admin-body">
-				{/*
-				 * 담당자를 레이아웃이 들고 있다가 화면들에 내려 준다.
-				 * 접수 탭에서 지정하고 개발 보드 탭에서 확인하는 흐름이라
-				 * 화면 하나에 두면 탭을 옮기는 순간 사라진다.
-				 *
-				 * 기획에 없는 기능이라 아직 서버에 남지 않는다. AssigneeDialog 의 주석 참고.
-				 */}
-				<Outlet context={{ assignees, setAssignees }} />
-			</main>
+			<main className="admin-body"><Outlet context={{ me }} /></main>
 
 			<ProjectDisc projects={projects} projectCode={projectCode} />
 

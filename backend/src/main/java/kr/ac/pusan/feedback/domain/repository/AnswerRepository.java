@@ -1,5 +1,6 @@
 package kr.ac.pusan.feedback.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,9 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 	/** 피드백 1건의 답변. 관리용 상세(GET /api/admin/feedbacks/{id})에서 쓴다. */
 	Optional<Answer> findByFeedbackId(Long feedbackId);
 
+	/** 내 문의 목록의 답변 여부를 한 번에 조회한다. */
+	List<Answer> findAllByFeedbackIdIn(Collection<Long> feedbackIds);
+
 	/**
 	 * 주어진 피드백 id들 중 답변이 달린 id만 돌려준다.
 	 * 관리용 목록에서 건마다 따로 조회하지 않고 한 번에 answered 여부를 구하기 위한 것이다(N+1 방지).
@@ -27,5 +31,4 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 	@Query("SELECT a.feedback.id FROM Answer a WHERE a.feedback.id IN :feedbackIds")
 	List<Long> findFeedbackIdsWithAnswer(@Param("feedbackIds") List<Long> feedbackIds);
 
-	// TODO(A, 3단계): 답변 등록·수정(PUT /api/admin/feedbacks/{id}/answer)에 필요한 메서드가 있으면 더한다.
 }

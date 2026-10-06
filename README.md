@@ -32,7 +32,7 @@ git clone https://github.com/PNUFeedbackBoard/feedback-board.git
 자세한 건 `docs/setup-guide.md`
 
 - [기획·개발 계획](docs/planning.md)
-- [0-1단계 API 스텁 명세](docs/api-spec.md)
+- [API 명세](docs/api-spec.md)
 
 빠른 실행은 저장소 루트에서 다음 명령을 사용합니다.
 

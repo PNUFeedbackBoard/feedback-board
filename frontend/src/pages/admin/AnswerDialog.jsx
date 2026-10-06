@@ -60,7 +60,7 @@ export default function AnswerDialog({ feedback, onDone, onCancel }) {
 				onSubmit={submit}
 				onKeyDown={(event) => event.key === 'Escape' && onCancel()}
 			>
-				<h2 className="dialog__title">답변 작성</h2>
+				<h2 className="dialog__title">{detail?.answer ? '답변 수정' : '답변 작성'}</h2>
 				<p className="dialog__subject">{feedback.title}</p>
 
 				{/* 문의 전문. 아직 받아 오는 중이면 자리만 비워 둔다. */}
@@ -95,7 +95,7 @@ export default function AnswerDialog({ feedback, onDone, onCancel }) {
 						className="dialog__button dialog__button--primary"
 						disabled={!content.trim() || saving}
 					>
-						{saving ? '보내는 중…' : '답변 등록'}
+						{saving ? '저장 중…' : detail?.answer ? '답변 수정' : '답변 등록'}
 					</button>
 				</div>
 			</form>
