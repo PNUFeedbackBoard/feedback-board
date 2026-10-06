@@ -20,6 +20,7 @@ import {
 	FEEDBACK_STATUS,
 	labelOf,
 } from '../../constants/enums.js'
+import DetailPanel from './DetailPanel.jsx'
 import StatusBadge from './components/StatusBadge.jsx'
 import './dashboard.css'
 
@@ -53,6 +54,7 @@ const STATUS_COLOR = {
 export default function DashboardPage() {
 	const [data, setData] = useState(null)
 	const [message, setMessage] = useState('')
+	const [openedId, setOpenedId] = useState(null)
 
 	useEffect(() => {
 		let cancelled = false
@@ -215,14 +217,27 @@ export default function DashboardPage() {
 			{/* ── 목록 ────────────────────────────────────────────── */}
 			<section className="dash__lists">
 				<Panel title="우선 처리 요청" caption={`${data.priorityRequested.length}건`}>
-					<FeedbackRows items={data.priorityRequested} empty="요청된 항목이 없습니다." />
+					<FeedbackRows items={data.priorityRequested} empty="요청된 항목이 없습니다." onOpen={setOpenedId} />
 				</Panel>
 				<Panel title="최근 접수" caption={`${data.recent.length}건`}>
-					<FeedbackRows items={data.recent} empty="접수된 항목이 없습니다." />
+					<FeedbackRows items={data.recent} empty="접수된 항목이 없습니다." onOpen={setOpenedId} />
 				</Panel>
 			</section>
+
+			{/* 조회 전용이라 canEdit/canRequestPriority 는 기본값(false) 그대로 둔다. */}
+			{openedId && (
+				<DetailPanel
+					item={findOpened(data, openedId)}
+					onClose={() => setOpenedId(null)}
+				/>
+			)}
 		</div>
 	)
+}
+
+/** 우선 처리 요청·최근 접수 두 목록 중 열린 항목을 찾는다. */
+function findOpened(data, id) {
+	return data.priorityRequested.find((item) => item.id === id) ?? data.recent.find((item) => item.id === id)
 }
 
 /** 축 눈금의 글자. 데이터보다 뒤로 물러나야 한다. */
@@ -275,16 +290,18 @@ function ChartTooltip({ active, payload, label, labels, unit }) {
 	)
 }
 
-function FeedbackRows({ items, empty }) {
+function FeedbackRows({ items, empty, onOpen }) {
 	if (items.length === 0) return <p className="board__empty">{empty}</p>
 
 	return (
 		<ul className="dash__rows">
 			{items.map((item) => (
 				<li key={item.id} className="dash__row">
-					<StatusBadge status={item.status} />
-					<span className="dash__row-title">{item.title}</span>
-					<span className="dash__row-meta">{item.projectName}</span>
+					<button type="button" className="dash__row-button" onClick={() => onOpen(item.id)}>
+						<StatusBadge status={item.status} />
+						<span className="dash__row-title">{item.title}</span>
+						<span className="dash__row-meta">{item.projectName}</span>
+					</button>
 				</li>
 			))}
 		</ul>

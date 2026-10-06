@@ -32,7 +32,10 @@ export default function DetailPanel({
 	onTogglePriority,
 	onClose,
 }) {
-	const { projectCode } = useParams()
+	// 전체 현황(대시보드)은 /admin 경로라 :projectCode 가 없다. 그럴 땐 목록 항목 자체의
+	// projectCode(AdminFeedbackSummary)로 "답변 화면으로 이동" 대상을 정한다.
+	const { projectCode: routeProjectCode } = useParams()
+	const projectCode = routeProjectCode ?? item.projectCode
 	const navigate = useNavigate()
 	// 어느 건의 상세인지 함께 담아 둔다. 그래야 다른 카드를 열었을 때
 	// effect 안에서 상태를 되돌리지 않고도 이전 응답을 화면에서 걸러 낼 수 있다.
