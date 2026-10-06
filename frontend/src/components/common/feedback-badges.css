@@ -25,6 +25,7 @@
 .feedback-badge--status[data-status='IN_PROGRESS'],
 .feedback-badge--priority[data-priority='LOW'] { color: var(--feedback-green); }
 .feedback-badge--status[data-status='DONE'] { color: var(--feedback-blue); }
+.feedback-badge--status[data-status='REJECTED'] { color: var(--feedback-purple); }
 .feedback-badge--priority[data-priority='HIGH'] { color: var(--feedback-red); }
 
 .feedback-badge--category {
