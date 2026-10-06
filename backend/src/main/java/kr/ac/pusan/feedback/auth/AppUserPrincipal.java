@@ -101,6 +101,4 @@ public class AppUserPrincipal implements UserDetails {
 		return this.status != UserStatus.DISABLED;
 	}
 
-	// TODO(B, 7단계): 관리용 화면은 status 가 ACTIVE 인 계정만 허용해야 한다.
-	// 지금은 경로 권한(SecurityConfig)만으로 막고, 상태 검사는 구글 로그인 전환과 함께 넣는다.
 }

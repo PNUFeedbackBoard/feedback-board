@@ -1,5 +1,8 @@
 package kr.ac.pusan.feedback.admin.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 /**
  * 답변 등록·수정 요청. PUT /api/admin/feedbacks/{id}/answer
  *
@@ -7,10 +10,9 @@ package kr.ac.pusan.feedback.admin.dto;
  * markDone 이 true 면 답변과 함께 상태를 DONE 으로 바꾼다.
  */
 public record AnswerUpsertRequest(
+		@NotBlank(message = "답변 내용을 입력해 주세요.")
+		@Size(max = 2000, message = "답변은 2,000자 이하로 입력해 주세요.")
 		String content,
 		boolean markDone
 ) {
-
-	// TODO(A, 3단계): 실제 구현 시 content 길이 제약(@NotBlank, @Size)을 이 자리에 붙이고
-	//                 컨트롤러 파라미터에 @Valid 를 추가한다. 0-1단계 스텁은 본문을 읽지 않는다.
 }

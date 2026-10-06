@@ -22,9 +22,8 @@ import './detail-panel.css'
  *
  * 목록 응답에는 본문이 없어(AdminFeedbackSummary 에 content 가 없다) 열 때 상세를 따로 받는다.
  *
- * TODO(C, 3단계): 원래 3단계 작업이다. 상태 변경 수단을 둘로 두기 위해 당겨서 만들었다.
  */
-export default function DetailPanel({ item, assignee, onChange, onClose }) {
+export default function DetailPanel({ item, onChange, onClose }) {
 	const { projectCode } = useParams()
 	const navigate = useNavigate()
 	// 어느 건의 상세인지 함께 담아 둔다. 그래야 다른 카드를 열었을 때
@@ -78,7 +77,7 @@ export default function DetailPanel({ item, assignee, onChange, onClose }) {
 				</div>
 				<div>
 					<dt>담당</dt>
-					<dd>{assignee || '미지정'}</dd>
+					<dd>{item.assigneeName || '미지정'}</dd>
 				</div>
 				<div>
 					<dt>답변</dt>

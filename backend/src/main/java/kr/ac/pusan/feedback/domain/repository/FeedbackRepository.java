@@ -1,6 +1,11 @@
 package kr.ac.pusan.feedback.domain.repository;
 
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import kr.ac.pusan.feedback.domain.Feedback;
 
@@ -12,6 +17,17 @@ import kr.ac.pusan.feedback.domain.Feedback;
  */
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 
-	// TODO(A, 1단계): 내 문의 목록·상세 조회 메서드를 추가한다.
-	// TODO(B, 1/3단계): 관리용 목록(필터·정렬)과 대시보드 집계 메서드를 추가한다.
+	@EntityGraph(attributePaths = { "project", "author" })
+	List<Feedback> findAllByAuthorIdOrderByCreatedAtDesc(Long authorId);
+
+	@EntityGraph(attributePaths = { "project", "author" })
+	Optional<Feedback> findByIdAndAuthorId(Long id, Long authorId);
+
+	@EntityGraph(attributePaths = { "project", "author" })
+	@Query("select f from Feedback f")
+	List<Feedback> findAllWithAssociations();
+
+	@EntityGraph(attributePaths = { "project", "author" })
+	@Query("select f from Feedback f where f.id = :id")
+	Optional<Feedback> findByIdWithAssociations(Long id);
 }

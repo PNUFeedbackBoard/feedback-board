@@ -68,5 +68,12 @@ public class User {
 		this.createdAt = createdAt;
 	}
 
-	// TODO(B, 6단계): 역할 변경·승인(PATCH /api/admin/users/{id})용 도메인 메서드는 담당자가 추가한다.
+	public void update(Role role, UserStatus status) {
+		if (role != null) {
+			this.role = role;
+		}
+		if (status != null) {
+			this.status = status;
+		}
+	}
 }

@@ -27,8 +27,6 @@ export default function AdminLayout() {
 
 	const [me, setMe] = useState(null)
 	const [projects, setProjects] = useState([])
-	/** 화면 안에서만 유지되는 담당자. { [피드백 번호]: 이름 } */
-	const [assignees, setAssignees] = useState({})
 
 	useEffect(() => {
 		// 로그인하지 않았으면 401 이 온다. 화면을 막지 않고 헤더에만 안내를 띄운다.
@@ -54,13 +52,13 @@ export default function AdminLayout() {
 				</NavLink>
 
 				<span className="admin-header__title">통합 피드백 보드</span>
-				{/* TODO(C, 6단계): 계정 메뉴를 열어 계정 관리(/admin/accounts) 진입점을 붙인다. */}
 				<span className="admin-header__account">
 					{me ? (
 						<>
 							<span className="admin-header__presence" aria-hidden="true" />
 							<span>{me.name}</span>
 							<span className="admin-header__role">{labelOf(ROLE, me.role)}</span>
+							{me.role === 'DEVELOPER' && <NavLink to="/admin/accounts">계정 관리</NavLink>}
 						</>
 					) : (
 						'로그인이 필요합니다'
@@ -90,16 +88,7 @@ export default function AdminLayout() {
 				</nav>
 			)}
 
-			<main className="admin-body">
-				{/*
-				 * 담당자를 레이아웃이 들고 있다가 화면들에 내려 준다.
-				 * 접수 탭에서 지정하고 개발 보드 탭에서 확인하는 흐름이라
-				 * 화면 하나에 두면 탭을 옮기는 순간 사라진다.
-				 *
-				 * 기획에 없는 기능이라 아직 서버에 남지 않는다. AssigneeDialog 의 주석 참고.
-				 */}
-				<Outlet context={{ assignees, setAssignees }} />
-			</main>
+			<main className="admin-body"><Outlet /></main>
 
 			<ProjectDisc projects={projects} projectCode={projectCode} />
 

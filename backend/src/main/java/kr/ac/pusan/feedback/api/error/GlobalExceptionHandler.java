@@ -3,6 +3,7 @@ package kr.ac.pusan.feedback.api.error;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +59,22 @@ public class GlobalExceptionHandler {
 			HttpServletRequest request
 	) {
 		return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "요청한 리소스를 찾을 수 없습니다.", request, List.of());
+	}
+
+	@ExceptionHandler(NoSuchElementException.class)
+	ResponseEntity<ApiErrorResponse> handleEntityNotFound(
+			NoSuchElementException exception,
+			HttpServletRequest request
+	) {
+		return error(HttpStatus.NOT_FOUND, "NOT_FOUND", exception.getMessage(), request, List.of());
+	}
+
+	@ExceptionHandler(IllegalStateException.class)
+	ResponseEntity<ApiErrorResponse> handleConflictState(
+			IllegalStateException exception,
+			HttpServletRequest request
+	) {
+		return error(HttpStatus.CONFLICT, "INVALID_STATE", exception.getMessage(), request, List.of());
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
