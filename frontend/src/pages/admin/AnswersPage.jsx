@@ -5,7 +5,6 @@ import { FEEDBACK_SORT, toOptions } from '../../constants/enums.js'
 import AnswerDialog from './AnswerDialog.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
 import Pagination from './components/Pagination.jsx'
-import StatusBadge from './components/StatusBadge.jsx'
 import './intake.css'
 
 const PAGE_SIZE = 6
@@ -105,7 +104,6 @@ export default function AnswersPage() {
 								dimmed={isGuest}
 								action={
 									<div className="intake__row">
-										<StatusBadge status={item.status} />
 										{isGuest ? (
 											<span className="intake__muted">비회원 · 답변 대상 아님</span>
 										) : canAnswer ? (

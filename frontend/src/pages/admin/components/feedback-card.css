@@ -1,0 +1,97 @@
+@import '../../../styles/tokens.css';
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--feedback-space-3);
+  min-width: 0;
+  min-height: var(--feedback-card-height);
+  padding: var(--feedback-space-4) var(--feedback-space-5);
+  border: var(--feedback-border-width) solid var(--feedback-card-border);
+  border-radius: var(--feedback-radius-card);
+  background: var(--feedback-surface);
+  color: var(--feedback-text);
+  box-shadow: var(--feedback-shadow-card);
+  transition: border-color var(--feedback-duration) ease, box-shadow var(--feedback-duration) ease;
+}
+
+.card[data-priority-requested='true'] {
+  border-color: var(--feedback-card-important-border);
+  box-shadow: var(--feedback-shadow-important);
+}
+
+.card.is-picked,
+.card:focus-within { border-color: var(--feedback-purple); box-shadow: var(--feedback-shadow-card), var(--feedback-focus-ring); }
+
+/* 비회원이 등록한 피드백은 답변 대상이 아니다(기획 6-4). 다른 카드와 구분되도록 흐리게 표시한다.
+   FeedbackCard.jsx와 AnswersPage.jsx는 계속 dimmed prop/is-dimmed 클래스를 쓰고 있었는데,
+   이 디자인 리뉴얼 과정에서 규칙이 빠져 있었다(답변 버튼이 안 보이는 기능은 살아 있었지만
+   시각적으로 흐려 보이지는 않았다). */
+.card.is-dimmed { opacity: 0.7; }
+.card.is-dimmed .card__title { color: var(--feedback-muted); }
+
+.card__head { display: flex; align-items: flex-start; gap: var(--feedback-space-3); }
+.card__tags { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: var(--feedback-space-2); min-width: 0; }
+.card__title {
+  min-height: var(--feedback-title-height);
+  margin: 0;
+  color: var(--feedback-text);
+  font-size: var(--feedback-font-title);
+  font-weight: var(--feedback-weight-bold);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.card__open { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.card__open:focus-visible { outline: var(--feedback-border-width) solid var(--feedback-purple); }
+.card__footer { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--feedback-space-3); margin-top: auto; padding-top: var(--feedback-space-5); }
+.card__information { flex: 1 1 auto; min-width: 0; }
+.card__author { display: flex; align-items: center; gap: var(--feedback-space-2); margin: 0 0 var(--feedback-space-1); color: var(--feedback-muted); font-size: var(--feedback-font-author); overflow-wrap: anywhere; }
+.card__author svg { flex: none; width: var(--feedback-person-size); height: var(--feedback-person-size); }
+.card__meta { display: flex; flex-wrap: wrap; margin: 0; color: var(--feedback-muted); font-size: var(--feedback-font-meta); }
+.card__meta time { white-space: pre-wrap; }
+.card__details,
+.card__assignee { margin: var(--feedback-space-1) 0 0; color: var(--feedback-muted); font-size: var(--feedback-font-meta); overflow-wrap: anywhere; }
+.card__action { flex: 0 1 auto; max-width: 100%; margin-left: auto; }
+.card__action .intake__row { flex-wrap: wrap; justify-content: flex-end; margin: 0; padding: 0; border: 0; gap: var(--feedback-space-2); }
+.card__action .intake__start {
+  min-height: var(--feedback-button-height);
+  padding: var(--feedback-space-2) var(--feedback-space-3);
+  border: 0;
+  border-radius: var(--feedback-radius-pill);
+  background: var(--feedback-button);
+  color: var(--feedback-on-accent);
+  font-size: var(--feedback-font-author);
+  font-weight: var(--feedback-weight-bold);
+  box-shadow: var(--feedback-shadow-button);
+  white-space: nowrap;
+}
+.card__action .intake__start:hover { background: var(--feedback-button-hover); }
+.card__action .intake__start:focus-visible { outline: var(--feedback-border-width) solid var(--feedback-purple); box-shadow: var(--feedback-focus-ring); }
+.card__check { display: flex; flex: none; align-items: center; min-height: var(--feedback-badge-height); cursor: pointer; }
+.card__check input {
+  appearance: none;
+  width: var(--feedback-check-size);
+  height: var(--feedback-check-size);
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(135deg, var(--feedback-check-light), var(--feedback-check-dark));
+  cursor: pointer;
+}
+.card__check input:checked { background: var(--feedback-check-active); }
+.card__check input:checked::after {
+  content: '✓';
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--feedback-on-accent);
+  font-size: var(--feedback-font-author);
+  line-height: 1;
+}
+.card__check input:focus-visible { outline: var(--feedback-border-width) solid var(--feedback-purple); box-shadow: var(--feedback-focus-ring); }
+
+@media (forced-colors: active) {
+  .card__check input { appearance: auto; }
+  .card__check input:checked::after { content: none; }
+}

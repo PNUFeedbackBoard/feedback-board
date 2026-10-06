@@ -40,3 +40,54 @@
     0 0.25rem 0.5rem rgb(45 47 110 / 28%);
   --shadow-priority-request-badge: 0 0.125rem 0.25rem rgb(49 52 132 / 24%);
 }
+
+/* 제공된 카드/뱃지 시안. 관리자 임시 토큰과 충돌하지 않는 공용 토큰. */
+:root {
+  --feedback-surface: #fafafa;
+  --feedback-text: #444444;
+  --feedback-muted: #7c7c7c;
+  --feedback-red: #ff3939;
+  --feedback-orange: #f48b20;
+  --feedback-green: #139c10;
+  --feedback-blue: #3253b5;
+  --feedback-purple: #7870cb;
+  --feedback-category-bg: #ced0e9;
+  --feedback-category-border: #9299cc;
+  --feedback-on-accent: #ffffff;
+  --feedback-card-border: #ededed;
+  --feedback-card-important-border: #a4a0ed;
+  --feedback-button: #8286cf;
+  --feedback-button-hover: #525bb0;
+  --feedback-check-light: #dedede;
+  --feedback-check-dark: #cccccc;
+  --feedback-check-active: #6972c8;
+  --feedback-font-label: 0.875rem;
+  --feedback-font-meta: 0.8125rem;
+  --feedback-font-author: 1rem;
+  --feedback-font-title: 1.25rem;
+  --feedback-weight-medium: 500;
+  --feedback-weight-bold: 700;
+  --feedback-space-1: 0.25rem;
+  --feedback-space-2: 0.5rem;
+  --feedback-space-3: 0.75rem;
+  --feedback-space-4: 1rem;
+  --feedback-space-5: 1.5rem;
+  --feedback-border-width: 1px;
+  --feedback-radius-pill: 999px;
+  --feedback-radius-tag: 2px;
+  --feedback-radius-card: 20px;
+  --feedback-badge-height: 1.75rem;
+  --feedback-badge-width: 4.25rem;
+  --feedback-badge-padding: 0.125rem 0.5rem;
+  --feedback-star-size: 1.75rem;
+  --feedback-check-size: 1.375rem;
+  --feedback-person-size: 1.25rem;
+  --feedback-card-height: 15.25rem;
+  --feedback-title-height: 2.8em;
+  --feedback-button-height: 2.625rem;
+  --feedback-shadow-card: 0 3px 5px rgb(0 0 0 / 22%), 0 0 20px rgb(0 0 0 / 6%);
+  --feedback-shadow-important: 0 3px 6px rgb(75 67 154 / 42%), 0 0 16px rgb(120 112 203 / 12%);
+  --feedback-shadow-button: 0 3px 8px rgb(0 0 0 / 9%);
+  --feedback-focus-ring: 0 0 0 3px rgb(120 112 203 / 30%);
+  --feedback-duration: 160ms;
+}
