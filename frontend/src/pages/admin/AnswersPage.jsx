@@ -68,7 +68,7 @@ export default function AnswersPage() {
 							<FeedbackCard
 								key={item.id}
 								item={item}
-								assignee={assignees[item.id]}
+								assignee={assignees[item.id] ?? item.assigneeName}
 								dimmed={isGuest}
 								action={
 									<div className="intake__row">
