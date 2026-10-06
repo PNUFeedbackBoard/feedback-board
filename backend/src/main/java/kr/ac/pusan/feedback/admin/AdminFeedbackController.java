@@ -105,7 +105,7 @@ public class AdminFeedbackController {
 		int fromIndex = Math.min(page * size, matched.size());
 		int toIndex = Math.min(fromIndex + size, matched.size());
 		List<AdminFeedbackSummary> items = matched.subList(fromIndex, toIndex).stream()
-				.map(feedback -> toSummary(feedback, answeredIds.contains(feedback.getId())))
+				.map(feedback -> AdminFeedbackMapper.toSummary(feedback, answeredIds.contains(feedback.getId())))
 				.toList();
 
 		// totalCount 는 이번 페이지 건수가 아니라 필터 조건 전체 건수다(AdminFeedbackPage 계약).
@@ -119,7 +119,7 @@ public class AdminFeedbackController {
 		Feedback feedback = feedbackRepository.findDetailById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
 		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
-		return toDetail(feedback, answer);
+		return AdminFeedbackMapper.toDetail(feedback, answer);
 	}
 
 	@Operation(summary = "상태·유형·중요도·담당자 변경",
@@ -144,7 +144,7 @@ public class AdminFeedbackController {
 		feedbackRepository.save(feedback);
 
 		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
-		return toDetail(feedback, answer);
+		return AdminFeedbackMapper.toDetail(feedback, answer);
 	}
 
 	/** assigneeId 가 null 이면 담당자를 바꾸지 않는다(null 반환). 보낸 id가 DEVELOPER·ACTIVE 가 아니면 400. */
@@ -214,61 +214,16 @@ public class AdminFeedbackController {
 	// Entity → DTO 변환
 	// ------------------------------------------------------------------
 
-	/** 주어진 피드백들 중 답변이 달린 id만 한 번의 쿼리로 구한다(목록에서 건마다 조회하는 N+1을 막는다). */
+	/**
+	 * 주어진 피드백들 중 답변이 달린 id만 한 번의 쿼리로 구한다(목록에서 건마다 조회하는 N+1을 막는다).
+	 * AdminDashboardController 에도 같은 모양의 메서드가 있다 — answerRepository 인스턴스가 필요해서
+	 * AdminFeedbackMapper(정적 유틸)로는 뺄 수 없었다. 로직 자체가 세 줄이라 중복 비용이 작다고 판단했다.
+	 */
 	private Set<Long> answeredFeedbackIds(List<Feedback> feedbacks) {
 		List<Long> ids = feedbacks.stream().map(Feedback::getId).toList();
 		if (ids.isEmpty()) {
 			return Set.of();
 		}
 		return new HashSet<>(answerRepository.findFeedbackIdsWithAnswer(ids));
-	}
-
-	private static String authorNameOf(Feedback feedback) {
-		return feedback.getAuthorType() == AuthorType.GUEST ? null : feedback.getAuthor().getName();
-	}
-
-	private static AdminFeedbackSummary toSummary(Feedback feedback, boolean answered) {
-		return new AdminFeedbackSummary(
-				feedback.getId(),
-				feedback.getProject().getCode(),
-				feedback.getProject().getName(),
-				feedback.getTitle(),
-				feedback.getCategory(),
-				feedback.getStatus(),
-				feedback.getReportedPriority(),
-				feedback.getPriority(),
-				feedback.isPriorityRequested(),
-				feedback.getAuthorType(),
-				authorNameOf(feedback),
-				feedback.getCreatedAt(),
-				answered,
-				feedback.getAssignee() == null ? null : feedback.getAssignee().getId(),
-				feedback.getAssignee() == null ? null : feedback.getAssignee().getName());
-	}
-
-	private static AdminFeedbackDetail toDetail(Feedback feedback, Answer answer) {
-		AnswerResponse answerResponse = answer == null ? null
-				: new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
-
-		return new AdminFeedbackDetail(
-				feedback.getId(),
-				feedback.getProject().getCode(),
-				feedback.getProject().getName(),
-				feedback.getTitle(),
-				feedback.getCategory(),
-				feedback.getStatus(),
-				feedback.getReportedPriority(),
-				feedback.getPriority(),
-				feedback.isPriorityRequested(),
-				feedback.getAuthorType(),
-				authorNameOf(feedback),
-				feedback.getCreatedAt(),
-				answer != null,
-				feedback.getContent(),
-				feedback.getFirstAnsweredAt(),
-				feedback.getClosedAt(),
-				answerResponse,
-				feedback.getAssignee() == null ? null : feedback.getAssignee().getId(),
-				feedback.getAssignee() == null ? null : feedback.getAssignee().getName());
 	}
 }
