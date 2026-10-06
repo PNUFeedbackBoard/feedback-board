@@ -2,8 +2,8 @@
 
 부산대학교 AI융합교육원이 운영하는 5개 시스템의 피드백을 한 곳에서 수집하고 처리하는 서비스의 설계 문서다.
 
-- 문서 버전: v1.1
-- 최종 수정: 2026-09-15
+- 문서 버전: v1.3 — `feedbacks.assignee_id`, 목록 필터 `answered`, 담당자 해제(`unassign`) 추가(8·9장)
+- 최종 수정: 2026-10-06
 - 관련 문서: [README](../README.md), [개발환경 설정 가이드](setup-guide.md)
 
 ---
@@ -326,12 +326,16 @@ React 애플리케이션 하나를 경로로 분리하고, 스프링부트 서�
 |---|---|---|
 | `projects` | `code`, `name`, `logo_url`, `site_url`, `sort_order` | `sort_order`는 하단 디스크의 배치 순서 |
 | `users` | `email`, `name`, `google_sub`, `role`, `status` | `role`: `USER`, `DEVELOPER`, `VIEWER` / `status`: `PENDING`, `ACTIVE`, `DISABLED` |
-| `feedbacks` | `project_id`, `author_id`, `author_type`, `title`, `content`, `category`, `status`, `reported_priority`, `priority`, `priority_requested`, `created_at`, `first_answered_at`, `closed_at` | 비회원은 `author_id`가 `NULL`, `author_type`이 `GUEST` |
+| `feedbacks` | `project_id`, `author_id`, `author_type`, `assignee_id`, `title`, `content`, `category`, `status`, `reported_priority`, `priority`, `priority_requested`, `created_at`, `first_answered_at`, `closed_at` | 비회원은 `author_id`가 `NULL`, `author_type`이 `GUEST` |
 | `answers` | `feedback_id`, `author_id`, `content`, `created_at`, `updated_at` | 피드백 1건당 1건 |
 
 - `first_answered_at`과 `closed_at`은 대시보드의 평균 처리 소요 시간 산출에 사용한다.
 - `priority_requested`는 우선 처리 요청 여부를 나타내며 정렬의 1순위 기준이다.
 - 비회원이 등록한 피드백도 저장한다. 통계 집계와 중복 신고 확인에 필요하다.
+- `assignee_id`는 담당 개발자(`users.id`, nullable)다. **최초 계획(v1.1)에는 없던 컬럼**이다. 관리용 화면을
+  구현하던 중 "접수에서 처리 중으로 옮길 때 담당자를 지정한다"는 요구가 나와서 1단계 도중 추가했다
+  (`frontend/src/pages/admin/AssigneeDialog.jsx` 주석 참고). `DEVELOPER`·`ACTIVE` 계정만 지정할 수 있다.
+  지정과 해제 둘 다 9장의 `PATCH`(`assigneeId`/`unassign`)로 가능하다.
 
 ---
 
@@ -344,15 +348,23 @@ React 애플리케이션 하나를 경로로 분리하고, 스프링부트 서�
 | `GET` | `/api/me/feedbacks` | `USER` | 본인이 등록한 피드백 목록 |
 | `GET` | `/api/me/feedbacks/{id}` | `USER` | 본인 피드백 상세. 답변 포함 |
 | `GET` | `/api/admin/dashboard` | `DEVELOPER`, `VIEWER` | 전체 현황 지표 |
-| `GET` | `/api/admin/feedbacks` | `DEVELOPER`, `VIEWER` | 목록 조회. `project`, `status`, `category`, `sort`, `from`, `to` |
+| `GET` | `/api/admin/feedbacks` | `DEVELOPER`, `VIEWER` | 목록 조회. `project`, `status`, `category`, `sort`, `from`, `to`, `authorType`, `answered` |
 | `GET` | `/api/admin/feedbacks/{id}` | `DEVELOPER`, `VIEWER` | 상세 조회 |
-| `PATCH` | `/api/admin/feedbacks/{id}` | `DEVELOPER` | 상태, 유형, 중요도 변경 |
+| `PATCH` | `/api/admin/feedbacks/{id}` | `DEVELOPER` | 상태, 유형, 중요도, 담당자(`assigneeId`) 변경 |
 | `PUT` | `/api/admin/feedbacks/{id}/answer` | `DEVELOPER` | 답변 등록 및 수정 |
 | `POST` | `/api/admin/feedbacks/{id}/priority-request` | `VIEWER` | 우선 처리 요청 토글 |
 | `GET` | `/api/admin/users` | `DEVELOPER` | 계정 목록 |
 | `PATCH` | `/api/admin/users/{id}` | `DEVELOPER` | 계정 승인 및 역할 변경 |
 
 `VIEWER` 역할이 `PATCH /api/admin/feedbacks/{id}`를 호출하면 403을 반환한다.
+
+**목록 필터 `answered`** — 답변 유무로 거른다(`true`/`false`, 생략하면 전체). 답변 탭을 전체 페이지로
+바꾸면서 추가됐다. 서버가 DB 쿼리로 직접 거르므로(EXISTS 서브쿼리), 전체를 받아와 화면에서 거르지 않는다.
+
+**`PATCH` 의 `assigneeId`·`unassign`** — `feedbacks.assignee_id`(위 8장 참고)를 바꾼다. `assigneeId`는
+`DEVELOPER`·`ACTIVE`가 아닌 계정 id를 보내면 `400`을 반환한다. 다른 세 필드(`status`·`category`·`priority`)와
+같은 규칙으로, `assigneeId`를 보내지 않거나 `null`이면 담당자를 바꾸지 않는다. **담당자를 해제하려면
+`assigneeId` 대신 `unassign`을 `true`로 보낸다** — 이때 `assigneeId`는 같이 보내도 무시된다(해제가 우선).
 
 ---
 

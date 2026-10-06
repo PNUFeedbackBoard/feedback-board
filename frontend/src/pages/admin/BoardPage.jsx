@@ -141,7 +141,7 @@ export default function BoardPage() {
 			<DragOverlay dropAnimation={null}>
 				{dragging && (
 					<div className="card-held">
-						<FeedbackCard item={dragging} assignee={assignees[dragging.id]} />
+						<FeedbackCard item={dragging} assignee={assignees[dragging.id] ?? dragging.assigneeName} />
 					</div>
 				)}
 			</DragOverlay>
@@ -149,7 +149,7 @@ export default function BoardPage() {
 			{opened && (
 				<DetailPanel
 					item={opened}
-					assignee={assignees[opened.id]}
+					assignee={assignees[opened.id] ?? opened.assigneeName}
 					onChange={(changes) => commitChange(opened.id, changes)}
 					onClose={() => setOpenedId(null)}
 				/>
@@ -174,7 +174,7 @@ function Column({ status, items, assignees, onOpen }) {
 					<DraggableCard
 						key={item.id}
 						item={item}
-						assignee={assignees[item.id]}
+						assignee={assignees[item.id] ?? item.assigneeName}
 						onOpen={() => onOpen(item.id)}
 					/>
 				))}
@@ -199,7 +199,7 @@ function RejectedArea({ items, assignees, onOpen }) {
 					<DraggableCard
 						key={item.id}
 						item={item}
-						assignee={assignees[item.id]}
+						assignee={assignees[item.id] ?? item.assigneeName}
 						onOpen={() => onOpen(item.id)}
 					/>
 				))}

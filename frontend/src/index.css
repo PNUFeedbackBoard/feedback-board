@@ -14,14 +14,22 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+	background: #f7f9fd;
 }
 
 body {
   margin: 0;
+	min-width: 320px;
+	min-height: 100vh;
   font-family: system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+	background: #d8e7ff;
+	color: #18233a;
 }
 
 img,
@@ -36,4 +44,10 @@ select,
 textarea {
   font: inherit;
   color: inherit;
+}
+
+button,
+select,
+input {
+	-webkit-tap-highlight-color: transparent;
 }

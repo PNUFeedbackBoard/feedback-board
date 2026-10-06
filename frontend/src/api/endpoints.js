@@ -70,7 +70,7 @@ export function getDashboard() {
 /**
  * 관리용 피드백 목록.
  * @param {object} [params] 필터와 정렬.
- *   { project, status, category, sort, from, to, authorType, page, size }
+ *   { project, status, category, sort, from, to, authorType, answered, page, size }
  *   sort 는 FEEDBACK_SORT 의 키(PRIORITY | LATEST | OLDEST)를 쓴다.
  *   비어 있는 값은 client.js 가 쿼리에서 알아서 빼준다.
  * @returns {Promise<object>} AdminFeedbackPage — { items, totalCount }
@@ -94,7 +94,9 @@ export function getAdminFeedback(id) {
  * 상태·유형·중요도 변경. 보낸 필드만 바뀐다.
  * 열람자가 호출하면 403 이 온다. (기획 9장)
  * @param {number | string} id 피드백 번호
- * @param {object} body FeedbackUpdateRequest — { status, category, priority } 셋 다 생략 가능
+ * @param {object} body FeedbackUpdateRequest — { status, category, priority, assigneeId, unassign }
+ *   전부 생략 가능. assigneeId 는 DEVELOPER·ACTIVE 계정이 아니면 400. 담당자 해제는
+ *   assigneeId 대신 unassign: true 를 보낸다(기획 8·9장).
  * @returns {Promise<object>} AdminFeedbackDetail
  */
 export function updateAdminFeedback(id, body) {

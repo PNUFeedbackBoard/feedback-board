@@ -1,21 +1,19 @@
-/**
- * 접수 · 답변 목록 화면. 색과 간격은 admin-tokens.temp.css 의 변수만 쓴다.
- */
-
 .intake {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-4);
+	gap: 20px;
 }
 
 .intake__count {
 	margin: 0;
 	color: var(--color-text-muted);
 	font-size: var(--font-size-small);
+	letter-spacing: 0.02em;
 }
 
 .intake__count strong {
-	color: var(--color-text);
+	color: var(--color-selected);
+	font-size: 1rem;
 	font-weight: var(--font-weight-bold);
 }
 
@@ -23,11 +21,10 @@
 	color: var(--color-text-subtle);
 }
 
-/* 카드가 한 줄씩 늘어서는 대신 폭에 맞춰 접힌다. 접수가 쌓여도 세로로만 길어지지 않는다. */
 .intake__list {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-	gap: var(--space-3);
+	grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+	gap: 12px;
 	align-items: start;
 }
 
@@ -35,14 +32,16 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: var(--space-2);
+	gap: 10px;
 	width: 100%;
-	margin-top: var(--space-1);
+	margin-top: 2px;
+	padding-top: 10px;
+	border-top: 1px solid var(--color-border);
 }
 
 .intake__start {
-	padding: var(--space-2) var(--space-3);
-	border: 1px solid var(--color-border);
+	padding: 7px 11px;
+	border: 1px solid var(--color-selected);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
 	color: var(--color-selected);
@@ -52,12 +51,12 @@
 	cursor: pointer;
 	transition:
 		background var(--duration-fast) ease,
-		border-color var(--duration-fast) ease;
+		color var(--duration-fast) ease;
 }
 
 .intake__start:hover {
-	border-color: var(--color-selected);
-	background: var(--color-status-received-bg);
+	background: var(--color-selected);
+	color: var(--color-surface);
 }
 
 .intake__muted {
@@ -65,10 +64,9 @@
 	font-size: var(--font-size-label);
 }
 
-/* 비회원처럼 손댈 수 없는 항목. 목록에는 남기되 지금 할 일이 아님을 드러낸다. */
 .card.is-dimmed {
-	background: var(--color-surface-sunken);
-	box-shadow: none;
+	background: #f3f5f8;
+	opacity: 0.74;
 }
 
 .card.is-dimmed .card__title {
@@ -77,22 +75,20 @@
 
 .card.is-dimmed:hover {
 	transform: none;
-	box-shadow: none;
 }
-
-/* ── 여러 건 골라 한꺼번에 옮기기 ─────────────────────────── */
 
 .intake__bulk {
 	position: sticky;
-	top: 88px;
+	top: 142px;
 	z-index: 5;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: var(--space-3);
-	padding: var(--space-3) var(--space-4);
-	border: 1px solid var(--color-selected);
-	border-radius: var(--radius-lg);
+	gap: 12px;
+	padding: 12px 14px;
+	border: 1px solid rgb(37 99 235 / 46%);
+	border-left: 3px solid var(--color-selected);
+	border-radius: 0;
 	background: var(--color-surface-veil);
 	backdrop-filter: var(--blur-veil);
 	box-shadow: var(--shadow-md);
@@ -101,43 +97,43 @@
 
 .intake__bulk-actions {
 	display: flex;
-	gap: var(--space-2);
+	gap: 8px;
 }
 
-.intake__primary {
-	padding: var(--space-2) var(--space-4);
-	border: none;
+.intake__primary,
+.intake__ghost {
+	padding: 7px 12px;
 	border-radius: var(--radius-sm);
-	background: var(--color-selected);
-	color: var(--color-surface);
 	font-family: var(--font-family);
 	font-size: var(--font-size-small);
 	font-weight: var(--font-weight-medium);
 	cursor: pointer;
 }
 
+.intake__primary {
+	border: 1px solid var(--color-selected);
+	background: var(--color-selected);
+	color: var(--color-surface);
+}
+
 .intake__primary:hover {
-	filter: brightness(0.94);
+	background: #1d54cb;
 }
 
 .intake__ghost {
-	padding: var(--space-2) var(--space-3);
-	border: none;
-	border-radius: var(--radius-sm);
-	background: none;
+	border: 1px solid transparent;
+	background: transparent;
 	color: var(--color-text-muted);
-	font-family: var(--font-family);
-	font-size: var(--font-size-small);
-	cursor: pointer;
 }
 
 .intake__ghost:hover {
+	border-color: var(--color-border);
 	background: var(--color-surface-sunken);
 }
 
 .intake__select {
-	padding: var(--space-1) var(--space-2);
-	border: 1px solid var(--color-border);
+	padding: 6px 8px;
+	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
 	color: var(--color-text);
@@ -146,15 +142,20 @@
 	cursor: pointer;
 }
 
-/* ── 카드의 체크칸 ────────────────────────────────────────── */
-
 .card__check {
 	display: flex;
 	align-items: center;
-	gap: var(--space-1);
+	gap: 6px;
+	min-height: 22px;
+	padding-right: 7px;
+	border-right: 1px solid var(--color-border);
 	color: var(--color-text-subtle);
 	font-size: var(--font-size-label);
 	cursor: pointer;
+}
+
+.card__check input {
+	accent-color: var(--color-selected);
 }
 
 .card__check-label {
@@ -163,5 +164,11 @@
 
 .card.is-picked {
 	border-color: var(--color-selected);
-	box-shadow: inset 0 0 0 1px var(--color-selected), var(--shadow-sm);
+	box-shadow: inset 0 0 0 1px var(--color-selected);
+}
+
+@media (max-width: 720px) {
+	.intake__bulk {
+		top: 132px;
+	}
 }

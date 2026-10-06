@@ -17,6 +17,8 @@ import kr.ac.pusan.feedback.common.enums.Priority;
  *   <li>priority 는 개발자가 확정한 값이며 정렬 기준이다.</li>
  *   <li>authorName 은 authorType 이 GUEST 면 null 이다.</li>
  *   <li>authorType 이 GUEST 인 항목은 답변 대상이 아니다. 답변 탭에서 비활성으로 표시한다(기획안 6-4).</li>
+ *   <li>assigneeId·assigneeName 은 담당자가 없으면 둘 다 null 이다. 기획에 없던 기능이라 뒤늦게
+ *       추가됐다(AssigneeDialog.jsx 주석, docs/planning.md 8·9장 참고).</li>
  * </ul>
  */
 public record AdminFeedbackSummary(
@@ -32,6 +34,8 @@ public record AdminFeedbackSummary(
 		AuthorType authorType,
 		String authorName,
 		LocalDateTime createdAt,
-		boolean answered
+		boolean answered,
+		Long assigneeId,
+		String assigneeName
 ) {
 }

@@ -35,26 +35,26 @@ export default function FeedbackCard({
 			// 열 수 있는 카드만 눌리게 한다. onOpen 이 없으면 그냥 보는 카드다.
 			onClick={onOpen}
 		>
-			{onSelect && (
-				// 카드를 누르면 패널이 열리는 자리도 있으므로 체크칸까지 번지지 않게 막는다.
-				<label className="card__check" onClick={(event) => event.stopPropagation()}>
-					<input
-						type="checkbox"
-						checked={selected ?? false}
-						onChange={(event) => onSelect(event.target.checked)}
-					/>
-					<span className="card__check-label">선택</span>
-				</label>
-			)}
-
-			{item.priorityRequested && <PriorityRequestBadge />}
+			<header className="card__head">
+				<div className="card__tags">
+					{onSelect && (
+						// 카드를 누르면 패널이 열리는 자리도 있으므로 체크칸까지 번지지 않게 막는다.
+						<label className="card__check" onClick={(event) => event.stopPropagation()}>
+							<input
+								type="checkbox"
+								checked={selected ?? false}
+								onChange={(event) => onSelect(event.target.checked)}
+							/>
+							<span className="card__check-label">선택</span>
+						</label>
+					)}
+					<CategoryTag category={item.category} />
+					<PriorityChip priority={item.priority} />
+				</div>
+				{item.priorityRequested && <PriorityRequestBadge />}
+			</header>
 
 			<h3 className="card__title">{item.title}</h3>
-
-			<div className="card__tags">
-				<PriorityChip priority={item.priority} />
-				<CategoryTag category={item.category} />
-			</div>
 
 			<footer className="card__meta">
 				<span>{daysSince(item.createdAt)}일 경과</span>
@@ -67,7 +67,11 @@ export default function FeedbackCard({
 			)}
 
 			{/* 선택 박스 같은 조작은 카드를 여는 동작과 겹치지 않게 막는다. */}
-			{action && <div onClick={(event) => event.stopPropagation()}>{action}</div>}
+			{action && (
+				<div className="card__action" onClick={(event) => event.stopPropagation()}>
+					{action}
+				</div>
+			)}
 		</article>
 	)
 }
