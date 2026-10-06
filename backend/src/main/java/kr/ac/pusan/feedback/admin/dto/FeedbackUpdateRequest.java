@@ -14,6 +14,7 @@ import kr.ac.pusan.feedback.common.enums.Priority;
 public record FeedbackUpdateRequest(
 		FeedbackStatus status,
 		FeedbackCategory category,
-		Priority priority
+		Priority priority,
+		String assigneeName
 ) {
 }

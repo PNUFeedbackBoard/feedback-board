@@ -31,6 +31,7 @@ public record AdminFeedbackSummary(
 		boolean priorityRequested,
 		AuthorType authorType,
 		String authorName,
+		String assigneeName,
 		LocalDateTime createdAt,
 		boolean answered
 ) {

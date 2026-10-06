@@ -1,5 +1,9 @@
 package kr.ac.pusan.feedback.domain.repository;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import kr.ac.pusan.feedback.domain.Answer;
@@ -11,5 +15,7 @@ import kr.ac.pusan.feedback.domain.Answer;
  */
 public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
-	// TODO(A, 3단계): 피드백별 답변 조회(findByFeedbackId 등) 메서드를 추가한다.
+	Optional<Answer> findByFeedbackId(Long feedbackId);
+
+	List<Answer> findAllByFeedbackIdIn(Collection<Long> feedbackIds);
 }

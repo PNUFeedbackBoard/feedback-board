@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useOutletContext, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { getAdminFeedbacks, updateAdminFeedback } from '../../api/endpoints.js'
 import { FEEDBACK_STATUS, labelOf } from '../../constants/enums.js'
 import AssigneeDialog from './AssigneeDialog.jsx'
@@ -28,7 +28,6 @@ const MOVE_TARGETS = ['IN_PROGRESS', 'DONE', 'REJECTED']
 
 export default function IntakePage() {
 	const { projectCode } = useParams()
-	const { assignees, setAssignees } = useOutletContext()
 	const [filters, setFilters] = useState({ sort: 'PRIORITY' })
 	const [state, setState] = useState({ projectCode: null, items: [], message: '' })
 	/** 체크한 피드백 번호들. 일괄 처리의 대상이다. */
@@ -41,7 +40,7 @@ export default function IntakePage() {
 		let cancelled = false
 
 		// 계약대로 필터를 서버에 보낸다. B 의 1단계 작업이 끝나면 서버가 걸러서 내려준다.
-		getAdminFeedbacks({ ...filters, project: projectCode, status: 'RECEIVED' })
+		getAdminFeedbacks({ ...filters, project: projectCode, status: 'RECEIVED', size: 100 })
 			.then((page) => {
 				if (!cancelled) {
 					setState({ projectCode, items: page.items, message: '' })
@@ -65,12 +64,12 @@ export default function IntakePage() {
 		const before = state.items
 		setState((prev) => ({ ...prev, items: prev.items.filter((item) => !ids.includes(item.id)) }))
 		setPicked((prev) => prev.filter((id) => !ids.includes(id)))
-		if (assignee !== undefined) {
-			setAssignees((prev) => ({ ...prev, ...Object.fromEntries(ids.map((id) => [id, assignee])) }))
-		}
 		setNotice('')
 
-		Promise.all(ids.map((id) => updateAdminFeedback(id, { status }))).catch((error) => {
+		Promise.all(ids.map((id) => updateAdminFeedback(id, {
+			status,
+			...(assignee !== undefined ? { assigneeName: assignee } : {}),
+		}))).catch((error) => {
 			setState((prev) => ({ ...prev, items: before }))
 			setNotice(`옮기지 못했습니다. ${error.message}`)
 		})
@@ -92,9 +91,7 @@ export default function IntakePage() {
 	if (state.projectCode !== projectCode) return <p className="board__notice">불러오는 중…</p>
 	if (state.message) return <p className="board__notice">{state.message}</p>
 
-	// TODO(C, 2단계): B 의 필터·정렬이 붙으면 이 줄을 지운다.
-	//                 0-1단계 스텁이 파라미터를 무시하고 모든 상태를 내려주기 때문에 둔 임시 처리다.
-	const visible = sortItems(state.items.filter((item) => matches(item, filters)), filters.sort)
+	const visible = state.items
 
 	return (
 		<div className="intake">
@@ -135,7 +132,7 @@ export default function IntakePage() {
 						<FeedbackCard
 							key={item.id}
 							item={item}
-							assignee={assignees[item.id]}
+							assignee={item.assigneeName}
 							selected={picked.includes(item.id)}
 							onSelect={(next) =>
 								setPicked((prev) =>
@@ -178,31 +175,4 @@ export default function IntakePage() {
 			)}
 		</div>
 	)
-}
-
-/** 스텁이 필터를 무시하는 동안 화면에서 같은 조건으로 거른다. */
-function matches(item, filters) {
-	// 이 탭은 접수만 다룬다. 스텁이 status 를 무시하고 모든 상태를 내려주므로 여기서 거른다.
-	if (item.status !== 'RECEIVED') return false
-	if (filters.category && item.category !== filters.category) return false
-	if (filters.authorType && item.authorType !== filters.authorType) return false
-	// createdAt 은 'YYYY-MM-DDTHH:mm:ss' 라 앞 10글자가 날짜다. 문자열 비교로 충분하다.
-	const day = item.createdAt.slice(0, 10)
-	if (filters.from && day < filters.from) return false
-	if (filters.to && day > filters.to) return false
-	return true
-}
-
-/** 정렬은 기획 4-5 를 따른다. 어떤 기준을 골라도 우선 처리 요청이 1순위다. */
-function sortItems(items, sort) {
-	const RANK = { HIGH: 0, NORMAL: 1, LOW: 2 }
-
-	return [...items].sort((a, b) => {
-		if (a.priorityRequested !== b.priorityRequested) return a.priorityRequested ? -1 : 1
-		if (sort === 'OLDEST') return a.createdAt.localeCompare(b.createdAt)
-		if (sort === 'LATEST') return b.createdAt.localeCompare(a.createdAt)
-		// 중요도순. 같은 중요도면 최신순이다.
-		if (RANK[a.priority] !== RANK[b.priority]) return RANK[a.priority] - RANK[b.priority]
-		return b.createdAt.localeCompare(a.createdAt)
-	})
 }

@@ -52,6 +52,12 @@ public class Feedback {
 			foreignKey = @ForeignKey(name = "fk_feedbacks_author"))
 	private User author;
 
+	/** 우선 처리 요청을 남긴 열람자. 기존 데이터와 요청이 없는 행은 null 이다 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "priority_requester_id",
+			foreignKey = @ForeignKey(name = "fk_feedbacks_priority_requester"))
+	private User priorityRequester;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "author_type", nullable = false, length = 20)
 	private AuthorType authorType;
@@ -83,6 +89,10 @@ public class Feedback {
 	/** 열람자의 우선 처리 요청 여부. 정렬 1순위 기준 */
 	@Column(name = "priority_requested", nullable = false)
 	private boolean priorityRequested;
+
+	/** 처리 담당자 표시 이름. 조직 계정 밖 담당자도 입력할 수 있어 문자열로 보관한다. */
+	@Column(name = "assignee_name", length = 100)
+	private String assigneeName;
 
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
@@ -132,7 +142,7 @@ public class Feedback {
 	 * 이 팩터리는 {@code DataSeeder} 가 처리 중·처리 완료처럼 중간 상태인 표본 데이터를
 	 * 만들기 위해서만 존재하며, dev 프로필 밖에서는 호출되지 않는다.
 	 *
-	 * <p>TODO(A, 1단계): 상태 변경 도메인 메서드가 생기면 시드도 그것을 쓰도록 바꾸고 이 팩터리를 지운다.
+	 * <p>시드가 과거 시점과 처리 상태를 재현해야 하므로 일반 변경 메서드와 분리한다.
 	 */
 	public static Feedback seed(Project project, User author, AuthorType authorType, String title, String content,
 			FeedbackCategory category, Priority reportedPriority, LocalDateTime createdAt,
@@ -148,7 +158,54 @@ public class Feedback {
 		return feedback;
 	}
 
-	// TODO(A/B, 1단계 이후): 상태 변경, 유형 변경, 중요도 확정, 우선 처리 요청 토글,
-	//                        firstAnsweredAt / closedAt 기록 메서드는 각 기능 담당자가 여기에 추가한다.
-	//                        Feedback 엔티티의 소유는 A 이므로 B 는 수정 전에 공유한다(기획안 13-4).
+	/** 관리자가 보낸 필드만 변경하고 종료 시각을 상태와 일관되게 유지한다. */
+	public void update(FeedbackStatus status, FeedbackCategory category, Priority priority,
+			String assigneeName, LocalDateTime now) {
+		if (status != null && status != this.status) {
+			this.status = status;
+			this.closedAt = isClosed(status) ? now : null;
+		}
+		if (category != null) {
+			this.category = category;
+		}
+		if (priority != null) {
+			this.priority = priority;
+		}
+		if (assigneeName != null) {
+			String normalized = assigneeName.trim();
+			this.assigneeName = normalized.isEmpty() ? null : normalized;
+		}
+	}
+
+	/** 첫 답변 시각은 최초 한 번만 기록한다. */
+	public void markAnswered(LocalDateTime now) {
+		if (this.firstAnsweredAt == null) {
+			this.firstAnsweredAt = now;
+		}
+	}
+
+	/** 답변과 동시에 완료 처리할 때 사용한다. */
+	public void markDone(LocalDateTime now) {
+		update(FeedbackStatus.DONE, null, null, null, now);
+	}
+
+	/** 열람자의 우선 처리 요청을 토글한다. 해제는 요청자 본인만 할 수 있다. */
+	public void togglePriorityRequest(User requester) {
+		if (this.priorityRequested) {
+			if (this.priorityRequester != null && !this.priorityRequester.getId().equals(requester.getId())) {
+				throw new IllegalStateException("우선 처리 요청은 요청한 계정만 해제할 수 있습니다.");
+			}
+			this.priorityRequested = false;
+			this.priorityRequester = null;
+			return;
+		}
+
+		this.priorityRequested = true;
+		this.priority = Priority.HIGH;
+		this.priorityRequester = requester;
+	}
+
+	private boolean isClosed(FeedbackStatus status) {
+		return status == FeedbackStatus.DONE || status == FeedbackStatus.REJECTED;
+	}
 }

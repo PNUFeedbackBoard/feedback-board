@@ -1,6 +1,6 @@
-# API 스텁 명세
+# API 명세
 
-0-1단계의 화면 병렬 개발을 위한 계약이다. 아래 제품 API 12개는 Swagger에 노출되고 정상 요청에 목 데이터와 HTTP 200을 반환한다.
+프런트엔드와 백엔드가 공유하는 제품 API 계약이다. 아래 12개 API는 Swagger에 노출되며 실제 DB 데이터를 조회·저장한다.
 
 ## 사용자 API
 
@@ -18,7 +18,7 @@
 | `GET` | `/api/admin/dashboard` | `DEVELOPER`, `VIEWER` | 전체 현황 지표 |
 | `GET` | `/api/admin/feedbacks` | `DEVELOPER`, `VIEWER` | 필터·정렬·페이징 목록 |
 | `GET` | `/api/admin/feedbacks/{id}` | `DEVELOPER`, `VIEWER` | 관리 상세 |
-| `PATCH` | `/api/admin/feedbacks/{id}` | `DEVELOPER` | 상태·유형·중요도 변경 |
+| `PATCH` | `/api/admin/feedbacks/{id}` | `DEVELOPER` | 상태·유형·중요도·담당자 변경 |
 | `PUT` | `/api/admin/feedbacks/{id}/answer` | `DEVELOPER` | 답변 등록·수정 |
 | `POST` | `/api/admin/feedbacks/{id}/priority-request` | `VIEWER` | 우선 처리 요청 토글 |
 | `GET` | `/api/admin/users` | `DEVELOPER` | 계정 목록 |
@@ -41,3 +41,7 @@
 - 관리 데이터 변경: `DEVELOPER`
 - 우선 처리 요청: `VIEWER`
 - `VIEWER`가 피드백 변경 API를 호출하면 403
+
+관리 목록은 `project`, `status`, `category`, `sort`, `from`, `to`, `authorType`, `answered`, `page`, `size` 쿼리를 지원한다. 어떤 정렬에서도 우선 처리 요청이 먼저 나오며 `size`는 1~100이다.
+
+피드백 변경 본문은 `status`, `category`, `priority`, `assigneeName` 중 바꿀 값만 보낸다. `assigneeName`에 빈 문자열을 보내면 담당자를 해제한다.

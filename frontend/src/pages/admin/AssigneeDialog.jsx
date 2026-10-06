@@ -5,15 +5,7 @@ import './assignee-dialog.css'
 /**
  * 담당자 입력 창. 접수에서 처리 중으로 옮기는 순간에 뜬다.
  *
- * **기획에 없는 기능이다.** 8장 데이터 모델의 feedbacks 에 담당자 컬럼이 없고
- * AdminFeedbackSummary 에도 필드가 없다. 그래서 지금은 화면 안에서만 유지되고
- * 새로고침하면 사라진다.
- *
- * TODO(팀 합의 필요): 담당자를 서버에 남기려면 계약이 바뀌어야 한다.
- *                    A - feedbacks 에 assignee_id 추가, Feedback 엔티티에 필드 추가
- *                    B - PATCH /api/admin/feedbacks/{id} 가 assigneeId 를 받고
- *                        AdminFeedbackSummary·Detail 이 assigneeName 을 내려준다
- *                    계약이 생기면 이 창은 그대로 두고 저장 부분만 바꾸면 된다.
+ * 선택한 이름은 상태 변경과 함께 assigneeName 필드로 서버에 저장된다.
  */
 export default function AssigneeDialog({ feedbackTitle, onConfirm, onCancel }) {
 	const [name, setName] = useState('')

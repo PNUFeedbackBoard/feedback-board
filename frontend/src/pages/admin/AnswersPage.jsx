@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useOutletContext, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { getAdminFeedbacks } from '../../api/endpoints.js'
 import AnswerDialog from './AnswerDialog.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
@@ -19,7 +19,6 @@ import './intake.css'
  */
 export default function AnswersPage() {
 	const { projectCode } = useParams()
-	const { assignees } = useOutletContext()
 	const [state, setState] = useState({ projectCode: null, items: [], message: '' })
 	const [writing, setWriting] = useState(null)
 
@@ -27,7 +26,7 @@ export default function AnswersPage() {
 		let cancelled = false
 
 		// 기본 정렬은 오래된순이다. 오래 기다린 것이 위로 온다.
-		getAdminFeedbacks({ project: projectCode, sort: 'OLDEST' })
+		getAdminFeedbacks({ project: projectCode, sort: 'OLDEST', answered: false, size: 100 })
 			.then((page) => {
 				if (!cancelled) setState({ projectCode, items: page.items, message: '' })
 			})
@@ -43,9 +42,7 @@ export default function AnswersPage() {
 	if (state.projectCode !== projectCode) return <p className="board__notice">불러오는 중…</p>
 	if (state.message) return <p className="board__notice">{state.message}</p>
 
-	// 답변이 달린 것은 이 화면의 일이 아니다. 답변을 마치는 순간 여기서 빠진다.
-	// TODO(C, 2단계): B 의 필터가 붙으면 answered=false 를 서버에 맡기고 이 줄을 지운다.
-	const waiting = state.items.filter((item) => !item.answered)
+	const waiting = state.items
 	const answerable = waiting.filter((item) => item.authorType === 'MEMBER').length
 
 	return (
@@ -68,7 +65,7 @@ export default function AnswersPage() {
 							<FeedbackCard
 								key={item.id}
 								item={item}
-								assignee={assignees[item.id]}
+								assignee={item.assigneeName}
 								dimmed={isGuest}
 								action={
 									<div className="intake__row">
