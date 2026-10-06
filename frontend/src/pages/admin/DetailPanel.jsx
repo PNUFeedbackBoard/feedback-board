@@ -12,6 +12,7 @@ import {
 	toOptions,
 } from '../../constants/enums.js'
 import PriorityRequestBadge from './components/PriorityRequestBadge.jsx'
+import useDevelopers from './components/useDevelopers.js'
 import './detail-panel.css'
 
 /**
@@ -30,8 +31,10 @@ export default function DetailPanel({
 	priorityBusy = false,
 	onChange,
 	onTogglePriority,
+	onAnswer,
 	onClose,
 }) {
+	const developers = useDevelopers(canEdit)
 	// 전체 현황(대시보드)은 /admin 경로라 :projectCode 가 없다. 그럴 땐 목록 항목 자체의
 	// projectCode(AdminFeedbackSummary)로 "답변 화면으로 이동" 대상을 정한다.
 	const { projectCode: routeProjectCode } = useParams()
@@ -105,7 +108,7 @@ export default function DetailPanel({
 				)}
 			</section>
 
-			{/* 답변이 있으면 이 패널에서 바로 읽을 수 있게 한다. 수정은 답변 화면에서 한다. */}
+			{/* 답변이 있으면 이 패널에서 바로 읽을 수 있게 한다. 작성·수정은 아래 버튼으로 한다. */}
 			<section>
 				<p className="panel__answer-title">개발자 답변</p>
 				{detail.id === item.id ? (
@@ -139,7 +142,26 @@ export default function DetailPanel({
 						options={toOptions(PRIORITY)}
 						onChange={(priority) => onChange({ priority })}
 					/>
+					<Field
+						label="담당"
+						value={item.assigneeId ?? ''}
+						options={[
+							{ value: '', label: '담당자 미지정' },
+							...(item.assigneeId != null && !developers.some((developer) => developer.id === item.assigneeId)
+								? [{ value: item.assigneeId, label: item.assigneeName ?? `#${item.assigneeId}` }]
+								: []),
+							...developers.map((developer) => ({ value: developer.id, label: developer.name })),
+						]}
+						onChange={(next) => onChange(next === '' ? { unassign: true } : { assigneeId: Number(next) })}
+					/>
 				</div>
+			)}
+
+			{/* 비회원 글은 답변 대상이 아니다(기획 6-4). */}
+			{canEdit && onAnswer && item.authorType === 'MEMBER' && (
+				<button type="button" className="panel__priority" onClick={onAnswer}>
+					{item.answered ? '답변 수정' : '답변하기'}
+				</button>
 			)}
 
 			{canRequestPriority && (
@@ -162,7 +184,7 @@ export default function DetailPanel({
 				className="panel__link"
 				onClick={() => navigate(`/admin/${projectCode}/answers`)}
 			>
-				답변 화면으로 이동
+				목록 화면으로 이동
 			</button>
 		</aside>,
 		document.body,

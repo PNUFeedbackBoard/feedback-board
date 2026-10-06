@@ -11,7 +11,7 @@ import './admin-layout.css'
  * 관리용 공통 레이아웃. 기획 6-1 의 화면 구조를 그대로 따른다.
  *
  *   공통 헤더 (제목 · 계정)
- *   상단 탭   (선택된 프로젝트 안의 메뉴 — 개발 보드 / 답변)
+ *   상단 탭   (선택된 프로젝트 안의 메뉴 — 접수 / 개발 보드 / 목록)
  *   본문      (<Outlet />)
  *   하단      (프로젝트 전환)
  *
@@ -80,7 +80,7 @@ export default function AdminLayout() {
 								개발 보드
 							</NavLink>
 							<NavLink to={`/admin/${projectCode}/answers`} className="admin-tabs__tab">
-								답변
+								목록
 							</NavLink>
 						</div>
 					</div>

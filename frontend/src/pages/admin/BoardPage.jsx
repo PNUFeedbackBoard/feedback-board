@@ -15,10 +15,14 @@ import {
 	updateAdminFeedback,
 } from '../../api/endpoints.js'
 import { FEEDBACK_SORT, toOptions } from '../../constants/enums.js'
+import AnswerDialog from './AnswerDialog.jsx'
 import DetailPanel from './DetailPanel.jsx'
+import AssigneeSelect from './components/AssigneeSelect.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
 import Pagination from './components/Pagination.jsx'
 import StatusBadge from './components/StatusBadge.jsx'
+import useDevelopers from './components/useDevelopers.js'
+import './intake.css'
 import './board.css'
 
 /**
@@ -56,6 +60,9 @@ export default function BoardPage() {
 	/** 상세 패널에 띄운 피드백 번호. 목록이 바뀌어도 같은 건을 따라가도록 번호만 들고 있다. */
 	const [openedId, setOpenedId] = useState(null)
 	const [priorityBusy, setPriorityBusy] = useState(false)
+	/** 답변 창에 띄운 피드백. */
+	const [writing, setWriting] = useState(null)
+	const developers = useDevelopers(canEdit)
 
 	// 살짝 눌렀다 떼는 것은 클릭으로 남겨 둔다. 6px 넘게 움직여야 끌기로 친다.
 	const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -89,16 +96,47 @@ export default function BoardPage() {
 	function commitChange(id, changes) {
 		if (!canEdit) return
 		const before = state.items
+		// unassign 은 요청에만 쓰는 값이다. 화면에는 담당자를 비운 모습으로 옮긴다.
+		const { unassign, ...rest } = changes
+		const local = unassign ? { ...rest, assigneeId: null, assigneeName: null } : rest
 		setState((prev) => ({
 			...prev,
-			items: prev.items.map((item) => (item.id === id ? { ...item, ...changes } : item)),
+			items: prev.items.map((item) => (item.id === id ? { ...item, ...local } : item)),
 		}))
 		setNotice('')
 
-		updateAdminFeedback(id, changes).catch((error) => {
-			setState((prev) => ({ ...prev, items: before }))
-			setNotice(`바꾸지 못했습니다. ${error.message}`)
-		})
+		updateAdminFeedback(id, changes)
+			// 담당자 이름처럼 서버만 아는 값은 응답으로 채운다.
+			.then((updated) =>
+				setState((prev) => ({
+					...prev,
+					items: prev.items.map((item) => (item.id === id ? { ...item, ...updated } : item)),
+				})),
+			)
+			.catch((error) => {
+				setState((prev) => ({ ...prev, items: before }))
+				setNotice(`바꾸지 못했습니다. ${error.message}`)
+			})
+	}
+
+	/** 카드 아래에 붙는 조작. 담당자 지정·변경과 답변을 보드에서 바로 한다. */
+	function renderAction(item) {
+		if (!canEdit) return undefined
+		return (
+			<div className="intake__row">
+				<AssigneeSelect
+					value={item.assigneeId}
+					currentName={item.assigneeName}
+					developers={developers}
+					onChange={(next) => commitChange(item.id, next == null ? { unassign: true } : { assigneeId: next })}
+				/>
+				{item.authorType === 'MEMBER' && (
+					<button type="button" className="intake__start" onClick={() => setWriting(item)}>
+						{item.answered ? '답변 수정' : '답변하기'}
+					</button>
+				)}
+			</div>
+		)
 	}
 
 	async function requestPriority(id) {
@@ -185,12 +223,13 @@ export default function BoardPage() {
 							items={state.items.filter((item) => item.status === status)}
 							onOpen={setOpenedId}
 							canEdit={canEdit}
+							renderAction={renderAction}
 						/>
 					))}
 				</div>
 
 				{/* 반영 불가는 열을 차지하지 않고 보드 하단에 접은 상태로 둔다. 기획 6-3 */}
-				<RejectedArea items={rejected} onOpen={setOpenedId} canEdit={canEdit} />
+				<RejectedArea items={rejected} onOpen={setOpenedId} canEdit={canEdit} renderAction={renderAction} />
 
 				<Pagination page={page} size={PAGE_SIZE} totalCount={state.totalCount} onChange={setPage} />
 			</div>
@@ -212,7 +251,25 @@ export default function BoardPage() {
 					priorityBusy={priorityBusy}
 					onChange={(changes) => commitChange(opened.id, changes)}
 					onTogglePriority={() => requestPriority(opened.id)}
+					onAnswer={() => setWriting(opened)}
 					onClose={() => setOpenedId(null)}
+				/>
+			)}
+
+			{canEdit && writing && (
+				<AnswerDialog
+					feedback={writing}
+					onCancel={() => setWriting(null)}
+					onDone={(markedDone) => {
+						// 답변 뒤에도 카드는 그 자리에 두고 표시만 최신화한다. 완료로 표시했으면 완료 열로 옮겨진다.
+						setState((prev) => ({
+							...prev,
+							items: prev.items.map((item) => item.id === writing.id
+								? { ...item, answered: true, status: markedDone ? 'DONE' : item.status }
+								: item),
+						}))
+						setWriting(null)
+					}}
 				/>
 			)}
 		</DndContext>
@@ -220,7 +277,7 @@ export default function BoardPage() {
 }
 
 /** 칸반의 한 열. 카드를 받아 준다. */
-function Column({ status, items, onOpen, canEdit }) {
+function Column({ status, items, onOpen, canEdit, renderAction }) {
 	const { setNodeRef, isOver } = useDroppable({ id: status })
 
 	return (
@@ -238,6 +295,7 @@ function Column({ status, items, onOpen, canEdit }) {
 						assignee={item.assigneeName}
 						onOpen={() => onOpen(item.id)}
 						canEdit={canEdit}
+						action={renderAction(item)}
 					/>
 				))}
 				{items.length === 0 && <p className="board__empty">여기로 끌어다 놓으세요</p>}
@@ -247,7 +305,7 @@ function Column({ status, items, onOpen, canEdit }) {
 }
 
 /** 반영 불가. 열이 아니지만 여기로도 끌어다 놓을 수 있다. */
-function RejectedArea({ items, onOpen, canEdit }) {
+function RejectedArea({ items, onOpen, canEdit, renderAction }) {
 	const { setNodeRef, isOver } = useDroppable({ id: 'REJECTED' })
 
 	return (
@@ -264,6 +322,7 @@ function RejectedArea({ items, onOpen, canEdit }) {
 						assignee={item.assigneeName}
 						onOpen={() => onOpen(item.id)}
 						canEdit={canEdit}
+						action={renderAction(item)}
 					/>
 				))}
 				{items.length === 0 && <p className="board__empty">항목이 없습니다</p>}
@@ -273,15 +332,15 @@ function RejectedArea({ items, onOpen, canEdit }) {
 }
 
 /** 끌 수 있는 카드. 끄는 동안 원래 자리는 흐려지고 실제 모습은 DragOverlay 가 그린다. */
-function BoardCard({ item, assignee, onOpen, canEdit }) {
+function BoardCard({ item, assignee, onOpen, canEdit, action }) {
 	if (!canEdit) {
 		return <FeedbackCard item={item} assignee={assignee} onOpen={onOpen} />
 	}
 
-	return <DraggableCard item={item} assignee={assignee} onOpen={onOpen} />
+	return <DraggableCard item={item} assignee={assignee} onOpen={onOpen} action={action} />
 }
 
-function DraggableCard({ item, assignee, onOpen }) {
+function DraggableCard({ item, assignee, onOpen, action }) {
 	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id })
 
 	return (
@@ -292,7 +351,7 @@ function DraggableCard({ item, assignee, onOpen }) {
 			{...attributes}
 		>
 			{/* 6px 넘게 움직여야 끌기로 치므로, 살짝 눌렀다 떼면 여기로 와 패널이 열린다. */}
-			<FeedbackCard item={item} assignee={assignee} onOpen={onOpen} />
+			<FeedbackCard item={item} assignee={assignee} onOpen={onOpen} action={action} />
 		</div>
 	)
 }
