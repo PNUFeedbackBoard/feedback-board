@@ -130,6 +130,43 @@
 	background: rgb(234 242 255 / 86%);
 }
 
+.board__rejected {
+	padding: 16px;
+	border: 1px solid var(--color-border);
+	border-top: 2px solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	background: rgb(238 243 251 / 62%);
+	transition:
+		border-color var(--duration-fast) ease,
+		background var(--duration-fast) ease;
+}
+
+.board__rejected summary {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	list-style: none;
+	cursor: pointer;
+}
+
+.board__rejected summary::-webkit-details-marker {
+	display: none;
+}
+
+.board__rejected summary::before {
+	content: '▸';
+	color: var(--color-text-subtle);
+	font-size: var(--font-size-label);
+}
+
+.board__rejected[open] summary::before {
+	content: '▾';
+}
+
+.board__rejected .board__count {
+	margin-left: auto;
+}
+
 .board__rejected.is-over {
 	border-color: var(--color-selected-light);
 	background: var(--color-selected-soft);
