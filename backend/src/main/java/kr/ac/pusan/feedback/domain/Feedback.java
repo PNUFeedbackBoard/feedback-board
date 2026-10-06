@@ -11,6 +11,7 @@ import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -29,9 +30,15 @@ import lombok.NoArgsConstructor;
  * 0-1단계에서 만들지 않는다. 1단계 이후 담당자가 자기 기능과 함께 추가한다.
  *
  * <p>작성자가 등록한 피드백은 수정·삭제할 수 없다(기획안 5-3).
+ *
+ * <p>인덱스는 B가 관리용 목록 조회(project·status 필터)를 위해 추가했다.
+ * project_id는 FK라 대부분의 DB가 자동으로 인덱스를 만들어 주지만, H2는 명시하지 않으면 안 만든다.
  */
 @Entity
-@Table(name = "feedbacks")
+@Table(name = "feedbacks", indexes = {
+		@Index(name = "idx_feedbacks_status", columnList = "status"),
+		@Index(name = "idx_feedbacks_project_id", columnList = "project_id")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Feedback {
@@ -51,6 +58,16 @@ public class Feedback {
 	@JoinColumn(name = "author_id",
 			foreignKey = @ForeignKey(name = "fk_feedbacks_author"))
 	private User author;
+
+	/**
+	 * 담당 개발자. 접수에서 처리 중으로 옮길 때 지정한다(기획에 없던 기능 — AssigneeDialog.jsx 주석,
+	 * docs/planning.md 8장·9장 반영). 미지정이면 null 이다. DEVELOPER·ACTIVE 계정만 지정할 수 있다
+	 * (AdminFeedbackController#update 가 검사한다, 엔티티에서는 강제하지 않는다).
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "assignee_id",
+			foreignKey = @ForeignKey(name = "fk_feedbacks_assignee"))
+	private User assignee;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "author_type", nullable = false, length = 20)
@@ -148,7 +165,40 @@ public class Feedback {
 		return feedback;
 	}
 
-	// TODO(A/B, 1단계 이후): 상태 변경, 유형 변경, 중요도 확정, 우선 처리 요청 토글,
-	//                        firstAnsweredAt / closedAt 기록 메서드는 각 기능 담당자가 여기에 추가한다.
+	/**
+	 * 관리용 상태·유형·중요도·담당자 변경(PATCH /api/admin/feedbacks/{id}, 기획안 9장). B 가 추가했다
+	 * (Feedback 엔티티 소유는 A, 수정 전 공유 — 기획안 13-4).
+	 *
+	 * <p>네 값 모두 null 이면 그 필드는 바꾸지 않는다. 호출자가 null 아닌 값만 넘긴다.
+	 * status·category·priority 는 "null = 변경 안 함" 규칙이라 원래 값으로 되돌릴 방법이 없는데,
+	 * 이 세 필드는 빈 상태(미지정)가 없는 enum이라 문제가 되지 않는다.
+	 * 반면 assignee 는 "미지정으로 되돌리기"가 있을 수 있는 값인데 이 메서드는 아직 그걸 지원하지 않는다
+	 * (assignee 가 null 로 오면 "담당자 변경 안 함"으로 취급한다). 담당자 해제가 필요해지면 팀에 공유하고
+	 * 별도 파라미터(예: unassign 플래그)를 추가한다.
+	 *
+	 * <p>상태가 처음으로 DONE·REJECTED 가 되는 순간 closedAt 을 기록한다. 이미 종료된 건에
+	 * 상태를 다시 바꿔도(예: DONE → REJECTED) closedAt 은 최초 종료 시각을 유지한다.
+	 */
+	public void applyAdminUpdate(FeedbackStatus status, FeedbackCategory category, Priority priority,
+			User assignee, LocalDateTime now) {
+		if (status != null) {
+			this.status = status;
+			boolean closed = status == FeedbackStatus.DONE || status == FeedbackStatus.REJECTED;
+			if (closed && this.closedAt == null) {
+				this.closedAt = now;
+			}
+		}
+		if (category != null) {
+			this.category = category;
+		}
+		if (priority != null) {
+			this.priority = priority;
+		}
+		if (assignee != null) {
+			this.assignee = assignee;
+		}
+	}
+
+	// TODO(A/B, 1단계 이후): 우선 처리 요청 토글, firstAnsweredAt 기록 메서드는 각 기능 담당자가 추가한다.
 	//                        Feedback 엔티티의 소유는 A 이므로 B 는 수정 전에 공유한다(기획안 13-4).
 }

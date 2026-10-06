@@ -229,7 +229,9 @@ public final class StubData {
 				contentOf(summary.title()),
 				firstAnsweredAt,
 				closedAt,
-				answer);
+				answer,
+				null, // assigneeId — 스텁 데이터는 담당자 개념이 없다(기획에 없던 기능, 뒤늦게 추가됨)
+				null); // assigneeName
 	}
 
 	/** 답변 등록·수정 결과. 스텁은 요청 본문을 읽지 않고 고정 답변을 돌려준다 */
@@ -304,7 +306,7 @@ public final class StubData {
 			boolean priorityRequested, String authorName, LocalDateTime createdAt, boolean answered) {
 		return new AdminFeedbackSummary(id, projectCode, projectName, title, category, status,
 				reportedPriority, priority, priorityRequested,
-				AuthorType.MEMBER, authorName, createdAt, answered);
+				AuthorType.MEMBER, authorName, createdAt, answered, null, null);
 	}
 
 	/** 비회원이 등록한 항목. authorName 은 null 이고 답변 대상이 아니므로 answered 는 항상 false 다 */
@@ -313,7 +315,7 @@ public final class StubData {
 			boolean priorityRequested, LocalDateTime createdAt) {
 		return new AdminFeedbackSummary(id, projectCode, projectName, title, category, status,
 				reportedPriority, priority, priorityRequested,
-				AuthorType.GUEST, null, createdAt, false);
+				AuthorType.GUEST, null, createdAt, false, null, null);
 	}
 
 	private static AdminFeedbackSummary findAdminFeedback(Long id) {
