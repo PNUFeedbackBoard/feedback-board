@@ -92,6 +92,7 @@ public class NotificationService {
 			message.setSubject(subject);
 			message.setText(body);
 			mailSender.send(message);
+			log.info("메일을 발송했습니다. to={}, subject={}", to, subject);
 		} catch (RuntimeException e) {
 			// 발송 실패는 기록만 남기고 요청 자체는 성공 처리한다(기획안 7장).
 			log.warn("메일 발송에 실패했습니다. to={}, subject={}", to, subject, e);
