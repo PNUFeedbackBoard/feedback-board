@@ -69,6 +69,12 @@ public class Feedback {
 			foreignKey = @ForeignKey(name = "fk_feedbacks_assignee"))
 	private User assignee;
 
+	/** 우선 처리 요청을 남긴 열람자. 요청이 없거나 기존 데이터면 null 이다. */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "priority_requester_id",
+			foreignKey = @ForeignKey(name = "fk_feedbacks_priority_requester"))
+	private User priorityRequester;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "author_type", nullable = false, length = 20)
 	private AuthorType authorType;
@@ -215,5 +221,19 @@ public class Feedback {
 		}
 	}
 
-	// TODO(A, 5단계): 우선 처리 요청 토글 메서드는 담당자가 추가한다.
+	/** 열람자의 우선 처리 요청을 토글한다. 해제는 요청자 본인만 할 수 있다. */
+	public void togglePriorityRequest(User requester) {
+		if (this.priorityRequested) {
+			if (this.priorityRequester != null && !this.priorityRequester.getId().equals(requester.getId())) {
+				throw new IllegalStateException("우선 처리 요청은 요청한 계정만 해제할 수 있습니다.");
+			}
+			this.priorityRequested = false;
+			this.priorityRequester = null;
+			return;
+		}
+
+		this.priorityRequested = true;
+		this.priority = Priority.HIGH;
+		this.priorityRequester = requester;
+	}
 }

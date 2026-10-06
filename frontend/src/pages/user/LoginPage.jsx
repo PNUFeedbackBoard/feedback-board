@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import heroImage from '../../assets/hero.png'
 import iniLogo from '../../assets/ini-logo.png'
-import { devLogin } from '../../api/endpoints.js'
+import { devLogin, getMe } from '../../api/endpoints.js'
 import './login.css'
 
 /**
@@ -14,6 +14,8 @@ import './login.css'
  *
  * ?site= 로 들어오면(기획 5-2) 피드백 작성 화면까지 그 값을 들고 간다. 로그인 화면 자체는
  * 사이트를 표시하지 않는다 — 어차피 다음 화면(작성 또는 홈)에서 결정되기 때문이다.
+ *
+ * 이미 로그인된 채로 들어오면 서버가 내려준 역할(GET /api/me)대로 첫 화면으로 보낸다.
  */
 export default function LoginPage() {
 	const [searchParams] = useSearchParams()
@@ -25,13 +27,33 @@ export default function LoginPage() {
 	const site = searchParams.get('site')
 	const writePath = site ? `/write?site=${encodeURIComponent(site)}` : '/write'
 
+	// 역할 판단은 서버가 준 값(me.role, me.status)만 본다.
+	const goToStart = useCallback(
+		(me) => {
+			if (me.status === 'PENDING') navigate('/admin/pending')
+			else if (me.role === 'DEVELOPER' || me.role === 'VIEWER') navigate('/admin')
+			else navigate('/home')
+		},
+		[navigate],
+	)
+
+	useEffect(() => {
+		getMe()
+			.then(goToStart)
+			.catch(() => {})
+	}, [goToStart])
+
 	async function loginWithGoogle() {
+		// 데모 로그인은 dev 프로필에만 있다. 운영 빌드에서는 7단계 전까지 막아 둔다.
+		if (!import.meta.env.DEV) {
+			setError('운영 로그인은 Google OAuth 설정이 완료된 뒤 제공됩니다.')
+			return
+		}
 		setBusy(true)
 		setError('')
 		try {
 			// TODO(B, 7단계): 구글 OAuth 로 교체한다. 화면은 이 함수 안쪽만 바뀌면 된다.
-			await devLogin('user')
-			navigate('/home')
+			goToStart(await devLogin('user'))
 		} catch (problem) {
 			setBusy(false)
 			setError(problem.message)

@@ -100,6 +100,13 @@
 	font-size: var(--font-size-small);
 }
 
+.admin-header__account a {
+	color: inherit;
+	font-weight: 700;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
 .admin-header__presence {
 	width: 6px;
 	height: 6px;

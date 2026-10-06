@@ -2,13 +2,16 @@ package kr.ac.pusan.feedback.admin;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,12 +34,10 @@ import kr.ac.pusan.feedback.admin.dto.FeedbackUpdateRequest;
 import kr.ac.pusan.feedback.admin.dto.PriorityRequestResponse;
 import kr.ac.pusan.feedback.auth.AppUserPrincipal;
 import kr.ac.pusan.feedback.auth.CurrentUser;
-import kr.ac.pusan.feedback.common.StubData;
 import kr.ac.pusan.feedback.common.enums.AuthorType;
 import kr.ac.pusan.feedback.common.enums.FeedbackCategory;
 import kr.ac.pusan.feedback.common.enums.FeedbackSort;
 import kr.ac.pusan.feedback.common.enums.FeedbackStatus;
-import kr.ac.pusan.feedback.common.enums.Priority;
 import kr.ac.pusan.feedback.common.enums.Role;
 import kr.ac.pusan.feedback.common.enums.UserStatus;
 import kr.ac.pusan.feedback.domain.Answer;
@@ -52,7 +53,7 @@ import kr.ac.pusan.feedback.feedback.dto.AnswerResponse;
  *
  * <p>목록·상세 조회(1단계)와 상태·유형·중요도·담당자 변경(원래 3단계 예정이었으나,
  * 프론트가 접수칸에서도 상세 패널로 바로 바꿀 수 있게 하면서 앞당겨 구현했다)을
- * B 가 실제 구현으로 교체했다(기획안 13-5). 답변 등록은 아직 스텁이며 A 가 3단계에서 교체한다.
+ * B 가 실제 구현으로 교체했다(기획안 13-5). 답변 등록과 우선 처리 요청도 DB에 저장한다.
  *
  * <p>권한은 0-1단계 SecurityConfig 가 이미 선언했다. 조회는 DEVELOPER·VIEWER, 변경은 DEVELOPER 전용이며
  * VIEWER 의 변경 호출은 403 이다(기획안 9장) — 여기서 따로 검사하지 않는다.
@@ -60,6 +61,7 @@ import kr.ac.pusan.feedback.feedback.dto.AnswerResponse;
 @Tag(name = "관리", description = "개발자·열람자용 API")
 @RestController
 @RequestMapping("/api/admin/feedbacks")
+@PreAuthorize("principal.status == T(kr.ac.pusan.feedback.common.enums.UserStatus).ACTIVE")
 public class AdminFeedbackController {
 
 	private final FeedbackRepository feedbackRepository;
@@ -79,6 +81,7 @@ public class AdminFeedbackController {
 			description = "필터는 사이트·상태·유형·기간·회원 여부·답변 유무이고 정렬은 PRIORITY·LATEST·OLDEST 다. "
 					+ "어떤 정렬을 골라도 우선 처리 요청 항목이 최상단에 고정된다.")
 	@GetMapping
+	@Transactional(readOnly = true)
 	public AdminFeedbackPage feedbacks(
 			@RequestParam(required = false) String project,
 			@RequestParam(required = false) FeedbackStatus status,
@@ -90,6 +93,10 @@ public class AdminFeedbackController {
 			@RequestParam(required = false) Boolean answered,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
+		validatePage(page, size);
+		if (from != null && to != null && from.isAfter(to)) {
+			throw new IllegalArgumentException("시작일은 종료일보다 늦을 수 없습니다.");
+		}
 
 		// to 는 날짜(하루 단위)라서, 그날 전체를 포함하도록 다음날 0시 "미만"으로 바꾼다.
 		LocalDateTime fromInclusive = from == null ? null : from.atStartOfDay();
@@ -97,27 +104,27 @@ public class AdminFeedbackController {
 
 		// answered(답변 유무)는 자바에서 거르지 않고 쿼리의 EXISTS 서브쿼리가 DB에서 직접 거른다.
 		// 조건에 안 맞는 행은 애초에 서버로 전송되지 않으니, 목록이 커져도 느려지지 않는다.
-		List<Feedback> matched = feedbackRepository.searchForAdmin(
-				project, status, category, authorType, fromInclusive, toExclusive, answered);
-		matched.sort(comparator(sort));
+		FeedbackSort effectiveSort = sort == null ? FeedbackSort.LATEST : sort;
+		Page<Feedback> matched = feedbackRepository.searchForAdmin(
+				project, status, category, authorType, fromInclusive, toExclusive, answered,
+				effectiveSort.name(), PageRequest.of(page, size));
 
 		// answeredIds는 필터링용이 아니라 DTO의 answered 필드를 채우는 표시용이다 — 건마다 따로
 		// 조회하면 N+1이 나니 한 번에 구한다.
-		Set<Long> answeredIds = answeredFeedbackIds(matched);
+		Set<Long> answeredIds = answeredFeedbackIds(matched.getContent());
 
-		int fromIndex = Math.min(page * size, matched.size());
-		int toIndex = Math.min(fromIndex + size, matched.size());
-		List<AdminFeedbackSummary> items = matched.subList(fromIndex, toIndex).stream()
+		List<AdminFeedbackSummary> items = matched.getContent().stream()
 				.map(feedback -> AdminFeedbackMapper.toSummary(feedback, answeredIds.contains(feedback.getId())))
 				.toList();
 
 		// totalCount 는 이번 페이지 건수가 아니라 필터 조건 전체 건수다(AdminFeedbackPage 계약).
-		return new AdminFeedbackPage(items, matched.size());
+		return new AdminFeedbackPage(items, matched.getTotalElements());
 	}
 
 	@Operation(summary = "관리용 피드백 상세 조회",
 			description = "목록 항목의 모든 필드에 본문, 내부 타임스탬프, 답변을 더해 내려준다.")
 	@GetMapping("/{id}")
+	@Transactional(readOnly = true)
 	public AdminFeedbackDetail feedback(@PathVariable Long id) {
 		Feedback feedback = feedbackRepository.findDetailById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
@@ -130,6 +137,7 @@ public class AdminFeedbackController {
 					+ "assigneeId 는 기획에 없던 기능으로, DEVELOPER·ACTIVE 계정이 아니면 400 이다. "
 					+ "담당자를 해제하려면 assigneeId 대신 unassign 을 true 로 보낸다.")
 	@PatchMapping("/{id}")
+	@Transactional
 	public AdminFeedbackDetail update(@PathVariable Long id, @RequestBody FeedbackUpdateRequest request) {
 		Feedback feedback = feedbackRepository.findDetailById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
@@ -165,6 +173,7 @@ public class AdminFeedbackController {
 			description = "개발자 전용이다. 피드백 1건당 답변 1건이다. markDone 이 true 면 상태를 DONE 으로 함께 바꾼다. "
 					+ "비회원 피드백은 답변 대상이 아니라 400 이다.")
 	@PutMapping("/{id}/answer")
+	@Transactional
 	public AnswerResponse upsertAnswer(
 			@PathVariable Long id,
 			@Valid @RequestBody AnswerUpsertRequest request,
@@ -211,45 +220,25 @@ public class AdminFeedbackController {
 		return new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
 	}
 
-	// TODO(A, 5단계): 실제 토글로 교체한다.
-	//                 요청 시 priorityRequested 를 true 로, priority 를 HIGH 로 바꾸고 개발자 전원에게 메일을 보낸다.
-	//                 해제는 요청한 열람자 본인만 할 수 있다(기획안 4-4).
 	@Operation(summary = "우선 처리 요청 토글",
 			description = "열람자 전용이다. 요청하면 중요도가 HIGH 로 올라가고 목록 최상단에 고정된다. 다시 호출하면 해제된다.")
 	@PostMapping("/{id}/priority-request")
-	public PriorityRequestResponse priorityRequest(@PathVariable Long id) {
-		return StubData.priorityRequest(id);
+	@Transactional
+	public PriorityRequestResponse priorityRequest(
+			@PathVariable Long id,
+			@CurrentUser AppUserPrincipal currentUser) {
+		Feedback feedback = feedbackRepository.findDetailById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+		User requester = userRepository.findById(currentUser.getId())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 계정을 찾을 수 없습니다."));
+		feedback.togglePriorityRequest(requester);
+		return new PriorityRequestResponse(feedback.getId(), feedback.isPriorityRequested(), feedback.getPriority());
 	}
 
-	// ------------------------------------------------------------------
-	// 정렬 (기획안 4-5)
-	// ------------------------------------------------------------------
-
-	/**
-	 * 우선 처리 요청 여부가 항상 1순위이고, sort 로 고른 기준이 2순위다.
-	 * sort 가 비어 있으면 LATEST 로 취급한다.
-	 */
-	private static Comparator<Feedback> comparator(FeedbackSort sort) {
-		Comparator<Feedback> secondary = switch (sort == null ? FeedbackSort.LATEST : sort) {
-			case LATEST -> Comparator.comparing(Feedback::getCreatedAt).reversed();
-			case OLDEST -> Comparator.comparing(Feedback::getCreatedAt);
-			// 중요도순: HIGH -> NORMAL -> LOW, 같은 중요도면 최신순.
-			case PRIORITY -> Comparator
-					.<Feedback, Integer>comparing(feedback -> priorityRank(feedback.getPriority()))
-					.thenComparing(Feedback::getCreatedAt, Comparator.reverseOrder());
-		};
-
-		return Comparator
-				.comparing(Feedback::isPriorityRequested).reversed() // true(요청됨)가 먼저 오게 reversed
-				.thenComparing(secondary);
-	}
-
-	private static int priorityRank(Priority priority) {
-		return switch (priority) {
-			case HIGH -> 0;
-			case NORMAL -> 1;
-			case LOW -> 2;
-		};
+	private static void validatePage(int page, int size) {
+		if (page < 0 || size < 1 || size > 100) {
+			throw new IllegalArgumentException("page는 0 이상, size는 1~100이어야 합니다.");
+		}
 	}
 
 	// ------------------------------------------------------------------
