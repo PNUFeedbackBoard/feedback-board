@@ -170,7 +170,8 @@ public class AdminFeedbackController {
 	}
 
 	@Operation(summary = "답변 등록·수정",
-			description = "개발자 전용이다. 피드백 1건당 답변 1건이다. markDone 이 true 면 상태를 DONE 으로 함께 바꾼다.")
+			description = "개발자 전용이다. 피드백 1건당 답변 1건이다. markDone 이 true 면 상태를 DONE 으로 함께 바꾼다. "
+					+ "비회원 피드백은 답변 대상이 아니라 400 이다.")
 	@PutMapping("/{id}/answer")
 	@Transactional
 	public AnswerResponse upsertAnswer(
@@ -179,29 +180,42 @@ public class AdminFeedbackController {
 			@CurrentUser AppUserPrincipal currentUser) {
 		Feedback feedback = feedbackRepository.findDetailById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+
+		// 비회원(AuthorType.GUEST) 피드백은 답변 대상이 아니다(기획안 6-4).
 		if (feedback.getAuthorType() == AuthorType.GUEST) {
-			throw new IllegalArgumentException("비회원 피드백에는 답변을 등록할 수 없습니다.");
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비회원 피드백은 답변 대상이 아닙니다.");
 		}
 
-		User author = userRepository.findById(currentUser.getId())
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 계정을 찾을 수 없습니다."));
+		// 이 엔드포인트는 DEVELOPER 전용이라(SecurityConfig) currentUser 가 null 일 수 없다.
+		User author = userRepository.findByEmail(currentUser.getEmail())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."));
+
 		LocalDateTime now = LocalDateTime.now();
 		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
-		if (answer == null) {
-			answer = answerRepository.save(Answer.builder()
+		boolean firstAnswer = answer == null;
+
+		if (firstAnswer) {
+			// 알림(이메일) 발송은 6단계에서 붙인다(기획안 7장) — 첫 등록에서만 보내고 수정 시에는 안 보낸다는
+			// 규칙이라, 여기 firstAnswer 분기가 나중에 알림을 추가할 자리다.
+			answer = Answer.builder()
 					.feedback(feedback)
 					.author(author)
-					.content(request.content().trim())
+					.content(request.content())
 					.createdAt(now)
 					.updatedAt(now)
-					.build());
-			feedback.markAnswered(now);
+					.build();
 		} else {
-			answer.updateContent(request.content().trim(), now);
+			answer.changeContent(request.content(), now);
+		}
+		answer = answerRepository.save(answer);
+
+		if (firstAnswer) {
+			feedback.recordFirstAnswerIfAbsent(now);
 		}
 		if (request.markDone()) {
-			feedback.markDone(now);
+			feedback.applyAdminUpdate(FeedbackStatus.DONE, null, null, null, false, now);
 		}
+		feedbackRepository.save(feedback);
 
 		return new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
 	}

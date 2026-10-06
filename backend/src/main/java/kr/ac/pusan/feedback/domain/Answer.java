@@ -65,7 +65,8 @@ public class Answer {
 		this.updatedAt = updatedAt;
 	}
 
-	public void updateContent(String content, LocalDateTime now) {
+	/** 답변 수정(PUT /api/admin/feedbacks/{id}/answer). 수정해도 createdAt은 바뀌지 않는다. */
+	public void changeContent(String content, LocalDateTime now) {
 		this.content = content;
 		this.updatedAt = now;
 	}

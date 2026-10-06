@@ -210,16 +210,15 @@ public class Feedback {
 		}
 	}
 
-	/** 첫 답변 시각은 최초 한 번만 기록한다. */
-	public void markAnswered(LocalDateTime now) {
+	/**
+	 * 첫 답변이 등록된 시각을 기록한다(PUT /api/admin/feedbacks/{id}/answer, 3단계).
+	 * 이미 값이 있으면 덮어쓰지 않는다 — 답변을 "수정"할 때 다시 불러도 최초 등록 시각이 유지되어야
+	 * 대시보드의 평균 처리 소요 시간 산출이 일관된다.
+	 */
+	public void recordFirstAnswerIfAbsent(LocalDateTime now) {
 		if (this.firstAnsweredAt == null) {
 			this.firstAnsweredAt = now;
 		}
-	}
-
-	/** 답변과 동시에 완료 처리할 때 사용한다. */
-	public void markDone(LocalDateTime now) {
-		applyAdminUpdate(FeedbackStatus.DONE, null, null, null, false, now);
 	}
 
 	/** 열람자의 우선 처리 요청을 토글한다. 해제는 요청자 본인만 할 수 있다. */
