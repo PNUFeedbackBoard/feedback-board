@@ -5,19 +5,18 @@ import './assignee-dialog.css'
 /**
  * 담당자 입력 창. 접수에서 처리 중으로 옮기는 순간에 뜬다.
  *
- * **기획에 없는 기능이다.** 8장 데이터 모델의 feedbacks 에 담당자 컬럼이 없고
- * AdminFeedbackSummary 에도 필드가 없다. 그래서 지금은 화면 안에서만 유지되고
- * 새로고침하면 사라진다.
+ * 계약은 팀 합의대로 됐다 — B 가 `feedbacks.assignee_id`(FK, DEVELOPER·ACTIVE 계정만)를 추가하고
+ * `PATCH /api/admin/feedbacks/{id}`가 `assigneeId`를 받아 `AdminFeedbackSummary`·`Detail`이
+ * `assigneeId`·`assigneeName`을 내려준다(기획 8·9장). 담당자 해제는 `unassign: true`로 한다.
  *
- * TODO(팀 합의 필요): 담당자를 서버에 남기려면 계약이 바뀌어야 한다.
- *                    A - feedbacks 에 assignee_id 추가, Feedback 엔티티에 필드 추가
- *                    B - PATCH /api/admin/feedbacks/{id} 가 assigneeId 를 받고
- *                        AdminFeedbackSummary·Detail 이 assigneeName 을 내려준다
- *                    계약이 생기면 이 창은 그대로 두고 저장 부분만 바꾸면 된다.
+ * 이 창의 입력은 여전히 자유 텍스트(자동완성 제안)지만, 서버는 등록된 개발자 id 만 받는다.
+ * 그래서 제출 시 입력한 이름을 developers 목록에서 찾아 id 를 함께 넘긴다. 목록에 없는 이름이면
+ * 저장할 수 없다는 뜻이라 제출을 막고 안내한다.
  */
 export default function AssigneeDialog({ feedbackTitle, onConfirm, onCancel }) {
 	const [name, setName] = useState('')
 	const [developers, setDevelopers] = useState([])
+	const [error, setError] = useState('')
 	const inputRef = useRef(null)
 
 	useEffect(() => {
@@ -40,7 +39,22 @@ export default function AssigneeDialog({ feedbackTitle, onConfirm, onCancel }) {
 
 	function submit(event) {
 		event.preventDefault()
-		onConfirm(name.trim())
+		const trimmed = name.trim()
+
+		// 비워 두면 미지정(해제) — 서버에는 unassign: true 로 보낸다.
+		if (!trimmed) {
+			setError('')
+			onConfirm({ name: '', id: null })
+			return
+		}
+
+		const matched = developers.find((developer) => developer.name === trimmed)
+		if (!matched) {
+			setError('목록에 있는 개발자 이름과 정확히 일치해야 저장됩니다.')
+			return
+		}
+		setError('')
+		onConfirm({ name: matched.name, id: matched.id })
 	}
 
 	return (
@@ -68,6 +82,8 @@ export default function AssigneeDialog({ feedbackTitle, onConfirm, onCancel }) {
 						<option key={developer.id} value={developer.name} />
 					))}
 				</datalist>
+
+				{error && <p className="dialog__error">{error}</p>}
 
 				<div className="dialog__actions">
 					<button type="button" className="dialog__button" onClick={onCancel}>

@@ -60,17 +60,30 @@ export default function IntakePage() {
 	/**
 	 * 골라낸 건들을 다른 상태로 보낸다. 먼저 화면에서 빼고 서버에 알린다.
 	 * 하나라도 실패하면 전부 되돌린다. 일부만 옮겨진 채로 두면 무엇이 남았는지 알 수 없다.
+	 *
+	 * @param {{ name: string, id: number | null }} [assignee] AssigneeDialog 가 돌려주는 값.
+	 *   id 가 있으면 지정(assigneeId), id 가 null 이면 해제(unassign: true)로 PATCH 에 함께 싣는다.
+	 *   status 변경과 담당자 변경을 요청 하나로 합친다 — PATCH 가 둘 다 받으므로 나눌 이유가 없다.
 	 */
 	function moveAll(ids, status, assignee) {
 		const before = state.items
 		setState((prev) => ({ ...prev, items: prev.items.filter((item) => !ids.includes(item.id)) }))
 		setPicked((prev) => prev.filter((id) => !ids.includes(id)))
 		if (assignee !== undefined) {
-			setAssignees((prev) => ({ ...prev, ...Object.fromEntries(ids.map((id) => [id, assignee])) }))
+			setAssignees((prev) => ({ ...prev, ...Object.fromEntries(ids.map((id) => [id, assignee.name])) }))
 		}
 		setNotice('')
 
-		Promise.all(ids.map((id) => updateAdminFeedback(id, { status }))).catch((error) => {
+		const body = { status }
+		if (assignee !== undefined) {
+			if (assignee.id) {
+				body.assigneeId = assignee.id
+			} else {
+				body.unassign = true
+			}
+		}
+
+		Promise.all(ids.map((id) => updateAdminFeedback(id, body))).catch((error) => {
 			setState((prev) => ({ ...prev, items: before }))
 			setNotice(`옮기지 못했습니다. ${error.message}`)
 		})
@@ -135,7 +148,7 @@ export default function IntakePage() {
 						<FeedbackCard
 							key={item.id}
 							item={item}
-							assignee={assignees[item.id]}
+							assignee={assignees[item.id] ?? item.assigneeName}
 							selected={picked.includes(item.id)}
 							onSelect={(next) =>
 								setPicked((prev) =>
