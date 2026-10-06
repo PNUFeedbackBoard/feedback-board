@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { devLogin, getMe } from '../../api/endpoints.js'
 import '../page-shell.css'
+import iniLogo from '../../assets/ini-logo.png'
+import './site-logo.css'
 
 export default function LoginPage() {
 	const navigate = useNavigate()
@@ -41,6 +43,7 @@ export default function LoginPage() {
 		<main className="app-page">
 			<div className="app-page__inner app-stack">
 				<header className="app-card">
+					<img className="login-brand__mark" src={iniLogo} alt="INI 로고" />
 					<p className="app-page__eyebrow">ISSUE &amp; IDEA</p>
 					<h1>통합 피드백 보드</h1>
 					<p className="app-page__muted">
