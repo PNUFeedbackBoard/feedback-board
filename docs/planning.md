@@ -2,7 +2,7 @@
 
 부산대학교 AI융합교육원이 운영하는 5개 시스템의 피드백을 한 곳에서 수집하고 처리하는 서비스의 설계 문서다.
 
-- 문서 버전: v1.2 — `feedbacks.assignee_id`, 목록 필터 `answered` 추가(8·9장)
+- 문서 버전: v1.3 — `feedbacks.assignee_id`, 목록 필터 `answered`, 담당자 해제(`unassign`) 추가(8·9장)
 - 최종 수정: 2026-10-06
 - 관련 문서: [README](../README.md), [개발환경 설정 가이드](setup-guide.md)
 
@@ -335,8 +335,7 @@ React 애플리케이션 하나를 경로로 분리하고, 스프링부트 서�
 - `assignee_id`는 담당 개발자(`users.id`, nullable)다. **최초 계획(v1.1)에는 없던 컬럼**이다. 관리용 화면을
   구현하던 중 "접수에서 처리 중으로 옮길 때 담당자를 지정한다"는 요구가 나와서 1단계 도중 추가했다
   (`frontend/src/pages/admin/AssigneeDialog.jsx` 주석 참고). `DEVELOPER`·`ACTIVE` 계정만 지정할 수 있다.
-  지금은 "지정"만 가능하고 "미지정으로 되돌리기"는 지원하지 않는다 — 필요해지면 팀에 먼저 공유하고 API를
-  확장한다.
+  지정과 해제 둘 다 9장의 `PATCH`(`assigneeId`/`unassign`)로 가능하다.
 
 ---
 
@@ -362,9 +361,10 @@ React 애플리케이션 하나를 경로로 분리하고, 스프링부트 서�
 **목록 필터 `answered`** — 답변 유무로 거른다(`true`/`false`, 생략하면 전체). 답변 탭을 전체 페이지로
 바꾸면서 추가됐다. 서버가 DB 쿼리로 직접 거르므로(EXISTS 서브쿼리), 전체를 받아와 화면에서 거르지 않는다.
 
-**`PATCH` 의 `assigneeId`** — `feedbacks.assignee_id`(위 8장 참고)를 바꾼다. `DEVELOPER`·`ACTIVE`가 아닌
-계정 id를 보내면 `400`을 반환한다. 다른 세 필드(`status`·`category`·`priority`)와 같은 규칙으로, 보내지
-않거나 `null`이면 담당자를 바꾸지 않는다 — 즉 **지금은 "담당자 해제"를 이 API로 할 수 없다.**
+**`PATCH` 의 `assigneeId`·`unassign`** — `feedbacks.assignee_id`(위 8장 참고)를 바꾼다. `assigneeId`는
+`DEVELOPER`·`ACTIVE`가 아닌 계정 id를 보내면 `400`을 반환한다. 다른 세 필드(`status`·`category`·`priority`)와
+같은 규칙으로, `assigneeId`를 보내지 않거나 `null`이면 담당자를 바꾸지 않는다. **담당자를 해제하려면
+`assigneeId` 대신 `unassign`을 `true`로 보낸다** — 이때 `assigneeId`는 같이 보내도 무시된다(해제가 우선).
 
 ---
 

@@ -124,16 +124,18 @@ public class AdminFeedbackController {
 
 	@Operation(summary = "상태·유형·중요도·담당자 변경",
 			description = "개발자 전용이다. 보낸 필드만 바꾼다. 작성자가 고른 reportedPriority 는 바꿀 수 없다. "
-					+ "assigneeId 는 기획에 없던 기능으로, DEVELOPER·ACTIVE 계정이 아니면 400 이다.")
+					+ "assigneeId 는 기획에 없던 기능으로, DEVELOPER·ACTIVE 계정이 아니면 400 이다. "
+					+ "담당자를 해제하려면 assigneeId 대신 unassign 을 true 로 보낸다.")
 	@PatchMapping("/{id}")
 	public AdminFeedbackDetail update(@PathVariable Long id, @RequestBody FeedbackUpdateRequest request) {
 		Feedback feedback = feedbackRepository.findDetailById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
 
-		User assignee = resolveAssignee(request.assigneeId());
+		// unassign이 true면 assigneeId는 보든 말든 무시한다 — 조회·검증(400)까지 할 필요가 없다.
+		User assignee = request.unassign() ? null : resolveAssignee(request.assigneeId());
 
 		feedback.applyAdminUpdate(request.status(), request.category(), request.priority(), assignee,
-				LocalDateTime.now());
+				request.unassign(), LocalDateTime.now());
 
 		// save()가 돌려주는 인스턴스를 쓰지 않는다. merge()는 내부적으로 DB에서 다시 읽어온 새 인스턴스를
 		// 돌려줄 수 있는데, 그 인스턴스는 project·author·assignee가 초기화 안 된 지연 로딩 프록시라서

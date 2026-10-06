@@ -169,18 +169,21 @@ public class Feedback {
 	 * 관리용 상태·유형·중요도·담당자 변경(PATCH /api/admin/feedbacks/{id}, 기획안 9장). B 가 추가했다
 	 * (Feedback 엔티티 소유는 A, 수정 전 공유 — 기획안 13-4).
 	 *
-	 * <p>네 값 모두 null 이면 그 필드는 바꾸지 않는다. 호출자가 null 아닌 값만 넘긴다.
-	 * status·category·priority 는 "null = 변경 안 함" 규칙이라 원래 값으로 되돌릴 방법이 없는데,
-	 * 이 세 필드는 빈 상태(미지정)가 없는 enum이라 문제가 되지 않는다.
-	 * 반면 assignee 는 "미지정으로 되돌리기"가 있을 수 있는 값인데 이 메서드는 아직 그걸 지원하지 않는다
-	 * (assignee 가 null 로 오면 "담당자 변경 안 함"으로 취급한다). 담당자 해제가 필요해지면 팀에 공유하고
-	 * 별도 파라미터(예: unassign 플래그)를 추가한다.
+	 * <p>status·category·priority 는 null 이면 그 필드를 바꾸지 않는다. 이 세 필드는 빈 상태(미지정)가
+	 * 없는 enum이라 "null = 변경 안 함" 규칙만으로 충분하다.
+	 *
+	 * <p>담당자는 세 경우로 나뉜다.
+	 * <ul>
+	 *   <li>{@code unassign} 이 true — assignee 값과 상관없이 담당자를 null 로 비운다(해제)</li>
+	 *   <li>{@code unassign} 이 false 이고 assignee 가 null 아님 — 그 담당자로 바꾼다(지정)</li>
+	 *   <li>{@code unassign} 이 false 이고 assignee 도 null — 담당자를 바꾸지 않는다</li>
+	 * </ul>
 	 *
 	 * <p>상태가 처음으로 DONE·REJECTED 가 되는 순간 closedAt 을 기록한다. 이미 종료된 건에
 	 * 상태를 다시 바꿔도(예: DONE → REJECTED) closedAt 은 최초 종료 시각을 유지한다.
 	 */
 	public void applyAdminUpdate(FeedbackStatus status, FeedbackCategory category, Priority priority,
-			User assignee, LocalDateTime now) {
+			User assignee, boolean unassign, LocalDateTime now) {
 		if (status != null) {
 			this.status = status;
 			boolean closed = status == FeedbackStatus.DONE || status == FeedbackStatus.REJECTED;
@@ -194,7 +197,9 @@ public class Feedback {
 		if (priority != null) {
 			this.priority = priority;
 		}
-		if (assignee != null) {
+		if (unassign) {
+			this.assignee = null;
+		} else if (assignee != null) {
 			this.assignee = assignee;
 		}
 	}
