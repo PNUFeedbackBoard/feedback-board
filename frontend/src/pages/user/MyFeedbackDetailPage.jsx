@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getMyFeedback } from '../../api/endpoints.js'
-import { FEEDBACK_CATEGORY, FEEDBACK_STATUS, PRIORITY, labelOf } from '../../constants/enums.js'
+import CategoryTag from '../../components/common/CategoryTag.jsx'
+import PriorityChip from '../../components/common/PriorityChip.jsx'
+import StatusBadge from '../../components/common/StatusBadge.jsx'
 import '../page-shell.css'
 
 export default function MyFeedbackDetailPage() {
@@ -34,9 +36,9 @@ export default function MyFeedbackDetailPage() {
 							</div>
 							<div className="detail-meta">
 								<span>{detail.projectName}</span>
-								<span>{labelOf(FEEDBACK_CATEGORY, detail.category)}</span>
-								<span>{labelOf(FEEDBACK_STATUS, detail.status)}</span>
-								<span>긴급도 {labelOf(PRIORITY, detail.reportedPriority)}</span>
+								<CategoryTag category={detail.category} />
+								<StatusBadge status={detail.status} />
+								<PriorityChip priority={detail.reportedPriority} />
 								<time>{formatDate(detail.createdAt)}</time>
 							</div>
 							<div className="detail-content">{detail.content}</div>

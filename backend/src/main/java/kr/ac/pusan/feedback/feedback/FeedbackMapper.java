@@ -24,7 +24,7 @@ public final class FeedbackMapper {
 	public static MyFeedbackSummary mySummary(Feedback feedback, boolean answered) {
 		return new MyFeedbackSummary(feedback.getId(), feedback.getProject().getCode(),
 				feedback.getProject().getName(), feedback.getTitle(), feedback.getCategory(),
-				feedback.getStatus(), feedback.getCreatedAt(), answered);
+				feedback.getStatus(), feedback.getCreatedAt(), answered, feedback.getReportedPriority());
 	}
 
 	public static MyFeedbackDetail myDetail(Feedback feedback, Answer answer) {
