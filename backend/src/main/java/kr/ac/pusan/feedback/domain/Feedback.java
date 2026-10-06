@@ -204,6 +204,16 @@ public class Feedback {
 		}
 	}
 
-	// TODO(A/B, 1단계 이후): 우선 처리 요청 토글, firstAnsweredAt 기록 메서드는 각 기능 담당자가 추가한다.
-	//                        Feedback 엔티티의 소유는 A 이므로 B 는 수정 전에 공유한다(기획안 13-4).
+	/**
+	 * 첫 답변이 등록된 시각을 기록한다(PUT /api/admin/feedbacks/{id}/answer, 3단계).
+	 * 이미 값이 있으면 덮어쓰지 않는다 — 답변을 "수정"할 때 다시 불러도 최초 등록 시각이 유지되어야
+	 * 대시보드의 평균 처리 소요 시간 산출이 일관된다.
+	 */
+	public void recordFirstAnswerIfAbsent(LocalDateTime now) {
+		if (this.firstAnsweredAt == null) {
+			this.firstAnsweredAt = now;
+		}
+	}
+
+	// TODO(A, 5단계): 우선 처리 요청 토글 메서드는 담당자가 추가한다.
 }
