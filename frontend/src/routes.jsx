@@ -1,15 +1,13 @@
-import AccountsPage from './pages/admin/AccountsPage.jsx'
-import AdminLayout from './pages/admin/AdminLayout.jsx'
-import AnswersPage from './pages/admin/AnswersPage.jsx'
-import IntakePage from './pages/admin/IntakePage.jsx'
-import BoardPage from './pages/admin/BoardPage.jsx'
-import DashboardPage from './pages/admin/DashboardPage.jsx'
-import PendingPage from './pages/admin/PendingPage.jsx'
-import NotFoundPage from './pages/NotFoundPage.jsx'
-import HomePage from './pages/user/HomePage.jsx'
-import LoginPage from './pages/user/LoginPage.jsx'
-import MyFeedbackDetailPage from './pages/user/MyFeedbackDetailPage.jsx'
-import WritePage from './pages/user/WritePage.jsx'
+import RouteFrame from './components/RouteFrame.jsx'
+import RouteFallback from './components/RouteFallback.jsx'
+
+/** 각 화면 코드는 해당 경로에 들어갈 때만 받는다. 차트와 드래그 라이브러리가 첫 화면을 막지 않게 한다. */
+function lazyPage(loader) {
+  return async () => {
+    const module = await loader()
+    return { Component: module.default }
+  }
+}
 
 /**
  * 라우트 정의 (react-router-dom v7).
@@ -23,36 +21,40 @@ import WritePage from './pages/user/WritePage.jsx'
  *
  * 관리용 경로는 AdminLayout의 children으로 묶여 공통 상단 탭과 프로젝트 전환을 공유한다.
  */
-export const routes = [
-  // ── 사용자용 ────────────────────────────────────────────────────
-  { path: '/', element: <LoginPage /> },
-  { path: '/write', element: <WritePage /> },
-  { path: '/home', element: <HomePage /> },
-  { path: '/my/:id', element: <MyFeedbackDetailPage /> },
+export const routes = [{
+  Component: RouteFrame,
+  HydrateFallback: RouteFallback,
+  children: [
+    // ── 사용자용 ────────────────────────────────────────────────────
+    { index: true, lazy: lazyPage(() => import('./pages/user/LoginPage.jsx')) },
+    { path: 'write', lazy: lazyPage(() => import('./pages/user/WritePage.jsx')) },
+    { path: 'home', lazy: lazyPage(() => import('./pages/user/HomePage.jsx')) },
+    { path: 'my/:id', lazy: lazyPage(() => import('./pages/user/MyFeedbackDetailPage.jsx')) },
 
-  // ── 관리용 ──────────────────────────────────────────────────────
-  // 승인 대기 안내는 레이아웃 바깥에 둔다. 아직 승인되지 않은 계정에게
-  // 상단 탭과 프로젝트 전환을 보여 줄 이유가 없다. (기획 3-2)
-  { path: '/admin/pending', element: <PendingPage /> },
-  {
-    // 관리 화면이 공통 UI를 공유하도록 추가한 레이아웃 부모 라우트다.
-    // **경로 문자열은 하나도 바꾸지 않았고 경로가 늘지도 않았다.** 감싸기만 한다.
-    element: <AdminLayout />,
-    children: [
-      { path: '/admin', element: <DashboardPage /> },
-      { path: '/admin/accounts', element: <AccountsPage /> },
-      // :projectCode 는 projects 의 code 값이다. codeplace | aipms | aicms | aicap | srvadm
-      // 경로가 2단이라 위의 /admin/pending, /admin/accounts 와 겹치지 않는다.
-      //
-      // intake 는 0-1단계에 없던 경로다. **팀 확인이 필요한 기획 변경이다.**
-      // 기획 6-1 은 상단 탭을 개발 보드·답변 두 개로 정했는데, 접수를 개발 보드에서 떼어
-      // 세 번째 탭으로 만들면서 경로가 하나 늘었다. 기존 경로 문자열은 바꾸지 않았다.
-      { path: '/admin/:projectCode/intake', element: <IntakePage /> },
-      { path: '/admin/:projectCode/board', element: <BoardPage /> },
-      { path: '/admin/:projectCode/answers', element: <AnswersPage /> },
-    ],
-  },
+    // ── 관리용 ──────────────────────────────────────────────────────
+    // 승인 대기 안내는 레이아웃 바깥에 둔다. 아직 승인되지 않은 계정에게
+    // 상단 탭과 프로젝트 전환을 보여 줄 이유가 없다. (기획 3-2)
+    { path: 'admin/pending', lazy: lazyPage(() => import('./pages/admin/PendingPage.jsx')) },
+    {
+      // 관리 화면이 공통 UI를 공유하도록 추가한 레이아웃 부모 라우트다.
+      // **경로 문자열은 하나도 바꾸지 않았고 경로가 늘지도 않았다.** 감싸기만 한다.
+      lazy: lazyPage(() => import('./pages/admin/AdminLayout.jsx')),
+      children: [
+        { path: 'admin', lazy: lazyPage(() => import('./pages/admin/DashboardPage.jsx')) },
+        { path: 'admin/accounts', lazy: lazyPage(() => import('./pages/admin/AccountsPage.jsx')) },
+        // :projectCode 는 projects 의 code 값이다. codeplace | aipms | aicms | aicap | srvadm
+        // 경로가 2단이라 위의 /admin/pending, /admin/accounts 와 겹치지 않는다.
+        //
+        // intake 는 0-1단계에 없던 경로다. **팀 확인이 필요한 기획 변경이다.**
+        // 기획 6-1 은 상단 탭을 개발 보드·답변 두 개로 정했는데, 접수를 개발 보드에서 떼어
+        // 세 번째 탭으로 만들면서 경로가 하나 늘었다. 기존 경로 문자열은 바꾸지 않았다.
+        { path: 'admin/:projectCode/intake', lazy: lazyPage(() => import('./pages/admin/IntakePage.jsx')) },
+        { path: 'admin/:projectCode/board', lazy: lazyPage(() => import('./pages/admin/BoardPage.jsx')) },
+        { path: 'admin/:projectCode/answers', lazy: lazyPage(() => import('./pages/admin/AnswersPage.jsx')) },
+      ],
+    },
 
-  // ── 나머지 ──────────────────────────────────────────────────────
-  { path: '*', element: <NotFoundPage /> },
-]
+    // ── 나머지 ──────────────────────────────────────────────────────
+    { path: '*', lazy: lazyPage(() => import('./pages/NotFoundPage.jsx')) },
+  ],
+}]

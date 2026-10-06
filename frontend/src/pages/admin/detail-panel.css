@@ -51,10 +51,12 @@
 	background: transparent;
 	color: var(--color-text-muted);
 	cursor: pointer;
+	transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 
 .panel__close:hover {
 	border-color: var(--color-border);
+	background: var(--color-surface-sunken);
 	color: var(--color-text);
 }
 
@@ -143,7 +145,11 @@
 	color: var(--color-text);
 	font-family: var(--font-family);
 	font-size: var(--font-size-small);
+	cursor: pointer;
+	transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
 }
+
+.panel__select:hover { border-color: var(--color-selected-light); }
 
 .panel__select:focus {
 	border-color: var(--color-selected);
@@ -179,6 +185,10 @@
 .panel__priority:disabled {
 	cursor: wait;
 	opacity: 0.55;
+}
+
+.panel__priority:not(:disabled):hover {
+	background: #ffe5e3;
 }
 
 .panel__link:hover {

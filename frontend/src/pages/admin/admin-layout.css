@@ -9,7 +9,6 @@
 		radial-gradient(circle at 90% 68%, rgb(99 102 241 / 8%), transparent 31%),
 		radial-gradient(circle at 46% 108%, rgb(37 99 235 / 7%), transparent 34%),
 		var(--color-bg);
-	background-attachment: fixed;
 	color: var(--color-text);
 	font-family: var(--font-family);
 	font-size: var(--font-size-body);
@@ -20,7 +19,7 @@
 /* Colour that remains visible through the translucent project disc. */
 .admin-shell::before {
 	content: '';
-	position: fixed;
+	position: absolute;
 	right: 50%;
 	bottom: -120px;
 	z-index: 0;
@@ -55,6 +54,10 @@
 	gap: 11px;
 	color: var(--color-text);
 	text-decoration: none;
+}
+
+.admin-brand:hover {
+	opacity: 0.78;
 }
 
 .admin-brand__mark {
@@ -192,8 +195,14 @@
 }
 
 .admin-tabs__tab:hover,
+.admin-tabs__tab:focus-visible,
 .admin-tabs__tab.active {
 	color: var(--color-text);
+}
+
+.admin-tabs__tab:hover::after,
+.admin-tabs__tab:focus-visible::after {
+	transform: scaleX(0.32);
 }
 
 .admin-tabs__tab.active::after {

@@ -17,10 +17,12 @@
 	color: var(--color-text);
 	font: inherit;
 	cursor: pointer;
+	transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 
 .pagination button:hover:not(:disabled) {
 	border-color: var(--color-selected);
+	background: var(--color-selected-soft);
 	color: var(--color-selected);
 }
 

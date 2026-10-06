@@ -12,6 +12,9 @@
 /** 모든 요청 앞에 붙는 주소. 바꾸면 Vite 프록시 설정도 같이 바꿔야 한다. */
 const BASE_URL = '/api'
 
+/** 같은 GET이 동시에 시작되면 하나의 네트워크 요청을 공유한다. 응답은 저장하지 않아 최신성은 유지한다. */
+const pendingGets = new Map()
+
 /**
  * 백엔드 공통 오류 응답(ApiErrorResponse)을 담은 에러.
  * { timestamp, status, code, message, path, details } 를 그대로 옮겨 담는다.
@@ -140,7 +143,20 @@ async function request(method, path, options = {}) {
 
 /** GET 요청. 쿼리 파라미터는 options.params 로 넘긴다. */
 export function get(path, options) {
-  return request('GET', path, options)
+  // AbortSignal은 호출마다 취소 수명이 다르므로 합치지 않는다.
+  if (options?.signal) return request('GET', path, options)
+
+  const key = `${path}${buildQuery(options?.params)}`
+  const pending = pendingGets.get(key)
+  if (pending) return pending
+
+  const next = request('GET', path, options)
+  pendingGets.set(key, next)
+  const clear = () => {
+    if (pendingGets.get(key) === next) pendingGets.delete(key)
+  }
+  next.then(clear, clear)
+  return next
 }
 
 /** POST 요청. 본문이 없으면 body 를 생략한다. */
