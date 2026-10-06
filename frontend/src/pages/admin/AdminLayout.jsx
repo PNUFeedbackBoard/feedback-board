@@ -4,7 +4,7 @@ import { getMe, getProjects } from '../../api/endpoints.js'
 import iniLogo from '../../assets/ini-logo.png'
 import { ROLE, labelOf } from '../../constants/enums.js'
 import ProjectDisc from './ProjectDisc.jsx'
-import './admin-tokens.temp.css'
+import '../../styles/tokens.css'
 import './admin-layout.css'
 
 /**
