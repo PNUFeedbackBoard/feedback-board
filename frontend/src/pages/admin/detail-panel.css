@@ -95,6 +95,24 @@
 	color: var(--color-text-subtle);
 }
 
+.panel__answer-title {
+	margin: 0 0 8px;
+	color: var(--color-text-subtle);
+	font-size: 9px;
+	font-weight: var(--font-weight-bold);
+	letter-spacing: 0.12em;
+}
+
+.panel__answer-content {
+	margin: 0;
+	padding: 12px;
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-sunken);
+	font-size: var(--font-size-small);
+	line-height: 1.75;
+	white-space: pre-wrap;
+}
+
 .panel__fields {
 	display: flex;
 	flex-direction: column;
