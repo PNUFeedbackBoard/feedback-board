@@ -25,6 +25,9 @@
 .feedback-badge--status[data-status='IN_PROGRESS'],
 .feedback-badge--priority[data-priority='LOW'] { color: var(--feedback-green); }
 .feedback-badge--status[data-status='DONE'] { color: var(--feedback-blue); }
+/* 반영 불가는 디자인상 회색이다(docs/design/README.md) — .feedback-badge 기본값과 같은 값을
+   여기 명시해서 "따로 정의 안 한 상태"와 "의도적으로 회색인 상태"를 구분해 둔다. */
+.feedback-badge--status[data-status='REJECTED'] { color: var(--feedback-muted); }
 .feedback-badge--priority[data-priority='HIGH'] { color: var(--feedback-red); }
 
 .feedback-badge--category {

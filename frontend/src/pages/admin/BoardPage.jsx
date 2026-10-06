@@ -14,7 +14,7 @@ import {
 	togglePriorityRequest,
 	updateAdminFeedback,
 } from '../../api/endpoints.js'
-import { FEEDBACK_SORT, FEEDBACK_STATUS, labelOf, toOptions } from '../../constants/enums.js'
+import { FEEDBACK_SORT, toOptions } from '../../constants/enums.js'
 import DetailPanel from './DetailPanel.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
 import Pagination from './components/Pagination.jsx'
@@ -253,7 +253,7 @@ function RejectedArea({ items, onOpen, canEdit }) {
 	return (
 		<details ref={setNodeRef} className={isOver ? 'board__rejected is-over' : 'board__rejected'}>
 			<summary>
-				{labelOf(FEEDBACK_STATUS, 'REJECTED')}
+				<StatusBadge status="REJECTED" />
 				<span className="board__count">{items.length}</span>
 			</summary>
 			<div className="board__cards board__cards--row">

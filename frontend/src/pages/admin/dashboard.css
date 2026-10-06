@@ -288,11 +288,6 @@
 }
 
 .dash__row {
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-	min-height: 42px;
-	padding: var(--space-2) 4px;
 	border-bottom: 1px solid var(--color-border);
 }
 
@@ -300,7 +295,23 @@
 	border-bottom: 0;
 }
 
-.dash__row:hover {
+.dash__row-button {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	gap: var(--space-2);
+	min-height: 42px;
+	padding: var(--space-2) 4px;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.dash__row-button:hover,
+.dash__row-button:focus-visible {
 	background: var(--color-surface-sunken);
 }
 

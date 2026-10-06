@@ -32,18 +32,21 @@ export default function DetailPanel({
 	onTogglePriority,
 	onClose,
 }) {
-	const { projectCode } = useParams()
+	// 전체 현황(대시보드)은 /admin 경로라 :projectCode 가 없다. 그럴 땐 목록 항목 자체의
+	// projectCode(AdminFeedbackSummary)로 "답변 화면으로 이동" 대상을 정한다.
+	const { projectCode: routeProjectCode } = useParams()
+	const projectCode = routeProjectCode ?? item.projectCode
 	const navigate = useNavigate()
 	// 어느 건의 상세인지 함께 담아 둔다. 그래야 다른 카드를 열었을 때
 	// effect 안에서 상태를 되돌리지 않고도 이전 응답을 화면에서 걸러 낼 수 있다.
-	const [detail, setDetail] = useState({ id: null, content: '' })
+	const [detail, setDetail] = useState({ id: null, content: '', answer: null })
 
 	useEffect(() => {
 		let cancelled = false
 
 		getAdminFeedback(item.id)
-			.then((found) => !cancelled && setDetail({ id: item.id, content: found.content }))
-			.catch(() => !cancelled && setDetail({ id: item.id, content: '내용을 불러오지 못했습니다.' }))
+			.then((found) => !cancelled && setDetail({ id: item.id, content: found.content, answer: found.answer }))
+			.catch(() => !cancelled && setDetail({ id: item.id, content: '내용을 불러오지 못했습니다.', answer: null }))
 
 		return () => {
 			cancelled = true
@@ -99,6 +102,20 @@ export default function DetailPanel({
 					detail.content
 				) : (
 					<span className="panel__loading">내용을 불러오는 중…</span>
+				)}
+			</section>
+
+			{/* 답변이 있으면 이 패널에서 바로 읽을 수 있게 한다. 수정은 답변 화면에서 한다. */}
+			<section>
+				<p className="panel__answer-title">개발자 답변</p>
+				{detail.id === item.id ? (
+					detail.answer ? (
+						<p className="panel__answer-content">{detail.answer.content}</p>
+					) : (
+						<p className="panel__loading">아직 등록된 답변이 없습니다.</p>
+					)
+				) : (
+					<span className="panel__loading">불러오는 중…</span>
 				)}
 			</section>
 
