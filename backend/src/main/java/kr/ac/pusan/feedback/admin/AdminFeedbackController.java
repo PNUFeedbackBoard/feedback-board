@@ -47,6 +47,7 @@ import kr.ac.pusan.feedback.domain.repository.AnswerRepository;
 import kr.ac.pusan.feedback.domain.repository.FeedbackRepository;
 import kr.ac.pusan.feedback.domain.repository.UserRepository;
 import kr.ac.pusan.feedback.feedback.dto.AnswerResponse;
+import kr.ac.pusan.feedback.notification.NotificationService;
 
 /**
  * 관리용 피드백 API. 기획안 6-3, 6-4, 9장.
@@ -67,14 +68,17 @@ public class AdminFeedbackController {
 	private final FeedbackRepository feedbackRepository;
 	private final AnswerRepository answerRepository;
 	private final UserRepository userRepository;
+	private final NotificationService notificationService;
 
 	AdminFeedbackController(
 			FeedbackRepository feedbackRepository,
 			AnswerRepository answerRepository,
-			UserRepository userRepository) {
+			UserRepository userRepository,
+			NotificationService notificationService) {
 		this.feedbackRepository = feedbackRepository;
 		this.answerRepository = answerRepository;
 		this.userRepository = userRepository;
+		this.notificationService = notificationService;
 	}
 
 	@Operation(summary = "관리용 피드백 목록 조회",
@@ -195,8 +199,6 @@ public class AdminFeedbackController {
 		boolean firstAnswer = answer == null;
 
 		if (firstAnswer) {
-			// 알림(이메일) 발송은 6단계에서 붙인다(기획안 7장) — 첫 등록에서만 보내고 수정 시에는 안 보낸다는
-			// 규칙이라, 여기 firstAnswer 분기가 나중에 알림을 추가할 자리다.
 			answer = Answer.builder()
 					.feedback(feedback)
 					.author(author)
@@ -217,6 +219,11 @@ public class AdminFeedbackController {
 		}
 		feedbackRepository.save(feedback);
 
+		// 답변을 수정한 경우에는 보내지 않는다(기획안 7장) — 첫 등록일 때만 호출한다.
+		if (firstAnswer) {
+			notificationService.notifyAnswerRegistered(feedback);
+		}
+
 		return new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
 	}
 
@@ -232,6 +239,13 @@ public class AdminFeedbackController {
 		User requester = userRepository.findById(currentUser.getId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 계정을 찾을 수 없습니다."));
 		feedback.togglePriorityRequest(requester);
+
+		// 요청을 거는 순간에만 보낸다(기획안 7장) — 해제할 때는 보내지 않는다.
+		if (feedback.isPriorityRequested()) {
+			List<User> developers = userRepository.findAllByRoleAndStatus(Role.DEVELOPER, UserStatus.ACTIVE);
+			notificationService.notifyPriorityRequested(feedback, developers);
+		}
+
 		return new PriorityRequestResponse(feedback.getId(), feedback.isPriorityRequested(), feedback.getPriority());
 	}
 
