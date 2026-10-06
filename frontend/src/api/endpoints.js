@@ -94,7 +94,7 @@ export function getAdminFeedback(id) {
  * 상태·유형·중요도 변경. 보낸 필드만 바뀐다.
  * 열람자가 호출하면 403 이 온다. (기획 9장)
  * @param {number | string} id 피드백 번호
- * @param {object} body FeedbackUpdateRequest — { status, category, priority, assigneeName } 모두 생략 가능
+ * @param {object} body FeedbackUpdateRequest — { status, category, priority, assigneeId, unassign } 모두 생략 가능
  * @returns {Promise<object>} AdminFeedbackDetail
  */
 export function updateAdminFeedback(id, body) {

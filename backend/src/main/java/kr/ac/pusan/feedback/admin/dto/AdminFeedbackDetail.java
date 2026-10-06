@@ -16,6 +16,7 @@ import kr.ac.pusan.feedback.feedback.dto.AnswerResponse;
  *
  * <p>firstAnsweredAt 과 closedAt 은 대시보드의 평균 처리 소요 시간 산출에 쓰는 값이며,
  * 아직 발생하지 않았으면 null 이다. answer 는 답변이 없으면 null 이다.
+ * assigneeId·assigneeName 은 담당자가 없으면 둘 다 null 이다(AdminFeedbackSummary 와 같은 규칙).
  */
 public record AdminFeedbackDetail(
 		Long id,
@@ -29,12 +30,13 @@ public record AdminFeedbackDetail(
 		boolean priorityRequested,
 		AuthorType authorType,
 		String authorName,
-		String assigneeName,
 		LocalDateTime createdAt,
 		boolean answered,
 		String content,
 		LocalDateTime firstAnsweredAt,
 		LocalDateTime closedAt,
-		AnswerResponse answer
+		AnswerResponse answer,
+		Long assigneeId,
+		String assigneeName
 ) {
 }

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useOutletContext, useParams } from 'react-router-dom'
 import { getAdminFeedbacks } from '../../api/endpoints.js'
 import AnswerDialog from './AnswerDialog.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
+import Pagination from './components/Pagination.jsx'
 import StatusBadge from './components/StatusBadge.jsx'
 import './intake.css'
+
+const PAGE_SIZE = 12
 
 /**
  * 답변 — **답변이 필요한 것만** 올라오는 대기열이다. 기획 6-4
@@ -19,25 +22,43 @@ import './intake.css'
  */
 export default function AnswersPage() {
 	const { projectCode } = useParams()
-	const [state, setState] = useState({ projectCode: null, items: [], message: '' })
+	const { me } = useOutletContext()
+	const canAnswer = me?.role === 'DEVELOPER'
+	const [pagination, setPagination] = useState({ projectCode, page: 0 })
+	const page = pagination.projectCode === projectCode ? pagination.page : 0
+	const [state, setState] = useState({ projectCode: null, items: [], totalCount: 0, message: '' })
 	const [writing, setWriting] = useState(null)
 
 	useEffect(() => {
 		let cancelled = false
 
 		// 기본 정렬은 오래된순이다. 오래 기다린 것이 위로 온다.
-		getAdminFeedbacks({ project: projectCode, sort: 'OLDEST', answered: false, size: 100 })
-			.then((page) => {
-				if (!cancelled) setState({ projectCode, items: page.items, message: '' })
+		getAdminFeedbacks({ project: projectCode, sort: 'OLDEST', answered: false, page, size: PAGE_SIZE })
+			.then((result) => {
+				if (!cancelled) {
+					setState({
+						projectCode,
+						items: result.items,
+						totalCount: result.totalCount,
+						message: '',
+					})
+				}
 			})
 			.catch((error) => {
-				if (!cancelled) setState({ projectCode, items: [], message: error.message })
+				if (!cancelled) {
+					setState({ projectCode, items: [], totalCount: 0, message: error.message })
+				}
 			})
 
 		return () => {
 			cancelled = true
 		}
-	}, [projectCode])
+	}, [projectCode, page])
+
+
+	function setPage(nextPage) {
+		setPagination({ projectCode, page: nextPage })
+	}
 
 	if (state.projectCode !== projectCode) return <p className="board__notice">불러오는 중…</p>
 	if (state.message) return <p className="board__notice">{state.message}</p>
@@ -48,9 +69,9 @@ export default function AnswersPage() {
 	return (
 		<div className="intake">
 			<p className="intake__count">
-				답변 필요 <strong>{answerable}</strong>건
+				답변 필요 <strong>{state.totalCount}</strong>건
 				{waiting.length > answerable && (
-					<span className="intake__sub"> · 비회원 {waiting.length - answerable}건은 대상 아님</span>
+					<span className="intake__sub"> · 현재 페이지의 비회원 {waiting.length - answerable}건은 대상 아님</span>
 				)}
 			</p>
 
@@ -72,7 +93,7 @@ export default function AnswersPage() {
 										<StatusBadge status={item.status} />
 										{isGuest ? (
 											<span className="intake__muted">비회원 · 답변 대상 아님</span>
-										) : (
+										) : canAnswer ? (
 											<button
 												type="button"
 												className="intake__start"
@@ -80,6 +101,8 @@ export default function AnswersPage() {
 											>
 												답변하기
 											</button>
+										) : (
+											<span className="intake__muted">개발자만 답변 가능</span>
 										)}
 									</div>
 								}
@@ -89,19 +112,18 @@ export default function AnswersPage() {
 				</div>
 			)}
 
-			{writing && (
+			<Pagination page={page} size={PAGE_SIZE} totalCount={state.totalCount} onChange={setPage} />
+
+			{canAnswer && writing && (
 				<AnswerDialog
 					feedback={writing}
 					onCancel={() => setWriting(null)}
-					onDone={(markedDone) => {
-						// 답변을 마쳤으니 이 화면에서 뺀다. 상태까지 바꿨으면 그것도 반영한다.
+					onDone={() => {
+						// 답변을 마쳤으니 답변 대기열에서 제거한다.
 						setState((prev) => ({
 							...prev,
-							items: prev.items.map((item) =>
-								item.id === writing.id
-									? { ...item, answered: true, status: markedDone ? 'DONE' : item.status }
-									: item,
-							),
+							items: prev.items.filter((item) => item.id !== writing.id),
+							totalCount: Math.max(0, prev.totalCount - 1),
 						}))
 						setWriting(null)
 					}}

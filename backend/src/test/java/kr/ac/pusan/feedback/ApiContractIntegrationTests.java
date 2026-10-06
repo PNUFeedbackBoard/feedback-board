@@ -109,6 +109,7 @@ class ApiContractIntegrationTests {
 	void createdFeedbackAndAdminChangesRoundTripThroughTheDatabase() throws Exception {
 		MockHttpSession user = login("user");
 		MockHttpSession developer = login("dev");
+		long developerId = currentUserId(developer);
 
 		String createBody = mockMvc.perform(post("/api/feedbacks")
 						.session(user)
@@ -142,9 +143,10 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/feedbacks/" + id)
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"status\":\"IN_PROGRESS\",\"assigneeName\":\"데모 개발자\"}"))
+						.content("{\"status\":\"IN_PROGRESS\",\"assigneeId\":" + developerId + "}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("IN_PROGRESS"))
+				.andExpect(jsonPath("$.assigneeId").value(developerId))
 				.andExpect(jsonPath("$.assigneeName").value("데모 개발자"));
 
 		mockMvc.perform(put("/api/admin/feedbacks/" + id + "/answer")
@@ -182,6 +184,46 @@ class ApiContractIntegrationTests {
 				.andExpect(jsonPath("$.role").value("DEVELOPER"));
 	}
 
+	@Test
+	void adminFeedbackListUsesRequestedPageSize() throws Exception {
+		MockHttpSession developer = login("dev");
+
+		mockMvc.perform(get("/api/admin/feedbacks")
+						.session(developer)
+						.param("page", "0")
+						.param("size", "5"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(5))
+				.andExpect(jsonPath("$.totalCount").isNumber());
+	}
+
+	@Test
+	@Transactional
+	void viewerCanTogglePriorityRequestOnOwnFeedback() throws Exception {
+		MockHttpSession viewer = login("viewer");
+		String createBody = mockMvc.perform(post("/api/feedbacks")
+						.session(viewer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "projectCode": "aipms",
+								  "category": "ETC",
+								  "reportedPriority": "NORMAL",
+								  "title": "우선 처리 요청 테스트",
+								  "content": "열람자가 본인 피드백의 우선 처리를 요청합니다."
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		long id = objectMapper.readTree(createBody).path("id").asLong();
+
+		mockMvc.perform(post("/api/admin/feedbacks/" + id + "/priority-request")
+						.session(viewer))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.priorityRequested").value(true))
+				.andExpect(jsonPath("$.priority").value("HIGH"));
+	}
+
 	private MockHttpSession login(String account) throws Exception {
 		return (MockHttpSession) mockMvc.perform(post("/api/dev/login")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -190,5 +232,12 @@ class ApiContractIntegrationTests {
 				.andReturn()
 				.getRequest()
 				.getSession(false);
+	}
+
+	private long currentUserId(MockHttpSession session) throws Exception {
+		String body = mockMvc.perform(get("/api/me").session(session))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		return objectMapper.readTree(body).path("id").asLong();
 	}
 }

@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { getAdminFeedbacks, updateAdminFeedback } from '../../api/endpoints.js'
+import { useOutletContext, useParams } from 'react-router-dom'
+import {
+	getAdminFeedbacks,
+	togglePriorityRequest,
+	updateAdminFeedback,
+} from '../../api/endpoints.js'
 import { FEEDBACK_STATUS, labelOf } from '../../constants/enums.js'
 import AssigneeDialog from './AssigneeDialog.jsx'
+import DetailPanel from './DetailPanel.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
 import FilterBar from './components/FilterBar.jsx'
+import Pagination from './components/Pagination.jsx'
 import './intake.css'
 
 /**
@@ -25,54 +31,119 @@ import './intake.css'
 
 /** 접수에서 곧바로 보낼 수 있는 곳. 접수는 지금 자리이므로 빠진다. */
 const MOVE_TARGETS = ['IN_PROGRESS', 'DONE', 'REJECTED']
+const PAGE_SIZE = 12
 
 export default function IntakePage() {
 	const { projectCode } = useParams()
+	const { me } = useOutletContext()
+	const canEdit = me?.role === 'DEVELOPER'
+	const canRequestPriority = me?.role === 'VIEWER'
 	const [filters, setFilters] = useState({ sort: 'PRIORITY' })
-	const [state, setState] = useState({ projectCode: null, items: [], message: '' })
+	const [pagination, setPagination] = useState({ projectCode, page: 0 })
+	const page = pagination.projectCode === projectCode ? pagination.page : 0
+	const [state, setState] = useState({ projectCode: null, items: [], totalCount: 0, message: '' })
 	/** 체크한 피드백 번호들. 일괄 처리의 대상이다. */
 	const [picked, setPicked] = useState([])
 	/** 담당자 입력을 기다리는 이동. 한 건일 수도 여러 건일 수도 있다. */
 	const [pending, setPending] = useState(null)
 	const [notice, setNotice] = useState('')
+	const [openedId, setOpenedId] = useState(null)
+	const [priorityBusy, setPriorityBusy] = useState(false)
 
 	useEffect(() => {
 		let cancelled = false
 
 		// 계약대로 필터를 서버에 보낸다. B 의 1단계 작업이 끝나면 서버가 걸러서 내려준다.
-		getAdminFeedbacks({ ...filters, project: projectCode, status: 'RECEIVED', size: 100 })
-			.then((page) => {
+		getAdminFeedbacks({ ...filters, project: projectCode, status: 'RECEIVED', page, size: PAGE_SIZE })
+			.then((result) => {
 				if (!cancelled) {
-					setState({ projectCode, items: page.items, message: '' })
+					setState({ projectCode, items: result.items, totalCount: result.totalCount, message: '' })
 					setPicked([])
 				}
 			})
 			.catch((error) => {
-				if (!cancelled) setState({ projectCode, items: [], message: error.message })
+				if (!cancelled) setState({ projectCode, items: [], totalCount: 0, message: error.message })
 			})
 
 		return () => {
 			cancelled = true
 		}
-	}, [projectCode, filters])
+	}, [projectCode, filters, page])
+
+
+	function setPage(nextPage) {
+		setPagination({ projectCode, page: nextPage })
+	}
 
 	/**
 	 * 골라낸 건들을 다른 상태로 보낸다. 먼저 화면에서 빼고 서버에 알린다.
 	 * 하나라도 실패하면 전부 되돌린다. 일부만 옮겨진 채로 두면 무엇이 남았는지 알 수 없다.
 	 */
-	function moveAll(ids, status, assignee) {
+	function moveAll(ids, status, assigneeId) {
+		if (!canEdit) return
 		const before = state.items
-		setState((prev) => ({ ...prev, items: prev.items.filter((item) => !ids.includes(item.id)) }))
+		const beforeTotalCount = state.totalCount
+		setState((prev) => ({
+			...prev,
+			items: prev.items.filter((item) => !ids.includes(item.id)),
+			totalCount: Math.max(0, prev.totalCount - ids.length),
+		}))
 		setPicked((prev) => prev.filter((id) => !ids.includes(id)))
 		setNotice('')
 
 		Promise.all(ids.map((id) => updateAdminFeedback(id, {
 			status,
-			...(assignee !== undefined ? { assigneeName: assignee } : {}),
+			...(assigneeId !== undefined
+				? assigneeId == null
+					? { unassign: true }
+					: { assigneeId }
+				: {}),
 		}))).catch((error) => {
-			setState((prev) => ({ ...prev, items: before }))
+			setState((prev) => ({ ...prev, items: before, totalCount: beforeTotalCount }))
 			setNotice(`옮기지 못했습니다. ${error.message}`)
 		})
+	}
+
+	async function commitChange(id, changes) {
+		if (!canEdit) return
+		setNotice('')
+		try {
+			const updated = await updateAdminFeedback(id, changes)
+			setState((prev) => {
+				const staysInIntake = updated.status === 'RECEIVED'
+				return {
+					...prev,
+					items: staysInIntake
+						? prev.items.map((item) => (item.id === id ? { ...item, ...updated } : item))
+						: prev.items.filter((item) => item.id !== id),
+					totalCount: staysInIntake ? prev.totalCount : Math.max(0, prev.totalCount - 1),
+				}
+			})
+			if (updated.status !== 'RECEIVED') setOpenedId(null)
+		} catch (error) {
+			setNotice(`바꾸지 못했습니다. ${error.message}`)
+		}
+	}
+
+	async function requestPriority(id) {
+		if (!canRequestPriority || priorityBusy) return
+		setPriorityBusy(true)
+		setNotice('')
+		try {
+			const result = await togglePriorityRequest(id)
+			setState((prev) => ({
+				...prev,
+				items: prev.items.map((item) =>
+					item.id === id
+						? { ...item, priorityRequested: result.priorityRequested, priority: result.priority }
+						: item,
+				),
+			}))
+		} catch (error) {
+			setNotice(`우선 처리 요청을 저장하지 못했습니다. ${error.message}`)
+		} finally {
+			setPriorityBusy(false)
+		}
 	}
 
 	/** 처리 중으로 갈 때만 담당자를 묻는다. 일이 시작되는 시점이기 때문이다. */
@@ -92,15 +163,22 @@ export default function IntakePage() {
 	if (state.message) return <p className="board__notice">{state.message}</p>
 
 	const visible = state.items
+	const opened = state.items.find((item) => item.id === openedId)
 
 	return (
 		<div className="intake">
-			<FilterBar value={filters} onChange={setFilters} />
+			<FilterBar
+				value={filters}
+				onChange={(next) => {
+					setFilters(next)
+					setPage(0)
+				}}
+			/>
 
 			{notice && <p className="board__alert">{notice}</p>}
 
 			{/* 고른 것이 있을 때만 나타난다. 평소에는 자리를 차지하지 않는다. */}
-			{picked.length > 0 && (
+			{canEdit && picked.length > 0 && (
 				<div className="intake__bulk">
 					<span>
 						<strong>{picked.length}건</strong> 선택됨
@@ -121,7 +199,7 @@ export default function IntakePage() {
 			)}
 
 			<p className="intake__count">
-				접수 <strong>{visible.length}</strong>건
+				접수 <strong>{state.totalCount}</strong>건
 			</p>
 
 			{visible.length === 0 ? (
@@ -134,12 +212,13 @@ export default function IntakePage() {
 							item={item}
 							assignee={item.assigneeName}
 							selected={picked.includes(item.id)}
-							onSelect={(next) =>
-								setPicked((prev) =>
+							onOpen={() => setOpenedId(item.id)}
+							onSelect={canEdit
+								? (next) => setPicked((prev) =>
 									next ? [...prev, item.id] : prev.filter((id) => id !== item.id),
 								)
-							}
-							action={
+								: undefined}
+							action={canEdit ? (
 								<label className="intake__row">
 									<span className="intake__muted">상태 변경</span>
 									<select
@@ -157,20 +236,34 @@ export default function IntakePage() {
 										))}
 									</select>
 								</label>
-							}
+							) : undefined}
 						/>
 					))}
 				</div>
 			)}
 
+			<Pagination page={page} size={PAGE_SIZE} totalCount={state.totalCount} onChange={setPage} />
+
 			{pending && (
 				<AssigneeDialog
 					feedbackTitle={pending.title}
 					onCancel={() => setPending(null)}
-					onConfirm={(name) => {
-						moveAll(pending.ids, pending.status, name)
+					onConfirm={(assigneeId) => {
+						moveAll(pending.ids, pending.status, assigneeId)
 						setPending(null)
 					}}
+				/>
+			)}
+
+			{opened && (
+				<DetailPanel
+					item={opened}
+					canEdit={canEdit}
+					canRequestPriority={canRequestPriority}
+					priorityBusy={priorityBusy}
+					onChange={(changes) => commitChange(opened.id, changes)}
+					onTogglePriority={() => requestPriority(opened.id)}
+					onClose={() => setOpenedId(null)}
 				/>
 			)}
 		</div>

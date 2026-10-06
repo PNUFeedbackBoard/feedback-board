@@ -23,7 +23,15 @@ import './detail-panel.css'
  * 목록 응답에는 본문이 없어(AdminFeedbackSummary 에 content 가 없다) 열 때 상세를 따로 받는다.
  *
  */
-export default function DetailPanel({ item, onChange, onClose }) {
+export default function DetailPanel({
+	item,
+	canEdit = false,
+	canRequestPriority = false,
+	priorityBusy = false,
+	onChange,
+	onTogglePriority,
+	onClose,
+}) {
 	const { projectCode } = useParams()
 	const navigate = useNavigate()
 	// 어느 건의 상세인지 함께 담아 둔다. 그래야 다른 카드를 열었을 때
@@ -94,26 +102,43 @@ export default function DetailPanel({ item, onChange, onClose }) {
 				)}
 			</section>
 
-			<div className="panel__fields">
-				<Field
-					label="상태"
-					value={item.status}
-					options={toOptions(FEEDBACK_STATUS)}
-					onChange={(status) => onChange({ status })}
-				/>
-				<Field
-					label="유형"
-					value={item.category}
-					options={toOptions(FEEDBACK_CATEGORY)}
-					onChange={(category) => onChange({ category })}
-				/>
-				<Field
-					label="중요도"
-					value={item.priority}
-					options={toOptions(PRIORITY)}
-					onChange={(priority) => onChange({ priority })}
-				/>
-			</div>
+			{canEdit && (
+				<div className="panel__fields">
+					<Field
+						label="상태"
+						value={item.status}
+						options={toOptions(FEEDBACK_STATUS)}
+						onChange={(status) => onChange({ status })}
+					/>
+					<Field
+						label="유형"
+						value={item.category}
+						options={toOptions(FEEDBACK_CATEGORY)}
+						onChange={(category) => onChange({ category })}
+					/>
+					<Field
+						label="중요도"
+						value={item.priority}
+						options={toOptions(PRIORITY)}
+						onChange={(priority) => onChange({ priority })}
+					/>
+				</div>
+			)}
+
+			{canRequestPriority && (
+				<button
+					type="button"
+					className="panel__priority"
+					disabled={priorityBusy}
+					onClick={onTogglePriority}
+				>
+					{priorityBusy
+						? '저장 중…'
+						: item.priorityRequested
+							? '우선 처리 요청 해제'
+							: '우선 처리 요청'}
+				</button>
+			)}
 
 			<button
 				type="button"

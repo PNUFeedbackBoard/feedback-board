@@ -11,6 +11,7 @@ import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -29,9 +30,15 @@ import lombok.NoArgsConstructor;
  * 0-1단계에서 만들지 않는다. 1단계 이후 담당자가 자기 기능과 함께 추가한다.
  *
  * <p>작성자가 등록한 피드백은 수정·삭제할 수 없다(기획안 5-3).
+ *
+ * <p>인덱스는 B가 관리용 목록 조회(project·status 필터)를 위해 추가했다.
+ * project_id는 FK라 대부분의 DB가 자동으로 인덱스를 만들어 주지만, H2는 명시하지 않으면 안 만든다.
  */
 @Entity
-@Table(name = "feedbacks")
+@Table(name = "feedbacks", indexes = {
+		@Index(name = "idx_feedbacks_status", columnList = "status"),
+		@Index(name = "idx_feedbacks_project_id", columnList = "project_id")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Feedback {
@@ -52,7 +59,17 @@ public class Feedback {
 			foreignKey = @ForeignKey(name = "fk_feedbacks_author"))
 	private User author;
 
-	/** 우선 처리 요청을 남긴 열람자. 기존 데이터와 요청이 없는 행은 null 이다 */
+	/**
+	 * 담당 개발자. 접수에서 처리 중으로 옮길 때 지정한다(기획에 없던 기능 — AssigneeDialog.jsx 주석,
+	 * docs/planning.md 8장·9장 반영). 미지정이면 null 이다. DEVELOPER·ACTIVE 계정만 지정할 수 있다
+	 * (AdminFeedbackController#update 가 검사한다, 엔티티에서는 강제하지 않는다).
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "assignee_id",
+			foreignKey = @ForeignKey(name = "fk_feedbacks_assignee"))
+	private User assignee;
+
+	/** 우선 처리 요청을 남긴 열람자. 요청이 없거나 기존 데이터면 null 이다. */
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "priority_requester_id",
 			foreignKey = @ForeignKey(name = "fk_feedbacks_priority_requester"))
@@ -89,10 +106,6 @@ public class Feedback {
 	/** 열람자의 우선 처리 요청 여부. 정렬 1순위 기준 */
 	@Column(name = "priority_requested", nullable = false)
 	private boolean priorityRequested;
-
-	/** 처리 담당자 표시 이름. 조직 계정 밖 담당자도 입력할 수 있어 문자열로 보관한다. */
-	@Column(name = "assignee_name", length = 100)
-	private String assigneeName;
 
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
@@ -142,7 +155,7 @@ public class Feedback {
 	 * 이 팩터리는 {@code DataSeeder} 가 처리 중·처리 완료처럼 중간 상태인 표본 데이터를
 	 * 만들기 위해서만 존재하며, dev 프로필 밖에서는 호출되지 않는다.
 	 *
-	 * <p>시드가 과거 시점과 처리 상태를 재현해야 하므로 일반 변경 메서드와 분리한다.
+	 * <p>TODO(A, 1단계): 상태 변경 도메인 메서드가 생기면 시드도 그것을 쓰도록 바꾸고 이 팩터리를 지운다.
 	 */
 	public static Feedback seed(Project project, User author, AuthorType authorType, String title, String content,
 			FeedbackCategory category, Priority reportedPriority, LocalDateTime createdAt,
@@ -158,12 +171,31 @@ public class Feedback {
 		return feedback;
 	}
 
-	/** 관리자가 보낸 필드만 변경하고 종료 시각을 상태와 일관되게 유지한다. */
-	public void update(FeedbackStatus status, FeedbackCategory category, Priority priority,
-			String assigneeName, LocalDateTime now) {
-		if (status != null && status != this.status) {
+	/**
+	 * 관리용 상태·유형·중요도·담당자 변경(PATCH /api/admin/feedbacks/{id}, 기획안 9장). B 가 추가했다
+	 * (Feedback 엔티티 소유는 A, 수정 전 공유 — 기획안 13-4).
+	 *
+	 * <p>status·category·priority 는 null 이면 그 필드를 바꾸지 않는다. 이 세 필드는 빈 상태(미지정)가
+	 * 없는 enum이라 "null = 변경 안 함" 규칙만으로 충분하다.
+	 *
+	 * <p>담당자는 세 경우로 나뉜다.
+	 * <ul>
+	 *   <li>{@code unassign} 이 true — assignee 값과 상관없이 담당자를 null 로 비운다(해제)</li>
+	 *   <li>{@code unassign} 이 false 이고 assignee 가 null 아님 — 그 담당자로 바꾼다(지정)</li>
+	 *   <li>{@code unassign} 이 false 이고 assignee 도 null — 담당자를 바꾸지 않는다</li>
+	 * </ul>
+	 *
+	 * <p>상태가 처음으로 DONE·REJECTED 가 되는 순간 closedAt 을 기록한다. 이미 종료된 건에
+	 * 상태를 다시 바꿔도(예: DONE → REJECTED) closedAt 은 최초 종료 시각을 유지한다.
+	 */
+	public void applyAdminUpdate(FeedbackStatus status, FeedbackCategory category, Priority priority,
+			User assignee, boolean unassign, LocalDateTime now) {
+		if (status != null) {
 			this.status = status;
-			this.closedAt = isClosed(status) ? now : null;
+			boolean closed = status == FeedbackStatus.DONE || status == FeedbackStatus.REJECTED;
+			if (closed && this.closedAt == null) {
+				this.closedAt = now;
+			}
 		}
 		if (category != null) {
 			this.category = category;
@@ -171,9 +203,10 @@ public class Feedback {
 		if (priority != null) {
 			this.priority = priority;
 		}
-		if (assigneeName != null) {
-			String normalized = assigneeName.trim();
-			this.assigneeName = normalized.isEmpty() ? null : normalized;
+		if (unassign) {
+			this.assignee = null;
+		} else if (assignee != null) {
+			this.assignee = assignee;
 		}
 	}
 
@@ -186,7 +219,7 @@ public class Feedback {
 
 	/** 답변과 동시에 완료 처리할 때 사용한다. */
 	public void markDone(LocalDateTime now) {
-		update(FeedbackStatus.DONE, null, null, null, now);
+		applyAdminUpdate(FeedbackStatus.DONE, null, null, null, false, now);
 	}
 
 	/** 열람자의 우선 처리 요청을 토글한다. 해제는 요청자 본인만 할 수 있다. */
@@ -203,9 +236,5 @@ public class Feedback {
 		this.priorityRequested = true;
 		this.priority = Priority.HIGH;
 		this.priorityRequester = requester;
-	}
-
-	private boolean isClosed(FeedbackStatus status) {
-		return status == FeedbackStatus.DONE || status == FeedbackStatus.REJECTED;
 	}
 }

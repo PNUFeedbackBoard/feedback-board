@@ -2,14 +2,14 @@ package kr.ac.pusan.feedback.admin;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,22 +38,29 @@ import kr.ac.pusan.feedback.common.enums.AuthorType;
 import kr.ac.pusan.feedback.common.enums.FeedbackCategory;
 import kr.ac.pusan.feedback.common.enums.FeedbackSort;
 import kr.ac.pusan.feedback.common.enums.FeedbackStatus;
-import kr.ac.pusan.feedback.common.enums.Priority;
+import kr.ac.pusan.feedback.common.enums.Role;
+import kr.ac.pusan.feedback.common.enums.UserStatus;
 import kr.ac.pusan.feedback.domain.Answer;
 import kr.ac.pusan.feedback.domain.Feedback;
 import kr.ac.pusan.feedback.domain.User;
 import kr.ac.pusan.feedback.domain.repository.AnswerRepository;
 import kr.ac.pusan.feedback.domain.repository.FeedbackRepository;
 import kr.ac.pusan.feedback.domain.repository.UserRepository;
-import kr.ac.pusan.feedback.feedback.FeedbackMapper;
 import kr.ac.pusan.feedback.feedback.dto.AnswerResponse;
-import lombok.RequiredArgsConstructor;
 
-/** 관리 화면에서 사용하는 피드백 조회와 변경 API. */
+/**
+ * 관리용 피드백 API. 기획안 6-3, 6-4, 9장.
+ *
+ * <p>목록·상세 조회(1단계)와 상태·유형·중요도·담당자 변경(원래 3단계 예정이었으나,
+ * 프론트가 접수칸에서도 상세 패널로 바로 바꿀 수 있게 하면서 앞당겨 구현했다)을
+ * B 가 실제 구현으로 교체했다(기획안 13-5). 답변 등록과 우선 처리 요청도 DB에 저장한다.
+ *
+ * <p>권한은 0-1단계 SecurityConfig 가 이미 선언했다. 조회는 DEVELOPER·VIEWER, 변경은 DEVELOPER 전용이며
+ * VIEWER 의 변경 호출은 403 이다(기획안 9장) — 여기서 따로 검사하지 않는다.
+ */
 @Tag(name = "관리", description = "개발자·열람자용 API")
 @RestController
 @RequestMapping("/api/admin/feedbacks")
-@RequiredArgsConstructor
 @PreAuthorize("principal.status == T(kr.ac.pusan.feedback.common.enums.UserStatus).ACTIVE")
 public class AdminFeedbackController {
 
@@ -60,8 +68,18 @@ public class AdminFeedbackController {
 	private final AnswerRepository answerRepository;
 	private final UserRepository userRepository;
 
+	AdminFeedbackController(
+			FeedbackRepository feedbackRepository,
+			AnswerRepository answerRepository,
+			UserRepository userRepository) {
+		this.feedbackRepository = feedbackRepository;
+		this.answerRepository = answerRepository;
+		this.userRepository = userRepository;
+	}
+
 	@Operation(summary = "관리용 피드백 목록 조회",
-			description = "필터는 사이트·상태·유형·기간·회원 여부·답변 여부이고, 우선 처리 요청을 항상 먼저 정렬한다.")
+			description = "필터는 사이트·상태·유형·기간·회원 여부·답변 유무이고 정렬은 PRIORITY·LATEST·OLDEST 다. "
+					+ "어떤 정렬을 골라도 우선 처리 요청 항목이 최상단에 고정된다.")
 	@GetMapping
 	@Transactional(readOnly = true)
 	public AdminFeedbackPage feedbacks(
@@ -74,51 +92,81 @@ public class AdminFeedbackController {
 			@RequestParam(required = false) AuthorType authorType,
 			@RequestParam(required = false) Boolean answered,
 			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "20") int size
-	) {
+			@RequestParam(defaultValue = "20") int size) {
 		validatePage(page, size);
 		if (from != null && to != null && from.isAfter(to)) {
 			throw new IllegalArgumentException("시작일은 종료일보다 늦을 수 없습니다.");
 		}
 
-		List<Feedback> all = feedbackRepository.findAllWithAssociations();
-		Map<Long, Answer> answers = answersByFeedback(all);
-		Comparator<Feedback> order = feedbackOrder(sort == null ? FeedbackSort.PRIORITY : sort);
-		List<Feedback> filtered = all.stream()
-				.filter(feedback -> project == null || project.isBlank() || feedback.getProject().getCode().equals(project))
-				.filter(feedback -> status == null || feedback.getStatus() == status)
-				.filter(feedback -> category == null || feedback.getCategory() == category)
-				.filter(feedback -> authorType == null || feedback.getAuthorType() == authorType)
-				.filter(feedback -> from == null || !feedback.getCreatedAt().toLocalDate().isBefore(from))
-				.filter(feedback -> to == null || !feedback.getCreatedAt().toLocalDate().isAfter(to))
-				.filter(feedback -> answered == null || answers.containsKey(feedback.getId()) == answered)
-				.sorted(order)
+		// to 는 날짜(하루 단위)라서, 그날 전체를 포함하도록 다음날 0시 "미만"으로 바꾼다.
+		LocalDateTime fromInclusive = from == null ? null : from.atStartOfDay();
+		LocalDateTime toExclusive = to == null ? null : to.plusDays(1).atStartOfDay();
+
+		// answered(답변 유무)는 자바에서 거르지 않고 쿼리의 EXISTS 서브쿼리가 DB에서 직접 거른다.
+		// 조건에 안 맞는 행은 애초에 서버로 전송되지 않으니, 목록이 커져도 느려지지 않는다.
+		FeedbackSort effectiveSort = sort == null ? FeedbackSort.LATEST : sort;
+		Page<Feedback> matched = feedbackRepository.searchForAdmin(
+				project, status, category, authorType, fromInclusive, toExclusive, answered,
+				effectiveSort.name(), PageRequest.of(page, size));
+
+		// answeredIds는 필터링용이 아니라 DTO의 answered 필드를 채우는 표시용이다 — 건마다 따로
+		// 조회하면 N+1이 나니 한 번에 구한다.
+		Set<Long> answeredIds = answeredFeedbackIds(matched.getContent());
+
+		List<AdminFeedbackSummary> items = matched.getContent().stream()
+				.map(feedback -> AdminFeedbackMapper.toSummary(feedback, answeredIds.contains(feedback.getId())))
 				.toList();
 
-		int start = Math.min(page * size, filtered.size());
-		int end = Math.min(start + size, filtered.size());
-		List<AdminFeedbackSummary> items = filtered.subList(start, end).stream()
-				.map(feedback -> FeedbackMapper.adminSummary(feedback, answers.containsKey(feedback.getId())))
-				.toList();
-		return new AdminFeedbackPage(items, filtered.size());
+		// totalCount 는 이번 페이지 건수가 아니라 필터 조건 전체 건수다(AdminFeedbackPage 계약).
+		return new AdminFeedbackPage(items, matched.getTotalElements());
 	}
 
-	@Operation(summary = "관리용 피드백 상세 조회")
+	@Operation(summary = "관리용 피드백 상세 조회",
+			description = "목록 항목의 모든 필드에 본문, 내부 타임스탬프, 답변을 더해 내려준다.")
 	@GetMapping("/{id}")
 	@Transactional(readOnly = true)
 	public AdminFeedbackDetail feedback(@PathVariable Long id) {
-		Feedback feedback = findFeedback(id);
-		return FeedbackMapper.adminDetail(feedback, answerRepository.findByFeedbackId(id).orElse(null));
+		Feedback feedback = feedbackRepository.findDetailById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
+		return AdminFeedbackMapper.toDetail(feedback, answer);
 	}
 
-	@Operation(summary = "상태·유형·중요도 변경",
-			description = "개발자 전용이다. 보낸 필드만 바꾼다. 작성자가 고른 reportedPriority 는 바꿀 수 없다.")
+	@Operation(summary = "상태·유형·중요도·담당자 변경",
+			description = "개발자 전용이다. 보낸 필드만 바꾼다. 작성자가 고른 reportedPriority 는 바꿀 수 없다. "
+					+ "assigneeId 는 기획에 없던 기능으로, DEVELOPER·ACTIVE 계정이 아니면 400 이다. "
+					+ "담당자를 해제하려면 assigneeId 대신 unassign 을 true 로 보낸다.")
 	@PatchMapping("/{id}")
 	@Transactional
 	public AdminFeedbackDetail update(@PathVariable Long id, @RequestBody FeedbackUpdateRequest request) {
-		Feedback feedback = findFeedback(id);
-		feedback.update(request.status(), request.category(), request.priority(), request.assigneeName(), LocalDateTime.now());
-		return FeedbackMapper.adminDetail(feedback, answerRepository.findByFeedbackId(id).orElse(null));
+		Feedback feedback = feedbackRepository.findDetailById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+
+		// unassign이 true면 assigneeId는 보든 말든 무시한다 — 조회·검증(400)까지 할 필요가 없다.
+		User assignee = request.unassign() ? null : resolveAssignee(request.assigneeId());
+
+		feedback.applyAdminUpdate(request.status(), request.category(), request.priority(), assignee,
+				request.unassign(), LocalDateTime.now());
+
+		// save()가 돌려주는 인스턴스를 쓰지 않는다. merge()는 내부적으로 DB에서 다시 읽어온 새 인스턴스를
+		// 돌려줄 수 있는데, 그 인스턴스는 project·author·assignee가 초기화 안 된 지연 로딩 프록시라서
+		// toDetail()에서 LazyInitializationException이 난다. findDetailById로 이미 JOIN FETCH 해 둔
+		// feedback을 그대로 쓰면 이 문제가 없다. (변경 사항은 save() 호출만으로 DB에 반영된다.)
+		feedbackRepository.save(feedback);
+
+		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
+		return AdminFeedbackMapper.toDetail(feedback, answer);
+	}
+
+	/** assigneeId 가 null 이면 담당자를 바꾸지 않는다(null 반환). 보낸 id가 DEVELOPER·ACTIVE 가 아니면 400. */
+	private User resolveAssignee(Long assigneeId) {
+		if (assigneeId == null) {
+			return null;
+		}
+		return userRepository.findById(assigneeId)
+				.filter(user -> user.getRole() == Role.DEVELOPER && user.getStatus() == UserStatus.ACTIVE)
+				.orElseThrow(() -> new ResponseStatusException(
+						HttpStatus.BAD_REQUEST, "담당자로 지정할 수 없는 계정입니다."));
 	}
 
 	@Operation(summary = "답변 등록·수정",
@@ -128,14 +176,15 @@ public class AdminFeedbackController {
 	public AnswerResponse upsertAnswer(
 			@PathVariable Long id,
 			@Valid @RequestBody AnswerUpsertRequest request,
-			@CurrentUser AppUserPrincipal currentUser
-	) {
-		Feedback feedback = findFeedback(id);
+			@CurrentUser AppUserPrincipal currentUser) {
+		Feedback feedback = feedbackRepository.findDetailById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
 		if (feedback.getAuthorType() == AuthorType.GUEST) {
 			throw new IllegalArgumentException("비회원 피드백에는 답변을 등록할 수 없습니다.");
 		}
+
 		User author = userRepository.findById(currentUser.getId())
-				.orElseThrow(() -> new NoSuchElementException("로그인 계정을 찾을 수 없습니다."));
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 계정을 찾을 수 없습니다."));
 		LocalDateTime now = LocalDateTime.now();
 		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
 		if (answer == null) {
@@ -153,7 +202,8 @@ public class AdminFeedbackController {
 		if (request.markDone()) {
 			feedback.markDone(now);
 		}
-		return FeedbackMapper.answer(answer);
+
+		return new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
 	}
 
 	@Operation(summary = "우선 처리 요청 토글",
@@ -162,58 +212,35 @@ public class AdminFeedbackController {
 	@Transactional
 	public PriorityRequestResponse priorityRequest(
 			@PathVariable Long id,
-			@CurrentUser AppUserPrincipal currentUser
-	) {
-		Feedback feedback = findFeedback(id);
+			@CurrentUser AppUserPrincipal currentUser) {
+		Feedback feedback = feedbackRepository.findDetailById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
 		User requester = userRepository.findById(currentUser.getId())
-				.orElseThrow(() -> new NoSuchElementException("로그인 계정을 찾을 수 없습니다."));
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 계정을 찾을 수 없습니다."));
 		feedback.togglePriorityRequest(requester);
 		return new PriorityRequestResponse(feedback.getId(), feedback.isPriorityRequested(), feedback.getPriority());
 	}
 
-	private Feedback findFeedback(Long id) {
-		return feedbackRepository.findByIdWithAssociations(id)
-				.orElseThrow(() -> new NoSuchElementException("피드백을 찾을 수 없습니다."));
-	}
-
-	private Map<Long, Answer> answersByFeedback(List<Feedback> feedbacks) {
-		if (feedbacks.isEmpty()) {
-			return Map.of();
-		}
-		return answerRepository.findAllByFeedbackIdIn(feedbacks.stream().map(Feedback::getId).toList())
-				.stream()
-				.collect(Collectors.toMap(answer -> answer.getFeedback().getId(), Function.identity()));
-	}
-
-	private Comparator<Feedback> feedbackOrder(FeedbackSort sort) {
-		return (left, right) -> {
-			int requested = Boolean.compare(right.isPriorityRequested(), left.isPriorityRequested());
-			if (requested != 0) {
-				return requested;
-			}
-			if (sort == FeedbackSort.PRIORITY) {
-				int priority = Integer.compare(priorityRank(left.getPriority()), priorityRank(right.getPriority()));
-				if (priority != 0) {
-					return priority;
-				}
-			}
-			return sort == FeedbackSort.OLDEST
-					? left.getCreatedAt().compareTo(right.getCreatedAt())
-					: right.getCreatedAt().compareTo(left.getCreatedAt());
-		};
-	}
-
-	private int priorityRank(Priority priority) {
-		return switch (priority) {
-			case HIGH -> 0;
-			case NORMAL -> 1;
-			case LOW -> 2;
-		};
-	}
-
-	private void validatePage(int page, int size) {
+	private static void validatePage(int page, int size) {
 		if (page < 0 || size < 1 || size > 100) {
 			throw new IllegalArgumentException("page는 0 이상, size는 1~100이어야 합니다.");
 		}
+	}
+
+	// ------------------------------------------------------------------
+	// Entity → DTO 변환
+	// ------------------------------------------------------------------
+
+	/**
+	 * 주어진 피드백들 중 답변이 달린 id만 한 번의 쿼리로 구한다(목록에서 건마다 조회하는 N+1을 막는다).
+	 * AdminDashboardController 에도 같은 모양의 메서드가 있다 — answerRepository 인스턴스가 필요해서
+	 * AdminFeedbackMapper(정적 유틸)로는 뺄 수 없었다. 로직 자체가 세 줄이라 중복 비용이 작다고 판단했다.
+	 */
+	private Set<Long> answeredFeedbackIds(List<Feedback> feedbacks) {
+		List<Long> ids = feedbacks.stream().map(Feedback::getId).toList();
+		if (ids.isEmpty()) {
+			return Set.of();
+		}
+		return new HashSet<>(answerRepository.findFeedbackIdsWithAnswer(ids));
 	}
 }

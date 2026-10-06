@@ -44,4 +44,4 @@
 
 관리 목록은 `project`, `status`, `category`, `sort`, `from`, `to`, `authorType`, `answered`, `page`, `size` 쿼리를 지원한다. 어떤 정렬에서도 우선 처리 요청이 먼저 나오며 `size`는 1~100이다.
 
-피드백 변경 본문은 `status`, `category`, `priority`, `assigneeName` 중 바꿀 값만 보낸다. `assigneeName`에 빈 문자열을 보내면 담당자를 해제한다.
+피드백 변경 본문은 `status`, `category`, `priority`, `assigneeId`, `unassign` 중 필요한 값만 보낸다. 담당자를 지정할 때는 활성 개발자 계정의 `assigneeId`를 보내고, 해제할 때는 `unassign: true`를 보낸다.

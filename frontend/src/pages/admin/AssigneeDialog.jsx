@@ -5,10 +5,10 @@ import './assignee-dialog.css'
 /**
  * 담당자 입력 창. 접수에서 처리 중으로 옮기는 순간에 뜬다.
  *
- * 선택한 이름은 상태 변경과 함께 assigneeName 필드로 서버에 저장된다.
+ * 선택한 개발자 계정 id는 상태 변경과 함께 assigneeId 필드로 서버에 저장된다.
  */
 export default function AssigneeDialog({ feedbackTitle, onConfirm, onCancel }) {
-	const [name, setName] = useState('')
+	const [assigneeId, setAssigneeId] = useState('')
 	const [developers, setDevelopers] = useState([])
 	const inputRef = useRef(null)
 
@@ -16,7 +16,6 @@ export default function AssigneeDialog({ feedbackTitle, onConfirm, onCancel }) {
 		inputRef.current?.focus()
 
 		// 개발자 목록을 받아 고를 수 있게 한다. 이름을 매번 손으로 적으면 표기가 갈린다.
-		// 열람자 계정은 이 API 에서 403 을 받으므로 그때는 직접 입력만 남는다.
 		let cancelled = false
 		getAdminUsers()
 			.then((users) => {
@@ -32,7 +31,7 @@ export default function AssigneeDialog({ feedbackTitle, onConfirm, onCancel }) {
 
 	function submit(event) {
 		event.preventDefault()
-		onConfirm(name.trim())
+		onConfirm(assigneeId ? Number(assigneeId) : null)
 	}
 
 	return (
@@ -46,20 +45,19 @@ export default function AssigneeDialog({ feedbackTitle, onConfirm, onCancel }) {
 				<p className="dialog__subject">{feedbackTitle}</p>
 				<p className="dialog__help">처리 중으로 옮깁니다. 누가 맡는지 적어 두면 보드에서 바로 보입니다.</p>
 
-				<input
+				<select
 					ref={inputRef}
-					className="dialog__input"
-					list="assignee-candidates"
-					value={name}
-					onChange={(event) => setName(event.target.value)}
-					placeholder="이름 (비워 두면 미지정)"
-					autoComplete="off"
-				/>
-				<datalist id="assignee-candidates">
+					className="dialog__select"
+					value={assigneeId}
+					onChange={(event) => setAssigneeId(event.target.value)}
+				>
+					<option value="">담당자 미지정</option>
 					{developers.map((developer) => (
-						<option key={developer.id} value={developer.name} />
+						<option key={developer.id} value={developer.id}>
+							{developer.name}
+						</option>
 					))}
-				</datalist>
+				</select>
 
 				<div className="dialog__actions">
 					<button type="button" className="dialog__button" onClick={onCancel}>

@@ -15,9 +15,8 @@ import './admin-layout.css'
  *   본문      (<Outlet />)
  *   하단      (프로젝트 전환)
  *
- * 규칙 두 가지를 지킨다.
- *   - **화면이 역할을 판단하지 않는다.** getMe() 가 내려준 값을 표시만 한다. (기획 13-2)
- *   - 권한 검사는 API 가 한다. 여기서 경로를 막지 않는다. (routes.jsx 주석)
+ * 권한의 기준은 getMe() 응답이다. 하위 화면은 Outlet context 로 같은 값을 받아
+ * 서버에서 거부될 조작을 애초에 버튼이나 드래그 대상으로 보여 주지 않는다.
  */
 export default function AdminLayout() {
 	// 상단 탭은 "선택된 프로젝트 안의 메뉴"라 프로젝트가 정해진 경로에서만 나온다.
@@ -88,7 +87,7 @@ export default function AdminLayout() {
 				</nav>
 			)}
 
-			<main className="admin-body"><Outlet /></main>
+			<main className="admin-body"><Outlet context={{ me }} /></main>
 
 			<ProjectDisc projects={projects} projectCode={projectCode} />
 
