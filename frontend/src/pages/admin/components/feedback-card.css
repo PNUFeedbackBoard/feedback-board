@@ -23,6 +23,14 @@
 
 .card.is-picked,
 .card:focus-within { border-color: var(--feedback-purple); box-shadow: var(--feedback-shadow-card), var(--feedback-focus-ring); }
+
+/* 비회원이 등록한 피드백은 답변 대상이 아니다(기획 6-4). 다른 카드와 구분되도록 흐리게 표시한다.
+   FeedbackCard.jsx와 AnswersPage.jsx는 계속 dimmed prop/is-dimmed 클래스를 쓰고 있었는데,
+   이 디자인 리뉴얼 과정에서 규칙이 빠져 있었다(답변 버튼이 안 보이는 기능은 살아 있었지만
+   시각적으로 흐려 보이지는 않았다). */
+.card.is-dimmed { opacity: 0.7; }
+.card.is-dimmed .card__title { color: var(--feedback-muted); }
+
 .card__head { display: flex; align-items: flex-start; gap: var(--feedback-space-3); }
 .card__tags { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: var(--feedback-space-2); min-width: 0; }
 .card__title {
