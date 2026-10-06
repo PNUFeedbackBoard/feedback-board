@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -50,6 +51,21 @@ public class GlobalExceptionHandler {
 			HttpServletRequest request
 	) {
 		return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST_BODY", "요청 본문을 읽을 수 없습니다.", request, List.of());
+	}
+
+	/**
+	 * 컨트롤러에서 {@code new ResponseStatusException(HttpStatus.NOT_FOUND, "...")} 처럼 던진 예외.
+	 * 상태 코드와 메시지를 그대로 써서 ApiErrorResponse 형식에 맞춰 돌려준다.
+	 * 이게 없으면 아래 handleUnexpected 가 잡아서 의도한 404 대신 500 이 나간다.
+	 */
+	@ExceptionHandler(ResponseStatusException.class)
+	ResponseEntity<ApiErrorResponse> handleResponseStatus(
+			ResponseStatusException exception,
+			HttpServletRequest request
+	) {
+		HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
+		String message = exception.getReason() != null ? exception.getReason() : status.getReasonPhrase();
+		return error(status, status.name(), message, request, List.of());
 	}
 
 	@ExceptionHandler(NoResourceFoundException.class)

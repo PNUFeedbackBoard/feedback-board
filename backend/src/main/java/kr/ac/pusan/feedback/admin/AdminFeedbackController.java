@@ -1,8 +1,14 @@
 package kr.ac.pusan.feedback.admin;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,11 +18,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackDetail;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackPage;
+import kr.ac.pusan.feedback.admin.dto.AdminFeedbackSummary;
 import kr.ac.pusan.feedback.admin.dto.AnswerUpsertRequest;
 import kr.ac.pusan.feedback.admin.dto.FeedbackUpdateRequest;
 import kr.ac.pusan.feedback.admin.dto.PriorityRequestResponse;
@@ -25,26 +33,35 @@ import kr.ac.pusan.feedback.common.enums.AuthorType;
 import kr.ac.pusan.feedback.common.enums.FeedbackCategory;
 import kr.ac.pusan.feedback.common.enums.FeedbackSort;
 import kr.ac.pusan.feedback.common.enums.FeedbackStatus;
+import kr.ac.pusan.feedback.common.enums.Priority;
+import kr.ac.pusan.feedback.domain.Answer;
+import kr.ac.pusan.feedback.domain.Feedback;
+import kr.ac.pusan.feedback.domain.repository.AnswerRepository;
+import kr.ac.pusan.feedback.domain.repository.FeedbackRepository;
 import kr.ac.pusan.feedback.feedback.dto.AnswerResponse;
 
 /**
  * 관리용 피드백 API. 기획안 6-3, 6-4, 9장.
  *
- * <p>0-1단계 스텁이다. 모든 응답은 StubData 의 고정값이며 필터·정렬·권한 검사를 하지 않는다.
- * 목록 14건에 상태 4종·유형 3종·중요도 3종과 우선 처리 요청 2건, 비회원 3건이 들어 있어
- * 칸반 3열, 반영 불가 목록, 비회원 비활성 표시를 스텁만으로 확인할 수 있다.
+ * <p>목록·상세 조회는 1단계에 B 가 실제 구현으로 교체했다(기획안 13-5).
+ * 상태·유형·중요도 변경과 답변 등록은 아직 스텁이며 각자 담당 단계에서 교체된다.
  *
- * <p>권한은 1단계에서 붙인다. 조회는 DEVELOPER·VIEWER, 변경은 DEVELOPER 전용이며
- * VIEWER 의 변경 호출은 403 이다(기획안 9장).
+ * <p>권한은 0-1단계 SecurityConfig 가 이미 선언했다. 조회는 DEVELOPER·VIEWER, 변경은 DEVELOPER 전용이며
+ * VIEWER 의 변경 호출은 403 이다(기획안 9장) — 여기서 따로 검사하지 않는다.
  */
 @Tag(name = "관리", description = "개발자·열람자용 API")
 @RestController
 @RequestMapping("/api/admin/feedbacks")
 public class AdminFeedbackController {
 
-	// TODO(B, 1단계): 실제 필터·정렬·페이지 조회로 교체한다.
-	//                 정렬 1순위는 항상 우선 처리 요청 여부이고, sort 값은 2순위로 적용한다(기획안 4-5).
-	//                 totalCount 는 페이지가 아니라 필터 조건 전체의 건수다.
+	private final FeedbackRepository feedbackRepository;
+	private final AnswerRepository answerRepository;
+
+	AdminFeedbackController(FeedbackRepository feedbackRepository, AnswerRepository answerRepository) {
+		this.feedbackRepository = feedbackRepository;
+		this.answerRepository = answerRepository;
+	}
+
 	@Operation(summary = "관리용 피드백 목록 조회",
 			description = "필터는 사이트·상태·유형·기간·회원 여부이고 정렬은 PRIORITY·LATEST·OLDEST 다. "
 					+ "어떤 정렬을 골라도 우선 처리 요청 항목이 최상단에 고정된다.")
@@ -59,15 +76,35 @@ public class AdminFeedbackController {
 			@RequestParam(required = false) AuthorType authorType,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-		return StubData.adminFeedbackPage();
+
+		// to 는 날짜(하루 단위)라서, 그날 전체를 포함하도록 다음날 0시 "미만"으로 바꾼다.
+		LocalDateTime fromInclusive = from == null ? null : from.atStartOfDay();
+		LocalDateTime toExclusive = to == null ? null : to.plusDays(1).atStartOfDay();
+
+		List<Feedback> matched = feedbackRepository.searchForAdmin(
+				project, status, category, authorType, fromInclusive, toExclusive);
+		matched.sort(comparator(sort));
+
+		Set<Long> answeredIds = answeredFeedbackIds(matched);
+
+		int fromIndex = Math.min(page * size, matched.size());
+		int toIndex = Math.min(fromIndex + size, matched.size());
+		List<AdminFeedbackSummary> items = matched.subList(fromIndex, toIndex).stream()
+				.map(feedback -> toSummary(feedback, answeredIds.contains(feedback.getId())))
+				.toList();
+
+		// totalCount 는 이번 페이지 건수가 아니라 필터 조건 전체 건수다(AdminFeedbackPage 계약).
+		return new AdminFeedbackPage(items, matched.size());
 	}
 
-	// TODO(B, 1단계): 실제 조회로 교체한다. 없는 id 면 404 를 반환한다.
 	@Operation(summary = "관리용 피드백 상세 조회",
 			description = "목록 항목의 모든 필드에 본문, 내부 타임스탬프, 답변을 더해 내려준다.")
 	@GetMapping("/{id}")
 	public AdminFeedbackDetail feedback(@PathVariable Long id) {
-		return StubData.adminFeedbackDetail(id);
+		Feedback feedback = feedbackRepository.findDetailById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
+		return toDetail(feedback, answer);
 	}
 
 	// TODO(B, 3단계): 실제 변경으로 교체한다.
@@ -99,5 +136,94 @@ public class AdminFeedbackController {
 	@PostMapping("/{id}/priority-request")
 	public PriorityRequestResponse priorityRequest(@PathVariable Long id) {
 		return StubData.priorityRequest(id);
+	}
+
+	// ------------------------------------------------------------------
+	// 정렬 (기획안 4-5)
+	// ------------------------------------------------------------------
+
+	/**
+	 * 우선 처리 요청 여부가 항상 1순위이고, sort 로 고른 기준이 2순위다.
+	 * sort 가 비어 있으면 LATEST 로 취급한다.
+	 */
+	private static Comparator<Feedback> comparator(FeedbackSort sort) {
+		Comparator<Feedback> secondary = switch (sort == null ? FeedbackSort.LATEST : sort) {
+			case LATEST -> Comparator.comparing(Feedback::getCreatedAt).reversed();
+			case OLDEST -> Comparator.comparing(Feedback::getCreatedAt);
+			// 중요도순: HIGH -> NORMAL -> LOW, 같은 중요도면 최신순.
+			case PRIORITY -> Comparator
+					.<Feedback, Integer>comparing(feedback -> priorityRank(feedback.getPriority()))
+					.thenComparing(Feedback::getCreatedAt, Comparator.reverseOrder());
+		};
+
+		return Comparator
+				.comparing(Feedback::isPriorityRequested).reversed() // true(요청됨)가 먼저 오게 reversed
+				.thenComparing(secondary);
+	}
+
+	private static int priorityRank(Priority priority) {
+		return switch (priority) {
+			case HIGH -> 0;
+			case NORMAL -> 1;
+			case LOW -> 2;
+		};
+	}
+
+	// ------------------------------------------------------------------
+	// Entity → DTO 변환
+	// ------------------------------------------------------------------
+
+	/** 주어진 피드백들 중 답변이 달린 id만 한 번의 쿼리로 구한다(목록에서 건마다 조회하는 N+1을 막는다). */
+	private Set<Long> answeredFeedbackIds(List<Feedback> feedbacks) {
+		List<Long> ids = feedbacks.stream().map(Feedback::getId).toList();
+		if (ids.isEmpty()) {
+			return Set.of();
+		}
+		return new HashSet<>(answerRepository.findFeedbackIdsWithAnswer(ids));
+	}
+
+	private static String authorNameOf(Feedback feedback) {
+		return feedback.getAuthorType() == AuthorType.GUEST ? null : feedback.getAuthor().getName();
+	}
+
+	private static AdminFeedbackSummary toSummary(Feedback feedback, boolean answered) {
+		return new AdminFeedbackSummary(
+				feedback.getId(),
+				feedback.getProject().getCode(),
+				feedback.getProject().getName(),
+				feedback.getTitle(),
+				feedback.getCategory(),
+				feedback.getStatus(),
+				feedback.getReportedPriority(),
+				feedback.getPriority(),
+				feedback.isPriorityRequested(),
+				feedback.getAuthorType(),
+				authorNameOf(feedback),
+				feedback.getCreatedAt(),
+				answered);
+	}
+
+	private static AdminFeedbackDetail toDetail(Feedback feedback, Answer answer) {
+		AnswerResponse answerResponse = answer == null ? null
+				: new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
+
+		return new AdminFeedbackDetail(
+				feedback.getId(),
+				feedback.getProject().getCode(),
+				feedback.getProject().getName(),
+				feedback.getTitle(),
+				feedback.getCategory(),
+				feedback.getStatus(),
+				feedback.getReportedPriority(),
+				feedback.getPriority(),
+				feedback.isPriorityRequested(),
+				feedback.getAuthorType(),
+				authorNameOf(feedback),
+				feedback.getCreatedAt(),
+				answer != null,
+				feedback.getContent(),
+				feedback.getFirstAnsweredAt(),
+				feedback.getClosedAt(),
+				answerResponse);
 	}
 }
