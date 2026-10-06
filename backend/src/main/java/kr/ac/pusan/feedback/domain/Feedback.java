@@ -33,11 +33,16 @@ import lombok.NoArgsConstructor;
  *
  * <p>인덱스는 B가 관리용 목록 조회(project·status 필터)를 위해 추가했다.
  * project_id는 FK라 대부분의 DB가 자동으로 인덱스를 만들어 주지만, H2는 명시하지 않으면 안 만든다.
+ * created_at·author_id는 5단계 성능 점검(기획안 13-5) 때 추가했다 — 1,040건 기준 실측에서는
+ * 아직 체감되는 지연이 없었지만, 날짜 필터·정렬·기간별 추이 집계(created_at)와 사용자의
+ * "내 문의" 조회(author_id)가 전부 이 두 컬럼을 거치므로 데이터가 늘기 전에 미리 걸어 둔다.
  */
 @Entity
 @Table(name = "feedbacks", indexes = {
 		@Index(name = "idx_feedbacks_status", columnList = "status"),
-		@Index(name = "idx_feedbacks_project_id", columnList = "project_id")
+		@Index(name = "idx_feedbacks_project_id", columnList = "project_id"),
+		@Index(name = "idx_feedbacks_created_at", columnList = "created_at"),
+		@Index(name = "idx_feedbacks_author_id", columnList = "author_id")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
