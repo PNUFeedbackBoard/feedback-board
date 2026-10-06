@@ -1,93 +1,53 @@
+import { UserRound } from 'lucide-react'
 import { AUTHOR_TYPE, labelOf } from '../../../constants/enums.js'
-import CategoryTag from './CategoryTag.jsx'
-import PriorityChip from './PriorityChip.jsx'
-import PriorityRequestBadge from './PriorityRequestBadge.jsx'
+import CategoryTag from '../../../components/common/CategoryTag.jsx'
+import PriorityChip from '../../../components/common/PriorityChip.jsx'
+import PriorityRequestBadge from '../../../components/common/PriorityRequestBadge.jsx'
+import StatusBadge from '../../../components/common/StatusBadge.jsx'
+import './feedback-card.css'
 
-/**
- * 피드백 카드. 접수 · 개발 보드 · 답변 세 화면이 함께 쓴다.
- *
- * 표시 항목은 기획 6-3 이 정한 7가지다.
- * 우선 처리 요청 배지 · 중요도 · 제목 · 유형 · 경과일 · 회원 여부 · 답변 여부
- * 담당자는 그 위에 얹은 항목이며 지정된 카드에만 나온다.
- *
- * @param {object} props
- * @param {object} props.item AdminFeedbackSummary
- * @param {string} [props.assignee] 담당자 이름. undefined 면 줄 자체가 나오지 않는다
- * @param {boolean} [props.dimmed] 비회원처럼 손댈 수 없는 항목을 흐리게 표시한다
- * @param {import('react').ReactNode} [props.action] 카드 아래에 붙는 버튼
- * @param {boolean} [props.selected] 체크 상태. onSelect 를 함께 주어야 체크칸이 나온다
- * @param {(next: boolean) => void} [props.onSelect] 체크칸을 누를 때 호출된다
- * @param {() => void} [props.onOpen] 카드를 누를 때 호출된다. 상세 패널을 여는 데 쓴다
- */
-export default function FeedbackCard({
-	item,
-	assignee,
-	dimmed = false,
-	action,
-	selected,
-	onSelect,
-	onOpen,
-}) {
-	return (
-		<article
-			className={cardClassName(dimmed, selected)}
-			data-priority-requested={item.priorityRequested}
-			// 열 수 있는 카드만 눌리게 한다. onOpen 이 없으면 그냥 보는 카드다.
-			onClick={onOpen}
-		>
-			<header className="card__head">
-				<div className="card__tags">
-					{onSelect && (
-						// 카드를 누르면 패널이 열리는 자리도 있으므로 체크칸까지 번지지 않게 막는다.
-						<label className="card__check" onClick={(event) => event.stopPropagation()}>
-							<input
-								type="checkbox"
-								checked={selected ?? false}
-								onChange={(event) => onSelect(event.target.checked)}
-							/>
-							<span className="card__check-label">선택</span>
-						</label>
-					)}
-					<CategoryTag category={item.category} />
-					<PriorityChip priority={item.priority} />
-				</div>
-				{item.priorityRequested && <PriorityRequestBadge />}
-			</header>
-
-			<h3 className="card__title">{item.title}</h3>
-
-			<footer className="card__meta">
-				<span>{daysSince(item.createdAt)}일 경과</span>
-				<span>{labelOf(AUTHOR_TYPE, item.authorType)}</span>
-				<span>{item.answered ? '답변 완료' : '답변 없음'}</span>
-			</footer>
-
-			{assignee !== undefined && (
-				<p className="card__assignee">{assignee ? `담당 ${assignee}` : '담당 미지정'}</p>
-			)}
-
-			{/* 선택 박스 같은 조작은 카드를 여는 동작과 겹치지 않게 막는다. */}
-			{action && (
-				<div className="card__action" onClick={(event) => event.stopPropagation()}>
-					{action}
-				</div>
-			)}
-		</article>
-	)
+/** 제공된 카드 시안. 선택·상세·담당자·화면별 action 계약은 유지한다. */
+export default function FeedbackCard({ item, assignee, dimmed = false, action, selected, onSelect, onOpen }) {
+  const names = ['card', dimmed && 'is-dimmed', selected && 'is-picked'].filter(Boolean).join(' ')
+  return (
+    <article className={names} data-priority-requested={item.priorityRequested} onClick={onOpen}>
+      <header className="card__head">
+        <div className="card__tags">
+          <CategoryTag category={item.category} />
+          <PriorityChip priority={item.priority} />
+          <StatusBadge status={item.status} />
+          {item.priorityRequested && <PriorityRequestBadge />}
+        </div>
+        {onSelect && (
+          <label className="card__check" onClick={(event) => event.stopPropagation()}>
+            <input type="checkbox" aria-label={`${item.title} 선택`} checked={selected ?? false} onChange={(event) => onSelect(event.target.checked)} />
+          </label>
+        )}
+      </header>
+      <h3 className="card__title">
+        {onOpen ? <button type="button" className="card__open" onClick={(event) => { event.stopPropagation(); onOpen() }}>{item.title}</button> : item.title}
+      </h3>
+      <footer className="card__footer">
+        <div className="card__information">
+          <p className="card__author"><UserRound aria-hidden="true" /><span>{item.authorType === 'GUEST' ? labelOf(AUTHOR_TYPE, 'GUEST') : item.authorName || labelOf(AUTHOR_TYPE, item.authorType)}</span></p>
+          <p className="card__meta"><time dateTime={item.createdAt}>{formatCreatedAt(item.createdAt)}</time><span>, <strong>{daysSince(item.createdAt)}일 경과</strong></span></p>
+          <p className="card__details">{labelOf(AUTHOR_TYPE, item.authorType)} · {item.answered ? '답변 완료' : '답변 없음'}</p>
+          {assignee !== undefined && <p className="card__assignee">{assignee ? `담당 ${assignee}` : '담당 미지정'}</p>}
+        </div>
+        {action && <div className="card__action" onClick={(event) => event.stopPropagation()}>{action}</div>}
+      </footer>
+    </article>
+  )
 }
 
-function cardClassName(dimmed, selected) {
-	const names = ['card']
-	if (dimmed) names.push('is-dimmed')
-	if (selected) names.push('is-picked')
-	return names.join(' ')
+function formatCreatedAt(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '등록일 미상'
+  const pad = (part) => String(part).padStart(2, '0')
+  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())}  ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-/**
- * 등록일로부터 며칠 지났는지. 기획 6-3 의 "경과일" 이다.
- * createdAt 은 시간대 없는 LocalDateTime 문자열이라 브라우저 현지 시각으로 해석된다.
- */
 function daysSince(createdAt) {
-	const MS_PER_DAY = 24 * 60 * 60 * 1000
-	return Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / MS_PER_DAY))
+  const elapsed = Date.now() - new Date(createdAt).getTime()
+  return Number.isNaN(elapsed) ? 0 : Math.max(0, Math.floor(elapsed / 86400000))
 }

@@ -1,22 +1,14 @@
-# components/common
+# 공용 배지
 
-**이 폴더의 소유자는 D 다. 0-2단계에서 D가 채운다.**
+최신 기준은 [카드·배지 디자인](../../../../docs/design/README.md)이다.
 
-0-1단계(공통 기반)에서는 폴더만 만들어 두고 컴포넌트 파일을 만들지 않는다.
-색상·타이포그래피 규칙이 먼저 정해지지 않은 상태에서 공용 컴포넌트를 만들면
-나중에 전부 다시 만들어야 하기 때문이다. (기획 13-5 의 0-2단계)
+| 디자인 이름 | 컴포넌트 | 사용법 |
+|---|---|---|
+| Card/Badge/Process | StatusBadge | `<StatusBadge status="RECEIVED" />` |
+| Card/Badge/Urgent | PriorityChip | `<PriorityChip priority="HIGH" />` |
+| Card/Badge/Sort | CategoryTag | `<CategoryTag category="BUG" />` |
+| Card/Badge/Important | PriorityRequestBadge | `<PriorityRequestBadge />` |
 
-## 여기에 들어올 것 (0-2단계 · D)
+영문 코드와 props 이름을 유지하고, 한국어 표시는 `src/constants/enums.js`의 label을 사용한다. 공용 스타일은 `feedback-badges.css`, 디자인 값은 `styles/tokens.css`의 `--feedback-*` 토큰을 사용한다.
 
-- 색상과 타이포그래피 토큰. 값은 한 곳에만 정의하고 화면에서 색상을 직접 쓰지 않는다.
-- 상태 배지 4종 — 접수(파랑) · 처리 중(주황) · 처리 완료(초록) · 반영 불가(회색). 기획 4-2
-- 중요도 칩 3종 — 긴급 · 보통 · 여유. 세 단계를 함께 표시하고 현재 값만 떠오르게 강조한다. 기획 4-3
-- 우선 처리 요청 배지 — 파란 별 이미지로 표시하며, 붙어 있으면 우선 처리 요청된 항목이다. 기획 4-4
-- 그 밖에 사용자용·관리용 화면이 함께 쓰는 요소
-
-표시 문자열은 직접 쓰지 말고 `src/constants/enums.js` 의 label 을 쓴다.
-
-## 다른 담당이 필요한 컴포넌트가 없을 때
-
-**기다리지 않는다.** 자기 화면 폴더 안에 임시로 만들고 통합 단계에서 D가 공용으로 흡수한다.
-이 폴더에 직접 파일을 추가하지 않는다. (기획 13-4)
+현재 중요도 하나를 외곽선 칩으로 표시한다. 우선 처리 요청은 보라색 별로 표시하며 접근성 이름을 제공한다. 관리자 화면의 기존 배지 파일들은 공용 컴포넌트를 재내보낸다.

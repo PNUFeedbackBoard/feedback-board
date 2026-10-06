@@ -101,110 +101,7 @@
 }
 
 .board__cards--row .card-slot,
-.board__cards--row .card {
-	flex: 1 1 270px;
-	max-width: 360px;
-}
-
-.board__empty {
-	margin: 8px 0;
-	color: var(--color-text-subtle);
-	font-size: var(--font-size-small);
-}
-
-.board__rejected {
-	padding: 16px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
-	background: rgb(255 255 255 / 72%);
-}
-
-.board__rejected summary {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	color: var(--color-text-muted);
-	font-size: var(--font-size-small);
-	font-weight: var(--font-weight-medium);
-	cursor: pointer;
-}
-
-.card {
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	gap: 12px;
-	padding: 16px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-sm);
-	background: var(--color-surface);
-	box-shadow: none;
-	cursor: default;
-	transition:
-		transform var(--duration-fast) var(--ease-spring),
-		border-color var(--duration-fast) ease;
-}
-
-.card:hover {
-	transform: translateY(-1px);
-	border-color: #b9c7da;
-}
-
-.card__head {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 10px;
-	width: 100%;
-	min-height: 23px;
-}
-
-.card__title {
-	display: -webkit-box;
-	min-height: 3em;
-	margin: 0;
-	overflow: hidden;
-	color: var(--color-text);
-	font-size: var(--font-size-body);
-	font-weight: var(--font-weight-bold);
-	line-height: 1.5;
-	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 2;
-}
-
-.card__tags {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-}
-
-.card__meta {
-	display: flex;
-	flex-wrap: wrap;
-	width: 100%;
-	gap: 5px 14px;
-	padding-top: 10px;
-	border-top: 1px solid var(--color-border);
-	color: var(--color-text-subtle);
-	font-size: var(--font-size-label);
-}
-
-.card__meta span + span {
-	position: relative;
-}
-
-.card__meta span + span::before {
-	content: '';
-	position: absolute;
-	top: 50%;
-	left: -8px;
-	width: 2px;
-	height: 2px;
-	background: var(--color-border-strong);
-}
-
-.card-slot {
+.board__cards--row .card-slot {
 	touch-action: none;
 	cursor: grab;
 	user-select: none;
@@ -236,21 +133,6 @@
 .board__rejected.is-over {
 	border-color: var(--color-selected-light);
 	background: var(--color-selected-soft);
-}
-
-.card__assignee {
-	width: 100%;
-	margin: 0;
-	padding: 7px 0 0;
-	border-top: 1px solid var(--color-border);
-	background: transparent;
-	color: var(--color-text-muted);
-	font-size: var(--font-size-label);
-	font-weight: var(--font-weight-medium);
-}
-
-.card__action {
-	width: 100%;
 }
 
 .board__alert,
