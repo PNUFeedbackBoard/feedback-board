@@ -178,7 +178,9 @@ cd frontend && npm run dev
 
 ## 7. 개발 중 로그인
 
-구글 로그인은 **7단계에서** 붙인다. 그 전까지는 데모 계정으로 개발한다.
+구글 로그인과 개발용 권한 미리보기를 함께 지원한다.
+구글 OAuth 자격 증명이 없어도 로컬 개발과 역할별 확인은 가능하다.
+실제 구글 로그인 설정은 [구글 로그인 가이드](google-login.md)를 참고한다.
 
 화면 오른쪽 아래에 개발 모드에서만 보이는 계정 전환 위젯이 있다. 거기서 역할을 바꾼다.
 
@@ -222,6 +224,11 @@ npm run build
 
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
+
+변경 요청(POST·PATCH·PUT·DELETE)은 CSRF 토큰이 필요하다.
+Swagger에서는 같은 브라우저로 `/api/auth/csrf`를 열어 `token` 값을 복사하고
+`Authorize`의 CSRF 항목에 입력한다. 로그인·로그아웃 후에는 다시 가져온다.
+앱 화면에서는 API 클라이언트가 자동으로 처리한다.
 
 API 오류는 `timestamp`, `status`, `code`, `message`, `path`, `details` 를 담은 공통 JSON 형식으로 온다.
 입력 검증에 실패하면 `details` 에 어떤 필드가 왜 틀렸는지 들어간다.

@@ -12,10 +12,10 @@ export default defineConfig(({ mode }) => {
       // 화면(5173)에서 /api 로 보낸 요청을 서버(8080)로 넘긴다.
       // 이게 없으면 CORS 에러가 난다.
       proxy: {
-        '/api': {
+        ...Object.fromEntries(['/api', '/oauth2', '/login/oauth2'].map((path) => [path, {
           target: env.VITE_API_PROXY_TARGET || 'http://localhost:8080',
           changeOrigin: true,
-        },
+        }])),
       },
     },
   }

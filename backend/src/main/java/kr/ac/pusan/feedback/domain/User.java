@@ -41,8 +41,8 @@ public class User {
 	private String name;
 
 	/**
-	 * 구글 계정 고유 식별자(sub).
-	 * 7단계에서 구글 로그인으로 전환하기 전까지는 데모 계정이라 null 이다.
+	 * 구글 계정 고유 식별자(sub). 데모 로그인으로 만든 계정은 null 이다.
+	 * 7단계부터는 구글 로그인 성공 시 이 값으로 계정을 찾는다 — 없으면 이메일로 찾아 연결한다.
 	 */
 	@Column(name = "google_sub", unique = true, length = 255)
 	private String googleSub;
@@ -75,5 +75,13 @@ public class User {
 		if (status != null) {
 			this.status = status;
 		}
+	}
+
+	/**
+	 * 구글 로그인(7단계)에서 처음 googleSub 로 못 찾고 이메일로 기존 계정을 찾았을 때,
+	 * 그 계정에 googleSub 을 연결해 다음부터는 바로 찾을 수 있게 한다.
+	 */
+	public void linkGoogleSub(String googleSub) {
+		this.googleSub = googleSub;
 	}
 }

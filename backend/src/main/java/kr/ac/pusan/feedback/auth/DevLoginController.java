@@ -41,7 +41,7 @@ import kr.ac.pusan.feedback.feedback.dto.MeResponse;
  *
  * <p>여기서 만든 세션은 실제 로그인과 완전히 같다. 이후 요청은 JSESSIONID 쿠키로 인증되고,
  * 컨트롤러는 {@link CurrentUser} 로만 사용자를 꺼낸다.
- * 7단계에서 이 클래스를 지우고 구글 로그인 성공 처리에서 같은 방식으로 SecurityContext 를 채우면
+ * 7단계 이후에도 개발용 권한 미리보기로 유지한다. 구글 로그인 성공 처리에서 같은 방식으로 SecurityContext 를 채우므로
  * 화면 코드와 다른 컨트롤러는 손대지 않아도 된다.
  */
 @Profile("dev")

@@ -115,6 +115,10 @@ async function request(method, path, options = {}) {
     signal,
   }
 
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const csrf = await request('GET', '/auth/csrf', { signal })
+    init.headers[csrf.headerName] = csrf.token
+  }
   if (body !== undefined) {
     init.headers['Content-Type'] = 'application/json'
     init.body = JSON.stringify(body)

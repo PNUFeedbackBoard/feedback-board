@@ -1,6 +1,8 @@
 package kr.ac.pusan.feedback;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -43,7 +45,10 @@ class ApiContractIntegrationTests {
 				.getResponse()
 				.getContentAsString();
 
-		JsonNode paths = objectMapper.readTree(body).path("paths");
+		JsonNode document = objectMapper.readTree(body);
+        assertThat(document.path("components").path("securitySchemes").path("CSRF").path("name").asText())
+                .isEqualTo("X-CSRF-TOKEN");
+        JsonNode paths = document.path("paths");
 		long operationCount = 0;
 		for (JsonNode pathItem : paths) {
 			for (var fields = pathItem.fieldNames(); fields.hasNext(); ) {
@@ -65,7 +70,7 @@ class ApiContractIntegrationTests {
 		MockHttpSession developer = login("dev");
 
 		mockMvc.perform(get("/api/projects")).andExpect(status().isOk());
-		mockMvc.perform(post("/api/feedbacks")
+		mockMvc.perform(post("/api/feedbacks").with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -83,21 +88,21 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(get("/api/admin/dashboard").session(viewer)).andExpect(status().isOk());
 		mockMvc.perform(get("/api/admin/feedbacks").session(viewer)).andExpect(status().isOk());
 		mockMvc.perform(get("/api/admin/feedbacks/1").session(viewer)).andExpect(status().isOk());
-		mockMvc.perform(post("/api/admin/feedbacks/1/priority-request").session(viewer))
+		mockMvc.perform(post("/api/admin/feedbacks/1/priority-request").with(csrf()).session(viewer))
 				.andExpect(status().isOk());
 
-		mockMvc.perform(patch("/api/admin/feedbacks/1")
+		mockMvc.perform(patch("/api/admin/feedbacks/1").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"status\":\"IN_PROGRESS\"}"))
 				.andExpect(status().isOk());
-		mockMvc.perform(put("/api/admin/feedbacks/1/answer")
+		mockMvc.perform(put("/api/admin/feedbacks/1/answer").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"content\":\"확인했습니다.\",\"markDone\":false}"))
 				.andExpect(status().isOk());
 		mockMvc.perform(get("/api/admin/users").session(developer)).andExpect(status().isOk());
-		mockMvc.perform(patch("/api/admin/users/4")
+		mockMvc.perform(patch("/api/admin/users/4").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"role\":\"VIEWER\",\"status\":\"ACTIVE\"}"))
@@ -111,7 +116,7 @@ class ApiContractIntegrationTests {
 		MockHttpSession developer = login("dev");
 		long developerId = currentUserId(developer);
 
-		String createBody = mockMvc.perform(post("/api/feedbacks")
+		String createBody = mockMvc.perform(post("/api/feedbacks").with(csrf())
 						.session(user)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
@@ -140,7 +145,7 @@ class ApiContractIntegrationTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items[?(@.id == " + id + ")]").exists());
 
-		mockMvc.perform(patch("/api/admin/feedbacks/" + id)
+		mockMvc.perform(patch("/api/admin/feedbacks/" + id).with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"status\":\"IN_PROGRESS\",\"assigneeId\":" + developerId + "}"))
@@ -149,7 +154,7 @@ class ApiContractIntegrationTests {
 				.andExpect(jsonPath("$.assigneeId").value(developerId))
 				.andExpect(jsonPath("$.assigneeName").value("데모 개발자"));
 
-		mockMvc.perform(put("/api/admin/feedbacks/" + id + "/answer")
+		mockMvc.perform(put("/api/admin/feedbacks/" + id + "/answer").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"content\":\"연결 상태를 확인했습니다.\",\"markDone\":true}"))
@@ -167,7 +172,7 @@ class ApiContractIntegrationTests {
 
 		mockMvc.perform(get("/api/admin/feedbacks").session(session))
 				.andExpect(status().isOk());
-		mockMvc.perform(patch("/api/admin/feedbacks/1")
+		mockMvc.perform(patch("/api/admin/feedbacks/1").with(csrf())
 						.session(session)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"status\":\"DONE\"}"))
@@ -201,7 +206,7 @@ class ApiContractIntegrationTests {
 	@Transactional
 	void viewerCanTogglePriorityRequestOnOwnFeedback() throws Exception {
 		MockHttpSession viewer = login("viewer");
-		String createBody = mockMvc.perform(post("/api/feedbacks")
+		String createBody = mockMvc.perform(post("/api/feedbacks").with(csrf())
 						.session(viewer)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
@@ -217,7 +222,7 @@ class ApiContractIntegrationTests {
 				.andReturn().getResponse().getContentAsString();
 		long id = objectMapper.readTree(createBody).path("id").asLong();
 
-		mockMvc.perform(post("/api/admin/feedbacks/" + id + "/priority-request")
+		mockMvc.perform(post("/api/admin/feedbacks/" + id + "/priority-request").with(csrf())
 						.session(viewer))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.priorityRequested").value(true))
@@ -225,7 +230,7 @@ class ApiContractIntegrationTests {
 	}
 
 	private MockHttpSession login(String account) throws Exception {
-		return (MockHttpSession) mockMvc.perform(post("/api/dev/login")
+		return (MockHttpSession) mockMvc.perform(post("/api/dev/login").with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"account\":\"" + account + "\"}"))
 				.andExpect(status().isOk())

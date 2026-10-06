@@ -1,3 +1,4 @@
+import LogoutButton from '../../components/common/LogoutButton.jsx'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useMatch } from 'react-router-dom'
 import { getMe, getProjects } from '../../api/endpoints.js'
@@ -56,6 +57,7 @@ export default function AdminLayout() {
 						<>
 							<span className="admin-header__presence" aria-hidden="true" />
 							<span>{me.name}</span>
+              <LogoutButton />
 							<span className="admin-header__role">{labelOf(ROLE, me.role)}</span>
 							{me.role === 'DEVELOPER' && <NavLink to="/admin/accounts">계정 관리</NavLink>}
 						</>

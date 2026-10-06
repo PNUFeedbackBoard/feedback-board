@@ -1,3 +1,4 @@
+import LogoutButton from '../../components/common/LogoutButton.jsx'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getMyFeedbacks } from '../../api/endpoints.js'
@@ -29,7 +30,7 @@ export default function HomePage() {
 						<h1>내 문의</h1>
 						<p className="app-page__muted">등록한 피드백의 처리 상태와 답변을 확인합니다.</p>
 					</div>
-					<Link className="app-button" to="/write">새 문의 작성</Link>
+					<div className="app-actions"><Link className="app-button" to="/write">새 문의 작성</Link><LogoutButton /></div>
 				</header>
 
 				{message && <p className="app-alert">{message}</p>}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ApiError } from '../api/client.js'
-import { devLogin, devLogout, getMe } from '../api/endpoints.js'
+import { devLogin, logout, getAuthConfig, getMe } from '../api/endpoints.js'
 import { ROLE, USER_STATUS, labelOf } from '../constants/enums.js'
 import './account-switcher.css'
 
@@ -8,8 +8,8 @@ import './account-switcher.css'
  * 개발용 계정 전환 위젯. 기획 13-2 참고.
  *
  * - `import.meta.env.DEV` 가 참일 때만 렌더한다. `npm run build` 결과물에는 화면이 나오지 않는다.
- * - POST /api/dev/login 과 /api/dev/logout 을 호출한다. 두 엔드포인트는 백엔드 dev 프로필에서만 등록된다.
- * - 7단계에서 구글 로그인으로 전환할 때 이 폴더(src/dev)만 지우면 된다. 화면 코드는 건드리지 않는다.
+ * - dev 전용 POST /api/dev/login 과 공통 POST /api/auth/logout 을 호출한다.
+ * - 구글 로그인 이후에도 개발용 권한 미리보기로 유지한다. 운영에는 노출하지 않는다.
  *
  * 스타일은 위치와 가독성에 필요한 최소한만 둔다. 색은 브라우저 시스템 색(Canvas 등)을 써서
  * 0-2단계에서 D가 정할 색상 팔레트와 겹치지 않게 했다.
@@ -18,6 +18,7 @@ export default function AccountSwitcher() {
 	const [collapsed, setCollapsed] = useState(
 		() => window.localStorage.getItem(COLLAPSED_STORAGE_KEY) === 'true',
 	)
+	const [previewEnabled, setPreviewEnabled] = useState(false)
 	const [state, setState] = useState({
 		busy: false,
 		current: null,
@@ -27,6 +28,9 @@ export default function AccountSwitcher() {
 	useEffect(() => {
 		if (!import.meta.env.DEV) return undefined
 		let cancelled = false
+    getAuthConfig().then((config) => {
+      if (!cancelled) setPreviewEnabled(config.previewEnabled)
+    }).catch(() => {})
 
 		getMe()
 			.then((me) => {
@@ -48,7 +52,7 @@ export default function AccountSwitcher() {
 	}, [])
 
 	// 훅 호출 뒤에 검사한다. 순서가 바뀌면 rules-of-hooks 위반이다.
-	if (!import.meta.env.DEV) return null
+	if (!import.meta.env.DEV || !previewEnabled) return null
 
 	async function run(account, label, action) {
 		setState((previous) => ({ ...previous, busy: true, message: `${label} 권한 적용 중…` }))
@@ -60,7 +64,14 @@ export default function AccountSwitcher() {
 				message: result ? `${result.name} · ${labelOf(ROLE, result.role)}` : '로그아웃됨',
 			})
 			// 레이아웃과 목록이 새 세션 권한으로 API 를 다시 읽도록 즉시 갱신한다.
-			window.setTimeout(() => window.location.reload(), 240)
+			window.setTimeout(() => {
+        if (!result) window.location.assign('/')
+        else if (result.status === 'PENDING') window.location.assign('/admin/pending')
+        else if (result.role === 'USER') window.location.assign('/home')
+        else if (!window.location.pathname.startsWith('/admin') || window.location.pathname === '/admin/pending') {
+          window.location.assign('/admin')
+        } else window.location.reload()
+      }, 240)
 		} catch (error) {
 			const reason =
 				error instanceof ApiError && error.status === 404
@@ -132,7 +143,7 @@ export default function AccountSwitcher() {
 				<button
 					type="button"
 					disabled={state.busy}
-					onClick={() => run(null, '로그아웃', devLogout)}
+					onClick={() => run(null, '로그아웃', logout)}
 				>
 					로그아웃
 				</button>
