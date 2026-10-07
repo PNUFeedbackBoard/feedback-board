@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { devLogin, getMe } from '../../api/endpoints.js'
 import '../page-shell.css'
+import LoginButtons from '../../components/common/LoginButtons.jsx'
 
 export default function LoginPage() {
 	const navigate = useNavigate()
@@ -46,14 +47,8 @@ export default function LoginPage() {
 					<p className="app-page__muted">
 						부산대학교 AI융합교육원 서비스에서 발견한 문제와 아이디어를 한곳에 남겨 주세요.
 					</p>
-					<div className="app-actions">
-						<button className="app-button" type="button" onClick={login} disabled={busy}>
-							{busy ? '로그인 중…' : import.meta.env.DEV ? '회원 데모 로그인' : 'Google로 로그인'}
-						</button>
-						<button className="app-button app-button--secondary" type="button" onClick={() => setGuestNotice(true)}>
-							비회원으로 계속
-						</button>
-					</div>
+					<LoginButtons onGoogleLogin={login} onGuestLogin={() => setGuestNotice(true)} busy={busy} />
+					{import.meta.env.DEV && <p className="login-demo-note">개발 모드에서는 테스트 계정으로 로그인됩니다.</p>}
 				</header>
 
 				{message && <p className="app-alert">{message}</p>}
