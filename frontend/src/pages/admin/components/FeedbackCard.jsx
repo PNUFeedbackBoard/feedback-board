@@ -10,7 +10,12 @@ import './feedback-card.css'
 export default function FeedbackCard({ item, assignee, dimmed = false, action, selected, onSelect, onOpen }) {
   const names = ['card', dimmed && 'is-dimmed', selected && 'is-picked'].filter(Boolean).join(' ')
   return (
-    <article className={names} data-priority-requested={item.priorityRequested} onClick={onOpen}>
+    <article
+      className={names}
+      data-priority-requested={item.priorityRequested}
+      data-interactive={Boolean(onOpen)}
+      onClick={onOpen}
+    >
       <header className="card__head">
         <div className="card__tags">
           <CategoryTag category={item.category} />

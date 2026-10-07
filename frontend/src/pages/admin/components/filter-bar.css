@@ -31,6 +31,12 @@
 	color: var(--color-text);
 	font-family: var(--font-family);
 	font-size: var(--font-size-small);
+	cursor: pointer;
+	transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.filters__control:hover {
+	border-color: var(--color-selected-light);
 }
 
 .filters__control:focus {

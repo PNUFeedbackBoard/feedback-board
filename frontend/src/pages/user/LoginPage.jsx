@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { devLogin, getMe } from '../../api/endpoints.js'
 import '../page-shell.css'
-import iniLogo from '../../assets/ini-logo.png'
+import iniLogo from '../../assets/ini-logo-optimized.png'
 import './site-logo.css'
 
 export default function LoginPage() {

@@ -16,6 +16,13 @@
   transition: border-color var(--feedback-duration) ease, box-shadow var(--feedback-duration) ease;
 }
 
+.card[data-interactive='true'] { cursor: pointer; }
+.card[data-interactive='true']:hover {
+  border-color: #c5c8dc;
+  box-shadow: 0 5px 12px rgb(0 0 0 / 16%), 0 0 18px rgb(82 86 195 / 7%);
+}
+.card[data-interactive='true']:hover .card__title { color: #343b8f; }
+
 .card[data-priority-requested='true'] {
   border-color: var(--feedback-card-important-border);
   box-shadow: var(--feedback-shadow-important);
@@ -42,7 +49,7 @@
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
-.card__open { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.card__open { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: color var(--feedback-duration) ease; }
 .card__open:focus-visible { outline: var(--feedback-border-width) solid var(--feedback-purple); }
 .card__footer { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--feedback-space-3); margin-top: auto; padding-top: var(--feedback-space-5); }
 .card__information { flex: 1 1 auto; min-width: 0; }
@@ -78,7 +85,9 @@
   border-radius: 0;
   background: linear-gradient(135deg, var(--feedback-check-light), var(--feedback-check-dark));
   cursor: pointer;
+  transition: background var(--feedback-duration) ease, box-shadow var(--feedback-duration) ease;
 }
+.card__check:hover input { box-shadow: var(--feedback-focus-ring); }
 .card__check input:checked { background: var(--feedback-check-active); }
 .card__check input:checked::after {
   content: '✓';

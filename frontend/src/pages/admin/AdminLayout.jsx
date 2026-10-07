@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useMatch } from 'react-router-dom'
 import { getMe, getProjects } from '../../api/endpoints.js'
-import iniLogo from '../../assets/ini-logo.png'
+import iniLogo from '../../assets/ini-logo-optimized.png'
 import { ROLE, labelOf } from '../../constants/enums.js'
 import ProjectDisc from './ProjectDisc.jsx'
 import '../../styles/tokens.css'
