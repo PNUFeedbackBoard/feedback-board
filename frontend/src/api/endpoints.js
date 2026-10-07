@@ -143,7 +143,7 @@ export function togglePriorityRequest(id) {
 }
 
 // ── 개발 전용 ───────────────────────────────────────────────────────
-// dev 프로필에서만 등록된다. 운영 프로필에서는 404 가 온다. 7단계에서 구글 로그인으로 교체한다.
+// dev 프로필에서만 등록된다. 운영 프로필에서는 404 가 온다. 구글 로그인 이후에도 개발용 권한 미리보기로 유지한다.
 
 /**
  * 데모 계정 로그인.
@@ -162,3 +162,12 @@ export function devLogin(account) {
 export function devLogout() {
   return post('/dev/logout')
 }
+
+// 구글 로그인과 데모 로그인 공통 인증 보조 함수.
+export function getAuthConfig() { return get('/auth/config') }
+export function startGoogleLogin(intent = 'user', site = null) {
+  const params = new URLSearchParams({ intent })
+  if (site) params.set('site', site)
+  window.location.assign(`/api/auth/login?${params}`)
+}
+export function logout() { return post('/auth/logout') }

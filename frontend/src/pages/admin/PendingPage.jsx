@@ -1,3 +1,4 @@
+import LogoutButton from '../../components/common/LogoutButton.jsx'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getMe } from '../../api/endpoints.js'
@@ -21,6 +22,7 @@ export default function PendingPage() {
 		<main className="app-page">
 			<div className="app-page__inner app-card app-stack">
 				<p className="app-page__eyebrow">ACCOUNT STATUS</p>
+              <LogoutButton />
 				<h1>{me?.status === 'PENDING' ? '승인을 기다리고 있습니다' : '계정 상태 안내'}</h1>
 				{message && <p className="app-alert">{message}</p>}
 				{!message && !me && <p>계정 상태를 확인하는 중…</p>}

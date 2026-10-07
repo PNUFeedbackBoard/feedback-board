@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,6 +16,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -24,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.ac.pusan.feedback.api.error.ApiErrorResponse;
+import kr.ac.pusan.feedback.auth.GoogleOAuth2SuccessHandler;
 
 /**
  * 보안 경로 패턴. 기획안 9장(접근 권한), 13-4(공유 파일), 13-5(0-1단계 산출물).
@@ -31,8 +34,17 @@ import kr.ac.pusan.feedback.api.error.ApiErrorResponse;
  * <p><b>이 파일은 0-1단계에서 계약의 모든 경로를 선언한다. 이후 담당자가 다시 열 일이 없어야 한다.</b>
  * 새 API 를 만들 때 여기에 경로를 추가해야 한다면 계약에 없던 경로라는 뜻이므로 팀에 먼저 공유한다.
  *
- * <p>인증 방식은 세션이다. 지금은 데모 로그인(POST /api/dev/login)이,
- * 7단계부터는 구글 로그인이 같은 세션을 만든다. 경로 규칙은 그대로 둔다.
+ * <p>인증 방식은 세션이다. 데모 로그인(POST /api/dev/login, dev 프로필 전용)과 구글 로그인
+ * (7단계, {@link GoogleOAuth2SuccessHandler})이 같은 세션을 만든다. 경로 규칙은 그대로 둔다.
+ *
+ * <p><b>구글 로그인은 {@code spring.security.oauth2.client.registration.google.client-id} 가
+ * 설정됐을 때만 켜진다.</b> client-id 설정을 생략하면(로컬에서 아직 발급 전인 팀원) Spring Boot가
+ * {@link ClientRegistrationRepository} 빈을 아예 만들지 않는다 — 그 상태에서 무조건
+ * {@code .oauth2Login(...)} 을 걸면 빈을 못 찾아 기동 자체가 실패하므로, 여기서는
+ * {@link ObjectProvider} 로 선택적으로 확인해서 있을 때만 건다. 즉 client-id 가 없으면
+ * 데모 로그인만 되고(지금까지와 동일), 있으면 데모 로그인과 구글 로그인이 **둘 다** 된다 —
+ * 개발 중에는 계정 전환 위젯으로 빠르게 역할을 바꿔 가며 화면을 보고, 실제 구글 계정으로
+ * 전체 흐름도 같이 확인할 수 있게 하기 위한 결정이다.
  *
  * <p>권한 표기 규칙: hasRole("DEVELOPER") 는 권한 문자열 "ROLE_DEVELOPER" 를 뜻한다.
  * 그 문자열은 {@code AppUserPrincipal#getAuthorities()} 가 "ROLE_" + Role 이름으로 만들어 준다.
@@ -44,17 +56,27 @@ import kr.ac.pusan.feedback.api.error.ApiErrorResponse;
 public class SecurityConfig {
 
 	private final ObjectMapper objectMapper;
+	private final String frontendUrl;
+	private final ObjectProvider<ClientRegistrationRepository> clientRegistrations;
+	private final GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler;
 
-	SecurityConfig(ObjectMapper objectMapper) {
+	SecurityConfig(
+			ObjectMapper objectMapper,
+			ObjectProvider<ClientRegistrationRepository> clientRegistrations,
+			GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler,
+			@org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:5173}") String frontendUrl
+	) {
 		this.objectMapper = objectMapper;
+		this.clientRegistrations = clientRegistrations;
+		this.googleOAuth2SuccessHandler = googleOAuth2SuccessHandler;
+		this.frontendUrl = frontendUrl;
 	}
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
-				// TODO(B, 7단계): 구글 로그인 전환 시 CSRF 재검토.
-				// 지금은 프론트가 별도 개발 서버(5173)에서 돌고 데모 로그인만 쓰므로 끈다.
-				.csrf(csrf -> csrf.disable())
+                // 세션 인증의 변경 요청은 CSRF 토큰을 요구한다. H2 콘솔 폼만 제외한다.
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
 				// h2-console 이 프레임을 쓴다. dev 프로필에서만 켜지는 경로다.
 				.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -77,6 +99,9 @@ public class SecurityConfig {
 						).permitAll()
 						// 데모 로그인. 운영 프로필에서는 컨트롤러가 등록되지 않아 404 다.
 						.requestMatchers("/api/dev/**").permitAll()
+						// 로그아웃은 로그인 여부와 무관하게 호출할 수 있어야 한다(데모 로그아웃과 동일).
+						.requestMatchers(HttpMethod.GET, "/api/auth/config", "/api/auth/csrf", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/projects").permitAll()
 						// 비회원 등록을 허용한다(기획안 9장).
 						.requestMatchers(HttpMethod.POST, "/api/feedbacks").permitAll()
@@ -100,7 +125,27 @@ public class SecurityConfig {
 						.requestMatchers("/api/**").authenticated()
 
 						// --- API 가 아닌 요청(정적 파일, 프론트 화면)은 공개한다 -------------------
-						.anyRequest().permitAll());
+						.anyRequest().permitAll())
+
+				// 로그아웃은 데모·구글 로그인 공통이다. 세션만 없애고 204 로 답한다 —
+				// DevLoginController#logout 과 같은 모양이라 프론트가 둘을 구분해 처리할 필요가 없다.
+				.logout(logout -> logout
+						.logoutUrl("/api/auth/logout")
+						.logoutSuccessHandler((request, response, authentication) ->
+								response.setStatus(HttpStatus.NO_CONTENT.value()))
+						.invalidateHttpSession(true)
+						.clearAuthentication(true));
+
+		// client-id 가 설정된 경우에만 구글 로그인을 켠다(클래스 주석 참고).
+		if (clientRegistrations.getIfAvailable() != null) {
+			http.oauth2Login(oauth2 -> oauth2.successHandler(googleOAuth2SuccessHandler)
+                    .failureHandler((request, response, exception) -> {
+                        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                        var session = request.getSession(false);
+                        if (session != null) session.invalidate();
+                        response.sendRedirect(frontendUrl.replaceAll("/+$", "") + "/?authError=google_failed");
+                    }));
+		}
 
 		return http.build();
 	}

@@ -28,6 +28,19 @@
 
 화면이 서버가 판정한 현재 계정과 역할을 조회할 수 있도록 `GET /api/me`를 제공한다. 이 인증 보조 API와 아래 개발 전용 API는 제품 API 12개를 보여 주는 Swagger 목록에서는 숨긴다.
 
+구글 로그인 보조 API(모든 프로필, Swagger 제품 목록에는 숨김):
+
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| GET | `/api/auth/config` | `{ googleEnabled, previewEnabled }`, 실제 연동·미리보기 가능 여부 |
+| GET | `/api/auth/csrf` | `{ headerName, token }`, 현재 세션의 CSRF 토큰 |
+| GET | `/api/auth/login?intent=user\|admin&site=프로젝트코드` | 구글 로그인 시작. 미설정 503, 잘못된 파라미터 400 |
+| POST | `/api/auth/logout` | 앱 세션 종료, 204 |
+
+POST/PATCH/PUT/DELETE에는 같은 세션에서 발급받은 CSRF 토큰을 `headerName` 헤더에 넣는다.
+토큰 누락·불일치는 403이다. 프론트 클라이언트는 자동으로 처리한다.
+Swagger에서는 `/api/auth/csrf`의 token을 Authorize에 입력한다.
+
 `dev` 프로필에서만 다음 API를 제공한다.
 
 - `POST /api/dev/login`: `{ "account": "dev" }` 형식으로 `dev`, `viewer`, `user`, `pending` 중 하나를 선택한다.
