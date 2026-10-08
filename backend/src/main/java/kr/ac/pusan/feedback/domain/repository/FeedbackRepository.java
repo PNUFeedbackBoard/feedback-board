@@ -50,6 +50,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 			  AND (:authorType IS NULL OR f.authorType = :authorType)
 			  AND (:fromInclusive IS NULL OR f.createdAt >= :fromInclusive)
 			  AND (:toExclusive IS NULL OR f.createdAt < :toExclusive)
+			  AND (:priorityRequested IS NULL OR f.priorityRequested = :priorityRequested)
 			  AND (
 			        :answered IS NULL
 			        OR (:answered = true AND EXISTS (SELECT 1 FROM Answer ans WHERE ans.feedback = f))
@@ -77,6 +78,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 			  AND (:authorType IS NULL OR f.authorType = :authorType)
 			  AND (:fromInclusive IS NULL OR f.createdAt >= :fromInclusive)
 			  AND (:toExclusive IS NULL OR f.createdAt < :toExclusive)
+			  AND (:priorityRequested IS NULL OR f.priorityRequested = :priorityRequested)
 			  AND (
 			        :answered IS NULL
 			        OR (:answered = true AND EXISTS (SELECT 1 FROM Answer ans WHERE ans.feedback = f))
@@ -91,6 +93,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 			@Param("fromInclusive") LocalDateTime fromInclusive,
 			@Param("toExclusive") LocalDateTime toExclusive,
 			@Param("answered") Boolean answered,
+			@Param("priorityRequested") Boolean priorityRequested,
 			@Param("sort") String sort,
 			Pageable pageable);
 

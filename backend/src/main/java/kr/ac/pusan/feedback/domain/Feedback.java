@@ -158,9 +158,8 @@ public class Feedback {
 	 * <p><b>일반 코드에서 쓰지 마라.</b> 사용자가 등록하는 경로는 {@link #create} 하나뿐이고,
 	 * 그 뒤의 상태·중요도 변경은 1단계에서 추가될 도메인 메서드로만 이뤄져야 한다.
 	 * 이 팩터리는 {@code DataSeeder} 가 처리 중·처리 완료처럼 중간 상태인 표본 데이터를
-	 * 만들기 위해서만 존재하며, dev 프로필 밖에서는 호출되지 않는다.
-	 *
-	 * <p>TODO(A, 1단계): 상태 변경 도메인 메서드가 생기면 시드도 그것을 쓰도록 바꾸고 이 팩터리를 지운다.
+	 * 만들기 위해서만 존재하며, dev 프로필 밖에서는 호출되지 않는다. 일반 변경 메서드는 현재 시각을
+	 * 기록하므로 과거 시점의 처리 시간까지 재현하는 시드에는 이 전용 팩터리를 유지한다.
 	 */
 	public static Feedback seed(Project project, User author, AuthorType authorType, String title, String content,
 			FeedbackCategory category, Priority reportedPriority, LocalDateTime createdAt,

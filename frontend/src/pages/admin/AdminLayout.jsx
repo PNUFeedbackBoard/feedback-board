@@ -1,6 +1,7 @@
 import LogoutButton from '../../components/common/LogoutButton.jsx'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useMatch } from 'react-router-dom'
+import { ExternalLink } from 'lucide-react'
 import { getMe, getProjects } from '../../api/endpoints.js'
 import iniLogo from '../../assets/ini-logo-optimized.png'
 import { ROLE, labelOf } from '../../constants/enums.js'
@@ -39,6 +40,7 @@ export default function AdminLayout() {
 	}, [])
 
 	const currentProject = projects.find((project) => project.code === projectCode)
+	const currentSiteUrl = safeHttpUrl(currentProject?.siteUrl)
 
 	return (
 		<div className="admin-shell">
@@ -73,6 +75,16 @@ export default function AdminLayout() {
 						<span className="admin-tabs__project">
 							<span>PROJECT</span>
 							<strong>{currentProject?.name ?? projectCode}</strong>
+							{currentSiteUrl && (
+								<a
+									className="admin-tabs__site"
+									href={currentSiteUrl}
+									target="_blank"
+									rel="noreferrer"
+								>
+									서비스 열기 <ExternalLink size={13} aria-hidden="true" />
+								</a>
+							)}
 						</span>
 						<div className="admin-tabs__links">
 							<NavLink to={`/admin/${projectCode}/intake`} className="admin-tabs__tab">
@@ -95,4 +107,14 @@ export default function AdminLayout() {
 
 		</div>
 	)
+}
+
+function safeHttpUrl(value) {
+	if (!value) return null
+	try {
+		const url = new URL(value)
+		return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null
+	} catch {
+		return null
+	}
 }

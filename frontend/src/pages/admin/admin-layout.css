@@ -164,6 +164,19 @@
 	font-weight: var(--font-weight-bold);
 }
 
+.admin-tabs__site {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-label);
+	text-decoration: none;
+}
+
+.admin-tabs__site:hover {
+	color: var(--color-selected);
+}
+
 .admin-tabs__links {
 	display: flex;
 	align-items: stretch;

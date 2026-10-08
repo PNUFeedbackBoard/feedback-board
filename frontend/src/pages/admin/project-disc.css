@@ -159,6 +159,13 @@
 		background var(--duration-fast) ease;
 }
 
+.disc__logo img {
+	width: 100%;
+	height: 100%;
+	padding: 7px;
+	object-fit: contain;
+}
+
 .disc__logo[data-slot='home'] { background: rgb(255 255 255 / 52%); color: var(--color-text-muted); }
 .disc__logo[data-slot='1'] { background: rgb(234 242 255 / 62%); color: var(--color-project-0-fg); }
 .disc__logo[data-slot='2'] { background: rgb(232 243 255 / 62%); color: var(--color-project-1-fg); }

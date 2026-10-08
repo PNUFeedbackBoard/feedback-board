@@ -20,7 +20,7 @@ export default function WritePage() {
 	const [busy, setBusy] = useState(false)
 	const [message, setMessage] = useState('')
 	const [createdId, setCreatedId] = useState(null)
-	const [isMember, setIsMember] = useState(false)
+	const [isMember, setIsMember] = useState(null)
 
 	useEffect(() => {
 		let cancelled = false
@@ -92,7 +92,7 @@ export default function WritePage() {
 						<h1>피드백 작성</h1>
 						<p className="app-page__muted">문제가 발생한 상황과 원하는 개선점을 구체적으로 알려 주세요.</p>
 					</div>
-					<Link className="app-button app-button--secondary" to="/home">내 문의</Link>
+					{isMember && <Link className="app-button app-button--secondary" to="/home">내 문의</Link>}
 				</header>
 
 				<form className="app-card app-stack" onSubmit={submit}>

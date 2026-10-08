@@ -227,6 +227,13 @@ class ApiContractIntegrationTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.priorityRequested").value(true))
 				.andExpect(jsonPath("$.priority").value("HIGH"));
+
+		mockMvc.perform(get("/api/admin/feedbacks")
+						.session(viewer)
+						.param("priorityRequested", "true"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[?(@.id == " + id + ")]").exists())
+				.andExpect(jsonPath("$.items[?(@.priorityRequested == false)]").doesNotExist());
 	}
 
 	private MockHttpSession login(String account) throws Exception {
