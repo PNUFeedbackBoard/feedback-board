@@ -2,8 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getAuthConfig, getMe, startGoogleLogin } from '../../api/endpoints.js'
 import '../page-shell.css'
+import LoginButtons from '../../components/common/LoginButtons.jsx'
 import iniLogo from '../../assets/ini-logo-optimized.png'
 import './site-logo.css'
+
+/** 관리용 Google 로그인 링크를 보일지. 빼려면 false 로 바꾸거나 아래 SHOW_ADMIN_LOGIN 블록을 지운다. */
+const SHOW_ADMIN_LOGIN = true
 
 export default function LoginPage() {
 	const navigate = useNavigate()
@@ -25,18 +29,20 @@ export default function LoginPage() {
 			.catch(() => {})
 	}, [goToStart])
 
-  useEffect(() => {
-    getAuthConfig().then(setAuthConfig).catch((error) => setMessage(error.message))
-  }, [])
-  const authErrors = {
-    disabled: '사용이 중지된 계정입니다. 관리자에게 문의해 주세요.',
-    account_conflict: '이미 다른 구글 계정과 연결된 이메일입니다.',
-    invalid_google_account: '확인된 이메일을 가진 구글 계정으로 로그인해 주세요.',
-    google_failed: '구글 로그인이 취소되었거나 실패했습니다. 다시 시도해 주세요.',
-  }
-  const authError = authErrors[params.get('authError')]
+	useEffect(() => {
+		getAuthConfig().then(setAuthConfig).catch((error) => setMessage(error.message))
+	}, [])
 
-  return (
+	const authErrors = {
+		disabled: '사용이 중지된 계정입니다. 관리자에게 문의해 주세요.',
+		account_conflict: '이미 다른 구글 계정과 연결된 이메일입니다.',
+		invalid_google_account: '확인된 이메일을 가진 구글 계정으로 로그인해 주세요.',
+		google_failed: '구글 로그인이 취소되었거나 실패했습니다. 다시 시도해 주세요.',
+	}
+	const authError = authErrors[params.get('authError')]
+	const googleReady = Boolean(authConfig?.googleEnabled)
+
+	return (
 		<main className="app-page">
 			<div className="app-page__inner app-stack">
 				<header className="app-card">
@@ -46,25 +52,32 @@ export default function LoginPage() {
 					<p className="app-page__muted">
 						부산대학교 AI융합교육원 서비스에서 발견한 문제와 아이디어를 한곳에 남겨 주세요.
 					</p>
-					<div className="app-actions">
-						<button className="app-button" type="button" onClick={() => startGoogleLogin('user', site)} disabled={!authConfig?.googleEnabled}>
-							Google로 로그인
-						</button>
-						<button className="app-button app-button--secondary" type="button"
-              onClick={() => startGoogleLogin('admin')} disabled={!authConfig?.googleEnabled}>
-              관리용 Google 로그인
-            </button>
-            <button className="app-button app-button--secondary" type="button" onClick={() => setGuestNotice(true)}>
-							비회원으로 계속
-						</button>
-					</div>
+					<LoginButtons
+						onGoogleLogin={() => startGoogleLogin('user', site)}
+						onGuestLogin={() => setGuestNotice(true)}
+						googleDisabled={!googleReady}
+					/>
+					{SHOW_ADMIN_LOGIN && (
+						<div className="app-actions">
+							<button
+								className="app-button app-button--secondary"
+								type="button"
+								onClick={() => startGoogleLogin('admin')}
+								disabled={!googleReady}
+							>
+								관리용 Google 로그인
+							</button>
+						</div>
+					)}
 				</header>
 
 				{(message || authError) && <p className="app-alert" role="alert">{message || authError}</p>}
-        {authConfig && !authConfig.googleEnabled && <p className="app-page__muted">
-          구글 로그인 설정이 아직 완료되지 않았습니다.
-          {import.meta.env.DEV && authConfig.previewEnabled && ' 개발용 접근 권한 미리보기에서 화면을 확인할 수 있습니다.'}
-        </p>}
+				{authConfig && !authConfig.googleEnabled && (
+					<p className="app-page__muted">
+						구글 로그인 설정이 아직 완료되지 않았습니다.
+						{import.meta.env.DEV && authConfig.previewEnabled && ' 개발용 접근 권한 미리보기에서 화면을 확인할 수 있습니다.'}
+					</p>
+				)}
 
 				{guestNotice && (
 					<section className="app-card" role="dialog" aria-modal="true" aria-labelledby="guest-title">
@@ -76,14 +89,18 @@ export default function LoginPage() {
 							<button className="app-button" type="button" onClick={() => navigate(site ? `/write?site=${encodeURIComponent(site)}` : '/write')}>
 								계속 작성
 							</button>
-							<button className="app-button app-button--secondary" type="button"
-                  onClick={() => startGoogleLogin('user', site)} disabled={!authConfig?.googleEnabled}>
-                Google로 로그인
+							<button
+								className="app-button app-button--secondary"
+								type="button"
+								onClick={() => startGoogleLogin('user', site)}
+								disabled={!googleReady}
+							>
+								Google로 로그인
 							</button>
 						</div>
 					</section>
 				)}
 			</div>
 		</main>
-  )
+	)
 }

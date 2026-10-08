@@ -1,0 +1,23 @@
+/* 제공된 Login.png의 로그인 버튼 규칙. */
+:root {
+  --login-button-surface: #fcfbff;
+  --login-button-text: #5c5987;
+  --login-button-border: #c5c7d8;
+  --login-button-hover: #f1effb;
+  --login-warning-color: #f00000;
+  --login-button-shadow: 0 4px 3px rgb(0 0 0 / 28%), inset 0 -2px 2px rgb(0 0 0 / 8%);
+  --login-button-focus: #6e67c6;
+  --login-button-width: 29.375rem;
+  --login-button-height: 5.625rem;
+  --login-button-radius: 999px;
+  --login-button-border-width: 1px;
+  --login-button-font: clamp(1.125rem, 4vw, 1.625rem);
+  --login-warning-font: 1.125rem;
+  --login-note-font: 0.875rem;
+  --login-google-size: 2rem;
+  --login-button-gap: 3.25rem;
+  --login-label-gap: 0.5rem;
+  --login-button-padding: 1rem;
+  --login-focus-width: 3px;
+  --login-duration: 160ms;
+}
