@@ -61,6 +61,7 @@ export default function ProjectDisc({ projects, projectCode }) {
 		const toSlot = (project) => ({
 			key: project.code,
 			name: project.name,
+			logoUrl: project.logoUrl,
 			to: `/admin/${project.code}/board`,
 		})
 
@@ -161,7 +162,7 @@ export default function ProjectDisc({ projects, projectCode }) {
 							title={slot.name}
 						>
 							<span className="disc__logo" data-slot={slot.home ? 'home' : index % 5} aria-hidden="true">
-								{slot.home ? <House size={22} strokeWidth={2} /> : slot.name.slice(0, 1)}
+								<ProjectLogo slot={slot} />
 							</span>
 							<span className="disc__name">{slot.name}</span>
 						</button>
@@ -170,4 +171,13 @@ export default function ProjectDisc({ projects, projectCode }) {
 			</nav>
 		</div>
 	)
+}
+
+function ProjectLogo({ slot }) {
+	const [failedUrl, setFailedUrl] = useState(null)
+	if (slot.home) return <House size={22} strokeWidth={2} />
+	if (slot.logoUrl && failedUrl !== slot.logoUrl) {
+		return <img src={slot.logoUrl} alt="" onError={() => setFailedUrl(slot.logoUrl)} />
+	}
+	return slot.name.slice(0, 1)
 }

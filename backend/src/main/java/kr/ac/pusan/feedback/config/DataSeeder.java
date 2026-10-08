@@ -95,10 +95,10 @@ public class DataSeeder implements ApplicationRunner {
 			Project project = projectRepository.save(Project.builder()
 					.code(seed.code())
 					.name(seed.name())
-					// TODO(D, 0-2단계): 로고 이미지가 준비되면 실제 주소로 채운다(기획안 12장 미결정 1).
+					// 로고와 서비스 주소는 배포 환경의 실제 프로젝트 데이터에서 채운다.
+					// 개발 시드에 가짜 외부 주소를 넣으면 화면에서 정상 링크처럼 노출되므로 null 로 둔다.
 					.logoUrl(null)
-					// 자리표시자 주소다. 8단계 배포 시 각 시스템의 실제 주소로 바꾼다(기획안 12장 미결정 5).
-					.siteUrl("https://example.pusan.ac.kr/" + seed.code())
+					.siteUrl(null)
 					.sortOrder(sortOrder++)
 					.build());
 			byCode.put(project.getCode(), project);

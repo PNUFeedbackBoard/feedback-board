@@ -42,7 +42,7 @@ export const routes = [{
       children: [
         { path: 'admin', lazy: lazyPage(() => import('./pages/admin/DashboardPage.jsx')) },
         { path: 'admin/accounts', lazy: lazyPage(() => import('./pages/admin/AccountsPage.jsx')) },
-        // :projectCode 는 projects 의 code 값이다. codeplace | aipms | aicms | aicap | srvadm
+        // :projectCode 는 GET /api/projects 응답의 code 값이다.
         // 경로가 2단이라 위의 /admin/pending, /admin/accounts 와 겹치지 않는다.
         //
         // intake 는 0-1단계에 없던 경로다. **팀 확인이 필요한 기획 변경이다.**

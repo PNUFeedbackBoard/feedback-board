@@ -1,4 +1,7 @@
 .board {
+	--board-column-gap: 18px;
+	--board-column-padding: 16px;
+
 	display: flex;
 	flex-direction: column;
 	gap: 20px;
@@ -42,7 +45,7 @@
 .board__columns {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 18px;
+	gap: var(--board-column-gap);
 	align-items: start;
 }
 
@@ -55,7 +58,7 @@
 	flex-direction: column;
 	gap: 14px;
 	min-height: 280px;
-	padding: 16px;
+	padding: var(--board-column-padding);
 	border: 1px solid var(--color-border);
 	border-top: 2px solid var(--color-border-strong);
 	border-radius: var(--radius-md);
@@ -95,13 +98,16 @@
 }
 
 .board__cards--row {
-	flex-direction: row;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	column-gap: calc(
+		var(--board-column-gap) + var(--board-column-padding) + var(--board-column-padding)
+	);
 	padding-top: 14px;
 }
 
-.board__cards--row .card-slot,
 .board__cards--row .card-slot {
+	min-width: 0;
 	touch-action: none;
 	cursor: grab;
 	user-select: none;
@@ -131,7 +137,7 @@
 }
 
 .board__rejected {
-	padding: 16px;
+	padding: var(--board-column-padding);
 	border: 1px solid var(--color-border);
 	border-top: 2px solid var(--color-border-strong);
 	border-radius: var(--radius-md);
@@ -201,5 +207,9 @@
 
 	.board__column {
 		min-height: 180px;
+	}
+
+	.board__cards--row {
+		grid-template-columns: 1fr;
 	}
 }

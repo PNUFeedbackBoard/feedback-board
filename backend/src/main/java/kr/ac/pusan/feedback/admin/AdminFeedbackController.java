@@ -82,7 +82,8 @@ public class AdminFeedbackController {
 	}
 
 	@Operation(summary = "관리용 피드백 목록 조회",
-			description = "필터는 사이트·상태·유형·기간·회원 여부·답변 유무이고 정렬은 PRIORITY·LATEST·OLDEST 다. "
+			description = "필터는 사이트·상태·유형·기간·회원 여부·답변 유무·우선 처리 요청 여부이고 "
+					+ "정렬은 PRIORITY·LATEST·OLDEST 다. "
 					+ "어떤 정렬을 골라도 우선 처리 요청 항목이 최상단에 고정된다.")
 	@GetMapping
 	@Transactional(readOnly = true)
@@ -95,6 +96,7 @@ public class AdminFeedbackController {
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
 			@RequestParam(required = false) AuthorType authorType,
 			@RequestParam(required = false) Boolean answered,
+			@RequestParam(required = false) Boolean priorityRequested,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
 		validatePage(page, size);
@@ -110,7 +112,7 @@ public class AdminFeedbackController {
 		// 조건에 안 맞는 행은 애초에 서버로 전송되지 않으니, 목록이 커져도 느려지지 않는다.
 		FeedbackSort effectiveSort = sort == null ? FeedbackSort.LATEST : sort;
 		Page<Feedback> matched = feedbackRepository.searchForAdmin(
-				project, status, category, authorType, fromInclusive, toExclusive, answered,
+				project, status, category, authorType, fromInclusive, toExclusive, answered, priorityRequested,
 				effectiveSort.name(), PageRequest.of(page, size));
 
 		// answeredIds는 필터링용이 아니라 DTO의 answered 필드를 채우는 표시용이다 — 건마다 따로
