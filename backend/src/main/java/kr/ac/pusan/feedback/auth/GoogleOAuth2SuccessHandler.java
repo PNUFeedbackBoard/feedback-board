@@ -123,9 +123,14 @@ public class GoogleOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 	private void reject(HttpServletRequest request, HttpServletResponse response, String reason) throws IOException {
 		SecurityContextHolder.clearContext();
 		var session = request.getSession(false);
+		String site = session == null ? null : (String) session.getAttribute(AuthController.LOGIN_SITE);
 		if (session != null) {
 			session.invalidate();
 		}
-		response.sendRedirect(frontendUrl + "/?authError=" + reason);
+		String target = "/?authError=" + reason;
+		if (site != null) {
+			target += "&site=" + java.net.URLEncoder.encode(site, java.nio.charset.StandardCharsets.UTF_8);
+		}
+		response.sendRedirect(frontendUrl + target);
 	}
 }

@@ -123,11 +123,13 @@ class GoogleLoginTests {
         assertThat(users.findByEmail("no@pusan.ac.kr")).isEmpty();
     }
     @Test void nonSchoolEmailIsRejectedWithoutCreatingUser() throws Exception {
-        var request = new MockHttpServletRequest(); request.getSession();
+        var request = new MockHttpServletRequest();
+        request.getSession().setAttribute(AuthController.LOGIN_SITE, "codeplace");
         var response = new MockHttpServletResponse();
         handler.onAuthenticationSuccess(request, response,
                 google("outside", "student@gmail.com", true, "gmail.com"));
-        assertThat(response.getRedirectedUrl()).endsWith("authError=school_email_required");
+        assertThat(response.getRedirectedUrl())
+                .isEqualTo("http://localhost:5173/?authError=school_email_required&site=codeplace");
         assertThat(users.findByEmail("student@gmail.com")).isEmpty();
         assertThat(request.getSession(false)).isNull();
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();

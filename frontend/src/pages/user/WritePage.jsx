@@ -18,11 +18,14 @@ export default function WritePage() {
 	const [searchParams] = useSearchParams()
 	const requestedSite = searchParams.get('site')
 	const [projects, setProjects] = useState([])
+	const [projectsReady, setProjectsReady] = useState(false)
 	const [form, setForm] = useState(EMPTY_FORM)
 	const [busy, setBusy] = useState(false)
 	const [message, setMessage] = useState('')
 	const [createdId, setCreatedId] = useState(null)
 	const [currentUser, setCurrentUser] = useState(undefined)
+	const [projectChoice, setProjectChoice] = useState({ requestedSite, open: false })
+	const projectChoiceOpen = projectChoice.requestedSite === requestedSite && projectChoice.open
 
 	useEffect(() => {
 		let cancelled = false
@@ -34,8 +37,13 @@ export default function WritePage() {
 					? requestedSite
 					: found[0]?.code ?? ''
 				setForm((current) => ({ ...current, projectCode: selected }))
+				setProjectsReady(true)
 			})
-			.catch((error) => !cancelled && setMessage(error.message))
+			.catch((error) => {
+				if (cancelled) return
+				setProjectsReady(true)
+				setMessage(error.message)
+			})
 		return () => {
 			cancelled = true
 		}
@@ -106,15 +114,44 @@ export default function WritePage() {
 				</header>
 
 				<form className="app-card app-stack" onSubmit={submit}>
-					{fixedProject ? (
-						<p><strong>대상 서비스</strong><br />{fixedProject.name}</p>
+					{!projectsReady ? (
+						<p className="app-notice" role="status">대상 서비스를 확인하는 중…</p>
+					) : fixedProject && !projectChoiceOpen ? (
+						<div className="source-service" role="status">
+							<div className="source-service__summary">
+								<span className="source-service__label">대상 서비스</span>
+								<strong>{fixedProject.name}</strong>
+								<small>서비스의 피드백 버튼을 통해 자동으로 선택되었습니다.</small>
+							</div>
+							<button
+								className="source-service__change"
+								type="button"
+								onClick={() => setProjectChoice({ requestedSite, open: true })}
+							>
+								다른 서비스 선택
+							</button>
+						</div>
 					) : (
-						<label className="app-field">
-							대상 서비스
-							<select value={form.projectCode} onChange={(event) => setField('projectCode', event.target.value)} required>
-								{projects.map((project) => <option key={project.code} value={project.code}>{project.name}</option>)}
-							</select>
-						</label>
+						<div className="app-stack app-stack--tight">
+							<label className="app-field">
+								대상 서비스
+								<select value={form.projectCode} onChange={(event) => setField('projectCode', event.target.value)} required>
+									{projects.map((project) => <option key={project.code} value={project.code}>{project.name}</option>)}
+								</select>
+							</label>
+							{fixedProject && (
+								<button
+									className="source-service__restore"
+									type="button"
+									onClick={() => {
+										setField('projectCode', fixedProject.code)
+										setProjectChoice({ requestedSite, open: false })
+									}}
+								>
+									{fixedProject.name} 자동 선택으로 돌아가기
+								</button>
+							)}
+						</div>
 					)}
 
 					<div className="app-grid">

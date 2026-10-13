@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class GoogleRedirectTests {
     @Autowired MockMvc mvc;
+
     @Test void configuredClientStartsAuthorizationWithStateAndCorrectCallback() throws Exception {
         mvc.perform(get("/api/auth/config")).andExpect(jsonPath("googleEnabled").value(true));
         var session = new MockHttpSession();
@@ -28,9 +29,20 @@ class GoogleRedirectTests {
                         "prompt=select_account", "hd=pusan.ac.kr");
         assertThat(session.getAttribute(AuthController.LOGIN_INTENT)).isEqualTo("admin");
     }
-    @Test void invalidCallbackDoesNotAuthenticateAndReturnsReadableFailure() throws Exception {
-        mvc.perform(get("/login/oauth2/code/google?error=access_denied&state=unknown"))
+
+    @Test void sourceSiteIsStoredBeforeGoogleAuthorization() throws Exception {
+        var session = new MockHttpSession();
+        mvc.perform(get("/api/auth/login?intent=user&site=codeplace").session(session))
                 .andExpect(status().isFound())
-                .andExpect(redirectedUrl("http://localhost:5173/?authError=google_failed"));
+                .andExpect(redirectedUrl("/oauth2/authorization/google"));
+        assertThat(session.getAttribute(AuthController.LOGIN_SITE)).isEqualTo("codeplace");
+    }
+
+    @Test void invalidCallbackReturnsReadableFailureAndKeepsSourceSite() throws Exception {
+        var session = new MockHttpSession();
+        session.setAttribute(AuthController.LOGIN_SITE, "aipms");
+        mvc.perform(get("/login/oauth2/code/google?error=access_denied&state=unknown").session(session))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost:5173/?authError=google_failed&site=aipms"));
     }
 }

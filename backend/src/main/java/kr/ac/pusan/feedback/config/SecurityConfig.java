@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.ac.pusan.feedback.api.error.ApiErrorResponse;
+import kr.ac.pusan.feedback.auth.AuthController;
 import kr.ac.pusan.feedback.auth.GoogleOAuth2SuccessHandler;
 
 /**
@@ -149,8 +150,13 @@ public class SecurityConfig {
                     .failureHandler((request, response, exception) -> {
                         org.springframework.security.core.context.SecurityContextHolder.clearContext();
                         var session = request.getSession(false);
+						String site = session == null ? null : (String) session.getAttribute(AuthController.LOGIN_SITE);
                         if (session != null) session.invalidate();
-                        response.sendRedirect(frontendUrl.replaceAll("/+$", "") + "/?authError=google_failed");
+						String target = "/?authError=google_failed";
+						if (site != null) {
+							target += "&site=" + java.net.URLEncoder.encode(site, StandardCharsets.UTF_8);
+						}
+						response.sendRedirect(frontendUrl.replaceAll("/+$", "") + target);
                     }));
 		}
 

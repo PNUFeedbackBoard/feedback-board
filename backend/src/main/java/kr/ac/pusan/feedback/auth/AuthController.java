@@ -23,7 +23,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @RequestMapping("/api/auth")
 public class AuthController {
     static final String LOGIN_INTENT = "feedback.login.intent";
-    static final String LOGIN_SITE = "feedback.login.site";
+    /** OAuth 실패 처리에서도 출처 사이트를 복원할 수 있도록 보안 설정과 공유한다. */
+    public static final String LOGIN_SITE = "feedback.login.site";
     private final ProjectRepository projects;
     private final ObjectProvider<ClientRegistrationRepository> registrations;
     private final Environment environment;
