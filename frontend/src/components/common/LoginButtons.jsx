@@ -1,11 +1,11 @@
 import './login-buttons.css'
 
 /** 로그인 시안의 두 버튼. 인증과 이동은 페이지에서 주입한다. */
-export default function LoginButtons({ onGoogleLogin, onGuestLogin, busy = false, googleDisabled = false }) {
+export default function LoginButtons({ onGoogleLogin, onGuestLogin, busy = false, disabled = false, googleDisabled = false }) {
   return (
     <div className="login-buttons" aria-busy={busy}>
       <div className="login-buttons__option">
-        <button className="login-button" type="button" onClick={onGoogleLogin} disabled={busy || googleDisabled}>
+        <button className="login-button" type="button" onClick={onGoogleLogin} disabled={busy || disabled || googleDisabled}>
           <svg className="login-button__google" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.36Z" />
             <path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.24-2.51c-.9.6-2.05.97-3.38.97-2.6 0-4.81-1.76-5.6-4.12H3.05v2.59A10 10 0 0 0 12 22Z" />
@@ -17,7 +17,7 @@ export default function LoginButtons({ onGoogleLogin, onGuestLogin, busy = false
         <p className="login-buttons__school-note">부산대학교 이메일(@pusan.ac.kr) 계정만 사용할 수 있습니다.</p>
       </div>
       <div className="login-buttons__guest">
-        <button className="login-button" type="button" onClick={onGuestLogin} disabled={busy} aria-describedby="guest-login-warning">
+        <button className="login-button" type="button" onClick={onGuestLogin} disabled={busy || disabled} aria-describedby="guest-login-warning">
           비회원 로그인
         </button>
         <p id="guest-login-warning" className="login-buttons__warning">*비회원 로그인 시 개발자의 응답이 어렵습니다.</p>

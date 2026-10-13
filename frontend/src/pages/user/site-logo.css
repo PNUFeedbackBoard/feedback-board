@@ -39,16 +39,85 @@
   line-height: 1.65;
 }
 
-.login-panel__admin {
-  justify-content: center;
-  margin-top: 1.5rem;
+.login-source-context {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	align-items: baseline;
+	gap: 0.15rem 0.65rem;
+	margin: -0.65rem 0 1.4rem;
+	padding: 0.85rem 1rem;
+	border: 1px solid var(--login-panel-border);
+	border-radius: 0.85rem;
+	background: rgb(246 248 255 / 88%);
 }
 
-.login-panel__admin .app-button {
-  min-height: 2.4rem;
-  padding-inline: 0.9rem;
-  font-size: 0.82rem;
-  font-weight: 700;
+.login-source-context span {
+	color: var(--login-note-color);
+	font-size: 0.75rem;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+}
+
+.login-source-context strong {
+	color: var(--login-button-text);
+	font-size: 0.95rem;
+}
+
+.login-source-context small {
+	grid-column: 1 / -1;
+	color: var(--login-note-color);
+	font-size: 0.78rem;
+}
+
+.guest-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(16 24 48 / 48%);
+  backdrop-filter: blur(5px);
+}
+
+.guest-dialog {
+  width: min(29rem, 100%);
+  padding: clamp(1.5rem, 4vw, 2rem);
+  border: 1px solid var(--login-panel-border);
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+  box-shadow: 0 1.5rem 4rem rgb(16 24 48 / 28%);
+  outline: none;
+  animation: guest-dialog-in 160ms ease-out;
+}
+
+.guest-dialog h2 {
+  margin: 0.35rem 0 0.65rem;
+  color: var(--color-text);
+  font-size: clamp(1.35rem, 4vw, 1.65rem);
+  letter-spacing: -0.025em;
+}
+
+.guest-dialog__description {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+}
+
+.guest-dialog .app-actions {
+  margin-top: 1.4rem;
+}
+
+@keyframes guest-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (max-width: 540px) {
@@ -59,5 +128,16 @@
   .login-panel {
     padding: 1.35rem;
     border-radius: 1.1rem;
+  }
+
+  .guest-dialog .app-actions,
+  .guest-dialog .app-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guest-dialog {
+    animation: none;
   }
 }

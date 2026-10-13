@@ -1,37 +1,103 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getAuthConfig, getMe, startGoogleLogin } from '../../api/endpoints.js'
+import { getAuthConfig, getMe, getProjects, startGoogleLogin } from '../../api/endpoints.js'
 import '../page-shell.css'
 import LoginButtons from '../../components/common/LoginButtons.jsx'
 import iniLogo from '../../assets/ini-logo-optimized.png'
 import './site-logo.css'
 
-/** 관리용 Google 로그인 링크를 보일지. 빼려면 false 로 바꾸거나 아래 SHOW_ADMIN_LOGIN 블록을 지운다. */
-const SHOW_ADMIN_LOGIN = true
+const NO_SOURCE_CONTEXT = { ready: true, project: null, invalid: false }
 
 export default function LoginPage() {
 	const navigate = useNavigate()
 	const [params] = useSearchParams()
-	const site = params.get('site')
+	const requestedSite = params.get('site')
 	const [authConfig, setAuthConfig] = useState(null)
+	const [sourceLookup, setSourceLookup] = useState({ requestedSite: null, project: null, invalid: false })
 	const [message, setMessage] = useState('')
 	const [guestNotice, setGuestNotice] = useState(false)
+	const guestDialogRef = useRef(null)
+	const sourceContext = !requestedSite
+		? NO_SOURCE_CONTEXT
+		: sourceLookup.requestedSite === requestedSite
+			? { ready: true, project: sourceLookup.project, invalid: sourceLookup.invalid }
+			: { ready: false, project: null, invalid: false }
+	const sourceSite = sourceContext.project?.code ?? null
 
 	const goToStart = useCallback((me) => {
 		if (me.status === 'PENDING') navigate('/admin/pending')
 		else if (me.role === 'DEVELOPER' || me.role === 'VIEWER') navigate('/admin')
-		else navigate(site ? `/write?site=${encodeURIComponent(site)}` : '/home')
-	}, [navigate, site])
+		else navigate(sourceSite ? `/write?site=${encodeURIComponent(sourceSite)}` : '/home')
+	}, [navigate, sourceSite])
 
 	useEffect(() => {
+		if (!sourceContext.ready) return
 		getMe()
 			.then(goToStart)
 			.catch(() => {})
-	}, [goToStart])
+	}, [goToStart, sourceContext.ready])
+
+	useEffect(() => {
+		if (!requestedSite) return
+
+		let cancelled = false
+		getProjects()
+			.then((projects) => {
+				if (cancelled) return
+				const project = projects.find((candidate) => candidate.code === requestedSite) ?? null
+				setSourceLookup({ requestedSite, project, invalid: !project })
+			})
+			.catch((error) => {
+				if (cancelled) return
+				setSourceLookup({ requestedSite, project: null, invalid: false })
+				setMessage(error.message)
+			})
+		return () => {
+			cancelled = true
+		}
+	}, [requestedSite])
 
 	useEffect(() => {
 		getAuthConfig().then(setAuthConfig).catch((error) => setMessage(error.message))
 	}, [])
+
+	useEffect(() => {
+		if (!guestNotice) return undefined
+
+		const previouslyFocused = document.activeElement
+		const previousOverflow = document.body.style.overflow
+		document.body.style.overflow = 'hidden'
+		const focusFrame = window.requestAnimationFrame(() => {
+			guestDialogRef.current?.querySelector('button:not(:disabled)')?.focus()
+		})
+		const closeOnEscape = (event) => {
+			if (event.key === 'Escape') setGuestNotice(false)
+		}
+		document.addEventListener('keydown', closeOnEscape)
+
+		return () => {
+			window.cancelAnimationFrame(focusFrame)
+			document.removeEventListener('keydown', closeOnEscape)
+			document.body.style.overflow = previousOverflow
+			if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus()
+		}
+	}, [guestNotice])
+
+	const keepFocusInGuestDialog = (event) => {
+		if (event.key !== 'Tab') return
+		const buttons = guestDialogRef.current?.querySelectorAll('button:not(:disabled)')
+		if (!buttons?.length) return
+
+		const firstButton = buttons[0]
+		const lastButton = buttons[buttons.length - 1]
+		if (event.shiftKey && (document.activeElement === firstButton || document.activeElement === guestDialogRef.current)) {
+			event.preventDefault()
+			lastButton.focus()
+		} else if (!event.shiftKey && document.activeElement === lastButton) {
+			event.preventDefault()
+			firstButton.focus()
+		}
+	}
 
 	const authErrors = {
 		disabled: '사용이 중지된 계정입니다. 관리자에게 문의해 주세요.',
@@ -53,26 +119,27 @@ export default function LoginPage() {
 					<p className="app-page__muted">
 						부산대학교 AI융합교육원 서비스에서 발견한 문제와 아이디어를 한곳에 남겨 주세요.
 					</p>
-					<LoginButtons
-						onGoogleLogin={() => startGoogleLogin('user', site)}
-						onGuestLogin={() => setGuestNotice(true)}
-						googleDisabled={!googleReady}
-					/>
-					{SHOW_ADMIN_LOGIN && (
-						<div className="app-actions login-panel__admin">
-							<button
-								className="app-button app-button--secondary"
-								type="button"
-								onClick={() => startGoogleLogin('admin')}
-								disabled={!googleReady}
-							>
-								관리용 Google 로그인
-							</button>
+					{sourceContext.project && (
+						<div className="login-source-context" role="status">
+							<span>피드백 대상</span>
+							<strong>{sourceContext.project.name}</strong>
+							<small>로그인 후 해당 서비스가 자동으로 선택됩니다.</small>
 						</div>
 					)}
+					<LoginButtons
+						onGoogleLogin={() => startGoogleLogin('user', sourceSite)}
+						onGuestLogin={() => setGuestNotice(true)}
+						disabled={!sourceContext.ready}
+						googleDisabled={!googleReady}
+					/>
 				</header>
 
 				{(message || authError) && <p className="app-alert" role="alert">{message || authError}</p>}
+				{sourceContext.invalid && (
+					<p className="app-notice" role="status">
+						연결된 서비스 정보를 확인하지 못했습니다. 계속 진행하면 작성 화면에서 대상 서비스를 직접 선택할 수 있습니다.
+					</p>
+				)}
 				{authConfig && !authConfig.googleEnabled && (
 					<p className="app-page__muted">
 						구글 로그인 설정이 아직 완료되지 않았습니다.
@@ -81,25 +148,37 @@ export default function LoginPage() {
 				)}
 
 				{guestNotice && (
-					<section className="app-card" role="dialog" aria-modal="true" aria-labelledby="guest-title">
-						<h2 id="guest-title">비회원으로 작성할까요?</h2>
-						<p className="app-page__muted">
-							비회원 문의는 제출 후 진행 상태와 개발자 답변을 다시 확인할 수 없습니다.
-						</p>
-						<div className="app-actions">
-							<button className="app-button" type="button" onClick={() => navigate(site ? `/write?site=${encodeURIComponent(site)}` : '/write')}>
-								계속 작성
-							</button>
-							<button
-								className="app-button app-button--secondary"
-								type="button"
-								onClick={() => startGoogleLogin('user', site)}
-								disabled={!googleReady}
-							>
-								Google로 로그인
-							</button>
-						</div>
-					</section>
+					<div
+						className="guest-dialog__backdrop"
+						onClick={(event) => {
+							if (event.target === event.currentTarget) setGuestNotice(false)
+						}}
+					>
+						<section
+							ref={guestDialogRef}
+							className="guest-dialog"
+							role="dialog"
+							aria-modal="true"
+							aria-labelledby="guest-title"
+							aria-describedby="guest-description"
+							tabIndex={-1}
+							onKeyDown={keepFocusInGuestDialog}
+						>
+							<p className="app-page__eyebrow">GUEST FEEDBACK</p>
+							<h2 id="guest-title">비회원으로 작성할까요?</h2>
+							<p id="guest-description" className="guest-dialog__description">
+								비회원으로 남긴 문의는 제출 후 진행 상태와 개발자 답변을 다시 확인할 수 없습니다.
+							</p>
+							<div className="app-actions">
+								<button className="app-button" type="button" onClick={() => navigate(sourceSite ? `/write?site=${encodeURIComponent(sourceSite)}` : '/write')}>
+									비회원으로 계속
+								</button>
+								<button className="app-button app-button--secondary" type="button" onClick={() => setGuestNotice(false)}>
+									취소
+								</button>
+							</div>
+						</section>
+					</div>
 				)}
 			</div>
 		</main>
