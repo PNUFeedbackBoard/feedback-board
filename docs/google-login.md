@@ -1,5 +1,7 @@
 # 구글 로그인 설정
 
+실제 학교 서버와 운영 도메인 배포 절차는 [학교 서버 운영 배포 가이드](school-server-deployment.md)를 먼저 확인한다.
+
 구글 연동 설정이 없어도 dev 프로필로 실행하고 권한 미리보기를 사용할 수 있다.
 
 1. Google Cloud Console에서 Google Auth Platform 동의 화면을 설정한다.
