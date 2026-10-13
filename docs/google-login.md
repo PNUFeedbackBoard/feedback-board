@@ -20,12 +20,18 @@ cd backend
 ```
 
 Spring Google 기본 scope(openid/profile/email)를 사용한다. ID와 secret을 모두 설정한다.
+로그인 성공 시 서버는 검증된 이메일 주소가 정확히 `@pusan.ac.kr`로 끝나는지와 Google Workspace의
+`hd` 클레임이 `pusan.ac.kr`인지 모두 확인한다. 다른 개인 Gmail·외부 조직 계정은 사용자 레코드를
+만들거나 세션을 발급하지 않고 로그인 화면으로 돌려보낸다. Google의 `hd` 요청 파라미터는 화면에서
+계정 선택을 돕는 힌트일 뿐 접근 통제가 아니므로, 실제 제한은 콜백을 처리하는 서버에서 수행한다.
+로그인 요청에는 `prompt=select_account`를 함께 보내 이전에 선택한 개인 Gmail 계정이 자동으로 다시
+사용되지 않게 하고, 실패 후 재시도할 때 다른 계정을 선택할 수 있게 한다.
 로컬에서는 프론트 주소를 localhost:5173으로 통일한다. 127.0.0.1과 혼용하면 쿠키가 공유되지 않는다.
 Vite는 /api, /oauth2, /login/oauth2를 백엔드로 프록시한다. 배포는 같은 사이트의 리버스 프록시에서
 이 경로를 백엔드로 전달하고 나머지는 SPA로 제공한다. HTTPS와 전달 헤더는 배포 환경에 맞춰 설정한다.
 FRONTEND_URL은 신뢰하는 고정 주소만 사용한다.
 
-- 일반 Google 로그인: 신규 USER·ACTIVE, 바로 내 문의 이용.
+- 일반 Google 로그인: 부산대학교 계정만 허용. 신규 USER·ACTIVE, 바로 내 문의 이용.
 - 관리용 Google 로그인: 신규 USER·PENDING, 개발자가 역할 지정 및 승인.
 - 최초 개발자: 지정 이메일의 신규 가입만 DEVELOPER·ACTIVE. 기존 계정 역할/상태는 보존.
 - DISABLED와 다른 구글 sub가 이미 연결된 이메일의 로그인은 거부.

@@ -107,6 +107,7 @@
   --shadow-sm: none;
   --shadow-md: 0 12px 32px rgb(30 50 88 / 10%);
   --shadow-lg: 0 24px 64px rgb(24 35 58 / 18%);
+  --shadow-account: 0 6px 18px rgb(35 50 88 / 8%);
 
   --ease-spring: cubic-bezier(0.22, 0.8, 0.28, 1);
   --duration-fast: 160ms;

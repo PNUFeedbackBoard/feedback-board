@@ -17,6 +17,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -137,8 +139,13 @@ public class SecurityConfig {
 						.clearAuthentication(true));
 
 		// client-id 가 설정된 경우에만 구글 로그인을 켠다(클래스 주석 참고).
-		if (clientRegistrations.getIfAvailable() != null) {
-			http.oauth2Login(oauth2 -> oauth2.successHandler(googleOAuth2SuccessHandler)
+		ClientRegistrationRepository registrations = clientRegistrations.getIfAvailable();
+		if (registrations != null) {
+			var authorizationRequestResolver = googleAuthorizationRequestResolver(registrations);
+			http.oauth2Login(oauth2 -> oauth2
+					.authorizationEndpoint(authorization -> authorization
+							.authorizationRequestResolver(authorizationRequestResolver))
+					.successHandler(googleOAuth2SuccessHandler)
                     .failureHandler((request, response, exception) -> {
                         org.springframework.security.core.context.SecurityContextHolder.clearContext();
                         var session = request.getSession(false);
@@ -148,6 +155,24 @@ public class SecurityConfig {
 		}
 
 		return http.build();
+	}
+
+	/**
+	 * 이전에 선택한 개인 Gmail 계정으로 자동 재로그인되지 않도록 매번 계정 선택 화면을 연다.
+	 * hd 는 계정 선택을 돕는 힌트일 뿐이며, 실제 도메인 제한은 성공 핸들러가 다시 검증한다.
+	 */
+	private DefaultOAuth2AuthorizationRequestResolver googleAuthorizationRequestResolver(
+			ClientRegistrationRepository registrations
+	) {
+		var resolver = new DefaultOAuth2AuthorizationRequestResolver(
+				registrations,
+				OAuth2AuthorizationRequestRedirectFilter.DEFAULT_AUTHORIZATION_REQUEST_BASE_URI
+		);
+		resolver.setAuthorizationRequestCustomizer(request -> request.additionalParameters(parameters -> {
+			parameters.put("prompt", "select_account");
+			parameters.put("hd", "pusan.ac.kr");
+		}));
+		return resolver;
 	}
 
 	/** 로그인하지 않은 요청: 401 을 JSON 으로 준다. */

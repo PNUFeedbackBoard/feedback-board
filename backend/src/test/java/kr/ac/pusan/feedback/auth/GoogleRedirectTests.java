@@ -24,7 +24,8 @@ class GoogleRedirectTests {
         var result = mvc.perform(get("/oauth2/authorization/google").session(session))
                 .andExpect(status().isFound()).andReturn();
         assertThat(result.getResponse().getRedirectedUrl()).startsWith("https://accounts.google.com/")
-                .contains("client_id=test-client", "state=", "redirect_uri=");
+                .contains("client_id=test-client", "state=", "redirect_uri=",
+                        "prompt=select_account", "hd=pusan.ac.kr");
         assertThat(session.getAttribute(AuthController.LOGIN_INTENT)).isEqualTo("admin");
     }
     @Test void invalidCallbackDoesNotAuthenticateAndReturnsReadableFailure() throws Exception {

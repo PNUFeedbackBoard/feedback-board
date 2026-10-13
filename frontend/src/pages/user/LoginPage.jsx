@@ -37,15 +37,16 @@ export default function LoginPage() {
 		disabled: '사용이 중지된 계정입니다. 관리자에게 문의해 주세요.',
 		account_conflict: '이미 다른 구글 계정과 연결된 이메일입니다.',
 		invalid_google_account: '확인된 이메일을 가진 구글 계정으로 로그인해 주세요.',
+		school_email_required: '부산대학교 이메일(@pusan.ac.kr) 계정으로만 로그인할 수 있습니다. Google 로그인을 다시 눌러 다른 계정을 선택해 주세요.',
 		google_failed: '구글 로그인이 취소되었거나 실패했습니다. 다시 시도해 주세요.',
 	}
 	const authError = authErrors[params.get('authError')]
 	const googleReady = Boolean(authConfig?.googleEnabled)
 
 	return (
-		<main className="app-page">
-			<div className="app-page__inner app-stack">
-				<header className="app-card">
+		<main className="app-page login-page">
+			<div className="app-page__inner app-stack login-page__inner">
+				<header className="app-card login-panel">
 					<img className="login-brand__mark" src={iniLogo} alt="INI 로고" />
 					<p className="app-page__eyebrow">ISSUE &amp; IDEA</p>
 					<h1>통합 피드백 보드</h1>
@@ -58,7 +59,7 @@ export default function LoginPage() {
 						googleDisabled={!googleReady}
 					/>
 					{SHOW_ADMIN_LOGIN && (
-						<div className="app-actions">
+						<div className="app-actions login-panel__admin">
 							<button
 								className="app-button app-button--secondary"
 								type="button"
