@@ -63,7 +63,7 @@ git clone https://github.com/PNUFeedbackBoard/feedback-board.git
 
 #### 회원
 
-- 구글 로그인
+- 부산대학교 이메일(`@pusan.ac.kr`)을 사용하는 구글 로그인
 - 피드백 작성
 - 피드백 유형 선택
   - 기능 제안

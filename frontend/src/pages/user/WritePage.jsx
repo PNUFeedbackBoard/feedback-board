@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { createFeedback, getMe, getProjects } from '../../api/endpoints.js'
+import CurrentUserBadge from '../../components/common/CurrentUserBadge.jsx'
+import LogoutButton from '../../components/common/LogoutButton.jsx'
 import { FEEDBACK_CATEGORY, PRIORITY, toOptions } from '../../constants/enums.js'
 import '../page-shell.css'
 
@@ -20,7 +22,7 @@ export default function WritePage() {
 	const [busy, setBusy] = useState(false)
 	const [message, setMessage] = useState('')
 	const [createdId, setCreatedId] = useState(null)
-	const [isMember, setIsMember] = useState(null)
+	const [currentUser, setCurrentUser] = useState(undefined)
 
 	useEffect(() => {
 		let cancelled = false
@@ -40,7 +42,7 @@ export default function WritePage() {
 	}, [requestedSite])
 
 	useEffect(() => {
-		getMe().then(() => setIsMember(true)).catch(() => setIsMember(false))
+		getMe().then(setCurrentUser).catch(() => setCurrentUser(null))
 	}, [])
 
 	const fixedProject = useMemo(
@@ -75,7 +77,7 @@ export default function WritePage() {
 					<p className="app-success">접수 번호는 #{createdId}입니다.</p>
 					<p className="app-page__muted">회원으로 작성했다면 내 문의에서 처리 상태를 계속 확인할 수 있습니다.</p>
 					<div className="app-actions">
-						{isMember && <Link className="app-button" to="/home">내 문의 보기</Link>}
+						{currentUser && <Link className="app-button" to="/home">내 문의 보기</Link>}
 						<Link className="app-button app-button--secondary" to="/">처음으로</Link>
 					</div>
 				</div>
@@ -92,7 +94,15 @@ export default function WritePage() {
 						<h1>피드백 작성</h1>
 						<p className="app-page__muted">문제가 발생한 상황과 원하는 개선점을 구체적으로 알려 주세요.</p>
 					</div>
-					{isMember && <Link className="app-button app-button--secondary" to="/home">내 문의</Link>}
+					{currentUser && (
+						<div className="app-header__aside">
+							<CurrentUserBadge user={currentUser} />
+							<div className="app-actions">
+								<Link className="app-button app-button--secondary" to="/home">내 문의</Link>
+								<LogoutButton />
+							</div>
+						</div>
+					)}
 				</header>
 
 				<form className="app-card app-stack" onSubmit={submit}>

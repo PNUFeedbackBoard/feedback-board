@@ -18,6 +18,17 @@
   margin-bottom: 28px;
 }
 
+.app-page__header--compact {
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.app-header__aside {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
 .app-page__eyebrow {
   margin: 0 0 8px;
   color: #3155d5;
@@ -250,6 +261,10 @@
 
   .app-page__header {
     display: grid;
+  }
+
+  .app-header__aside {
+    justify-items: start;
   }
 
   .account-table,

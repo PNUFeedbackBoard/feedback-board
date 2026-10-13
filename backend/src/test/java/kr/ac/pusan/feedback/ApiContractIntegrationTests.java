@@ -181,6 +181,37 @@ class ApiContractIntegrationTests {
 	}
 
 	@Test
+	@Transactional
+	void memberCanReadOnlyOwnFeedbackAndGuestCannotReadMemberApi() throws Exception {
+		MockHttpSession member = login("user");
+		MockHttpSession anotherMember = login("viewer");
+
+		String createBody = mockMvc.perform(post("/api/feedbacks").with(csrf())
+						.session(member)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "projectCode": "aipms",
+								  "category": "ETC",
+								  "reportedPriority": "NORMAL",
+								  "title": "내 문의 접근 범위 테스트",
+								  "content": "로그인한 회원 본인만 이 문의를 조회할 수 있어야 합니다."
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		long id = objectMapper.readTree(createBody).path("id").asLong();
+
+		mockMvc.perform(get("/api/me/feedbacks"))
+				.andExpect(status().isUnauthorized());
+		mockMvc.perform(get("/api/me/feedbacks/" + id).session(anotherMember))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/me/feedbacks/" + id).session(member))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(id));
+	}
+
+	@Test
 	void currentUserResponseComesFromServerSession() throws Exception {
 		MockHttpSession session = login("dev");
 

@@ -1,7 +1,63 @@
 .login-brand__mark {
   display: block;
-  width: 6rem;
-  height: 6rem;
+  width: 4.75rem;
+  height: 4.75rem;
   object-fit: contain;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.login-page {
+  display: grid;
+  align-items: start;
+  padding-top: 2.5rem;
+  background:
+    radial-gradient(circle at 14% 8%, var(--login-page-glow), transparent 26rem),
+    var(--color-bg);
+}
+
+.login-page__inner {
+  width: min(46rem, 100%);
+}
+
+.login-panel {
+  padding: clamp(1.6rem, 4vw, 2.6rem);
+  border-color: var(--login-panel-border);
+  border-radius: 1.5rem;
+  box-shadow: var(--login-panel-shadow);
+}
+
+.login-panel h1 {
+  margin-bottom: 0.45rem;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.login-panel > .app-page__muted {
+  max-width: 37rem;
+  margin-bottom: 1.75rem;
+  line-height: 1.65;
+}
+
+.login-panel__admin {
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.login-panel__admin .app-button {
+  min-height: 2.4rem;
+  padding-inline: 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 540px) {
+  .login-page {
+    padding-top: 1rem;
+  }
+
+  .login-panel {
+    padding: 1.35rem;
+    border-radius: 1.1rem;
+  }
 }

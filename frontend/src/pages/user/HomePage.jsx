@@ -1,20 +1,26 @@
 import LogoutButton from '../../components/common/LogoutButton.jsx'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getMyFeedbacks } from '../../api/endpoints.js'
+import { getMe, getMyFeedbacks } from '../../api/endpoints.js'
 import CategoryTag from '../../components/common/CategoryTag.jsx'
+import CurrentUserBadge from '../../components/common/CurrentUserBadge.jsx'
 import PriorityChip from '../../components/common/PriorityChip.jsx'
 import StatusBadge from '../../components/common/StatusBadge.jsx'
 import '../page-shell.css'
 
 export default function HomePage() {
 	const [items, setItems] = useState(null)
+	const [currentUser, setCurrentUser] = useState(null)
 	const [message, setMessage] = useState('')
 
 	useEffect(() => {
 		let cancelled = false
-		getMyFeedbacks()
-			.then((found) => !cancelled && setItems(found))
+		Promise.all([getMyFeedbacks(), getMe()])
+			.then(([found, me]) => {
+				if (cancelled) return
+				setItems(found)
+				setCurrentUser(me)
+			})
 			.catch((error) => !cancelled && setMessage(error.message))
 		return () => {
 			cancelled = true
@@ -30,7 +36,13 @@ export default function HomePage() {
 						<h1>내 문의</h1>
 						<p className="app-page__muted">등록한 피드백의 처리 상태와 답변을 확인합니다.</p>
 					</div>
-					<div className="app-actions"><Link className="app-button" to="/write">새 문의 작성</Link><LogoutButton /></div>
+					<div className="app-header__aside">
+						<CurrentUserBadge user={currentUser} />
+						<div className="app-actions">
+							<Link className="app-button" to="/write">새 문의 작성</Link>
+							<LogoutButton />
+						</div>
+					</div>
 				</header>
 
 				{message && <p className="app-alert">{message}</p>}

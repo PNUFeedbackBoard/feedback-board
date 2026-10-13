@@ -38,9 +38,13 @@ class GoogleLoginTests {
     @Autowired MockMvc mvc;
     @AfterEach void clear() { SecurityContextHolder.clearContext(); }
     private OAuth2AuthenticationToken google(String sub, String email, boolean verified) {
+        return google(sub, email, verified, "pusan.ac.kr");
+    }
+    private OAuth2AuthenticationToken google(String sub, String email, boolean verified, String hostedDomain) {
         var authorities = List.of(new SimpleGrantedAuthority("OIDC_USER"));
         var principal = new DefaultOAuth2User(authorities,
-                Map.of("sub", sub, "email", email, "email_verified", verified, "name", "테스트"), "sub");
+                Map.of("sub", sub, "email", email, "email_verified", verified, "name", "테스트",
+                        "hd", hostedDomain), "sub");
         return new OAuth2AuthenticationToken(principal, authorities, "google");
     }
     private User existing(String email, String sub, UserStatus status) {
@@ -51,7 +55,7 @@ class GoogleLoginTests {
         var request = new MockHttpServletRequest();
         request.getSession().setAttribute(AuthController.LOGIN_SITE, "aipms");
         var response = new MockHttpServletResponse();
-        String email = UUID.randomUUID() + "@gmail.com";
+        String email = UUID.randomUUID() + "@pusan.ac.kr";
         handler.onAuthenticationSuccess(request, response, google("new-sub", email, true));
         User found = users.findByEmail(email).orElseThrow();
         assertThat(found.getRole()).isEqualTo(Role.USER);
@@ -67,7 +71,7 @@ class GoogleLoginTests {
         var request = new MockHttpServletRequest();
         request.getSession().setAttribute(AuthController.LOGIN_INTENT, "admin");
         var response = new MockHttpServletResponse();
-        String email = UUID.randomUUID() + "@gmail.com";
+        String email = UUID.randomUUID() + "@pusan.ac.kr";
         handler.onAuthenticationSuccess(request, response, google("admin-sub", email, true));
         var user = users.findByEmail(email).orElseThrow();
         assertThat(user.getStatus()).isEqualTo(UserStatus.PENDING);
@@ -87,7 +91,7 @@ class GoogleLoginTests {
                 .andExpect(status().isForbidden());
     }
     @Test void existingVerifiedEmailLinksOnceWithoutChangingRole() throws Exception {
-        var user = existing("link@gmail.com", null, UserStatus.ACTIVE);
+        var user = existing("link@pusan.ac.kr", null, UserStatus.ACTIVE);
         handler.onAuthenticationSuccess(new MockHttpServletRequest(), new MockHttpServletResponse(),
                 google("linked-sub", user.getEmail(), true));
         assertThat(user.getGoogleSub()).isEqualTo("linked-sub");
@@ -95,7 +99,7 @@ class GoogleLoginTests {
         assertThat(users.findByGoogleSub("linked-sub")).isPresent();
     }
     @Test void differentSubCannotOverwriteLinkedAccount() throws Exception {
-        var user = existing("conflict@gmail.com", "original", UserStatus.ACTIVE);
+        var user = existing("conflict@pusan.ac.kr", "original", UserStatus.ACTIVE);
         var request = new MockHttpServletRequest(); request.getSession();
         var response = new MockHttpServletResponse();
         handler.onAuthenticationSuccess(request, response, google("other", user.getEmail(), true));
@@ -105,7 +109,7 @@ class GoogleLoginTests {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
     @Test void disabledAccountCannotCreateSession() throws Exception {
-        var user = existing("disabled@gmail.com", "disabled-sub", UserStatus.DISABLED);
+        var user = existing("disabled@pusan.ac.kr", "disabled-sub", UserStatus.DISABLED);
         var request = new MockHttpServletRequest(); request.getSession();
         var response = new MockHttpServletResponse();
         handler.onAuthenticationSuccess(request, response, google("disabled-sub", user.getEmail(), true));
@@ -114,15 +118,39 @@ class GoogleLoginTests {
     }
     @Test void unverifiedEmailIsRejectedWithoutCreatingUser() throws Exception {
         var response = new MockHttpServletResponse();
-        handler.onAuthenticationSuccess(new MockHttpServletRequest(), response, google("unverified", "no@gmail.com", false));
+        handler.onAuthenticationSuccess(new MockHttpServletRequest(), response, google("unverified", "no@pusan.ac.kr", false));
         assertThat(response.getRedirectedUrl()).endsWith("authError=invalid_google_account");
-        assertThat(users.findByEmail("no@gmail.com")).isEmpty();
+        assertThat(users.findByEmail("no@pusan.ac.kr")).isEmpty();
+    }
+    @Test void nonSchoolEmailIsRejectedWithoutCreatingUser() throws Exception {
+        var request = new MockHttpServletRequest(); request.getSession();
+        var response = new MockHttpServletResponse();
+        handler.onAuthenticationSuccess(request, response,
+                google("outside", "student@gmail.com", true, "gmail.com"));
+        assertThat(response.getRedirectedUrl()).endsWith("authError=school_email_required");
+        assertThat(users.findByEmail("student@gmail.com")).isEmpty();
+        assertThat(request.getSession(false)).isNull();
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+    @Test void matchingEmailWithoutPusanHostedDomainIsRejected() throws Exception {
+        var response = new MockHttpServletResponse();
+        handler.onAuthenticationSuccess(new MockHttpServletRequest(), response,
+                google("wrong-hosted-domain", "student@pusan.ac.kr", true, "other.ac.kr"));
+        assertThat(response.getRedirectedUrl()).endsWith("authError=school_email_required");
+        assertThat(users.findByEmail("student@pusan.ac.kr")).isEmpty();
+    }
+    @Test void schoolEmailIsNormalizedBeforeAccountLookup() throws Exception {
+        var response = new MockHttpServletResponse();
+        handler.onAuthenticationSuccess(new MockHttpServletRequest(), response,
+                google("normalized", "Student@PUSAN.AC.KR", true, "PUSAN.AC.KR"));
+        assertThat(users.findByEmail("student@pusan.ac.kr")).isPresent();
+        assertThat(users.findByEmail("Student@PUSAN.AC.KR")).isEmpty();
     }
     @Test void bootstrapAppliesOnlyToNewAccount() throws Exception {
-        var bootstrap = new GoogleOAuth2SuccessHandler(users, "owner@gmail.com", "http://localhost:5173");
+        var bootstrap = new GoogleOAuth2SuccessHandler(users, "owner@pusan.ac.kr", "http://localhost:5173");
         var response = new MockHttpServletResponse();
-        bootstrap.onAuthenticationSuccess(new MockHttpServletRequest(), response, google("owner-sub", "owner@gmail.com", true));
-        var user = users.findByEmail("owner@gmail.com").orElseThrow();
+        bootstrap.onAuthenticationSuccess(new MockHttpServletRequest(), response, google("owner-sub", "owner@pusan.ac.kr", true));
+        var user = users.findByEmail("owner@pusan.ac.kr").orElseThrow();
         assertThat(user.getRole()).isEqualTo(Role.DEVELOPER);
         user.update(Role.USER, UserStatus.ACTIVE);
         bootstrap.onAuthenticationSuccess(new MockHttpServletRequest(), new MockHttpServletResponse(), google("owner-sub", user.getEmail(), true));

@@ -7,6 +7,12 @@
   margin-inline: auto;
 }
 
+.login-buttons__option,
+.login-buttons__guest {
+  display: grid;
+  gap: var(--login-note-gap);
+}
+
 .login-button {
   display: flex;
   align-items: center;
@@ -32,7 +38,14 @@
 .login-button:focus-visible { outline: var(--login-focus-width) solid var(--login-button-focus); outline-offset: var(--login-focus-width); }
 .login-button:disabled { opacity: 0.65; cursor: wait; }
 .login-button__google { flex: none; width: var(--login-google-size); height: var(--login-google-size); }
-.login-buttons__guest { display: grid; gap: var(--login-label-gap); }
+.login-buttons__school-note {
+  margin: 0;
+  color: var(--login-note-color);
+  font-size: var(--login-note-font);
+  line-height: 1.5;
+  text-align: center;
+  word-break: keep-all;
+}
 .login-buttons__warning {
   margin: 0;
   color: var(--login-warning-color);
