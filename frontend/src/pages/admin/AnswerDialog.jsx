@@ -29,7 +29,11 @@ export default function AnswerDialog({ feedback, onDone, onCancel }) {
 				// 이미 답변이 있으면 그 내용을 불러 고쳐 쓰게 한다.
 				if (found.answer) setContent(found.answer.content)
 			})
-			.catch(() => setDetail(null))
+			.catch((problem) => {
+				if (cancelled) return
+				setDetail(null)
+				setError(problem.message)
+			})
 
 		return () => {
 			cancelled = true
@@ -38,12 +42,17 @@ export default function AnswerDialog({ feedback, onDone, onCancel }) {
 
 	function submit(event) {
 		event.preventDefault()
-		if (!content.trim() || saving) return
+		if (!detail || !content.trim() || saving) return
 
 		setSaving(true)
 		setError('')
-		upsertAnswer(feedback.id, { content: content.trim(), markDone })
-			.then(() => onDone(markDone))
+		upsertAnswer(feedback.id, {
+			feedbackVersion: detail.version,
+			answerVersion: detail.answer?.version ?? null,
+			content: content.trim(),
+			markDone,
+		})
+			.then((answer) => onDone({ markedDone: markDone, version: answer.feedbackVersion }))
 			.catch((problem) => {
 				setSaving(false)
 				setError(problem.message)
@@ -93,7 +102,7 @@ export default function AnswerDialog({ feedback, onDone, onCancel }) {
 					<button
 						type="submit"
 						className="dialog__button dialog__button--primary"
-						disabled={!content.trim() || saving}
+						disabled={!detail || !content.trim() || saving}
 					>
 						{saving ? '저장 중…' : detail?.answer ? '답변 수정' : '답변 등록'}
 					</button>

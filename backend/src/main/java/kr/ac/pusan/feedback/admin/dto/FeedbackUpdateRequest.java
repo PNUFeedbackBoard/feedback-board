@@ -1,5 +1,7 @@
 package kr.ac.pusan.feedback.admin.dto;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import kr.ac.pusan.feedback.common.enums.FeedbackCategory;
 import kr.ac.pusan.feedback.common.enums.FeedbackStatus;
 import kr.ac.pusan.feedback.common.enums.Priority;
@@ -7,7 +9,8 @@ import kr.ac.pusan.feedback.common.enums.Priority;
 /**
  * 상태·유형·중요도 변경 요청. PATCH /api/admin/feedbacks/{id}
  *
- * <p>네 필드 모두 nullable 이며, 보낸 값만 바꾼다. null 인 필드는 변경하지 않는다.
+ * <p>version 은 목록·상세에서 마지막으로 읽은 값이며 필수다. 서버의 현재 버전과 다르면 409가 된다.
+ * 나머지 변경 필드는 nullable 이며, 보낸 값만 바꾼다. null 인 필드는 변경하지 않는다.
  * 여기의 priority 는 개발자 확정값이며, 작성자가 고른 reportedPriority 는 바꿀 수 없다(기획안 4-3).
  * VIEWER 가 호출하면 403 이다(기획안 9장).
  *
@@ -21,6 +24,9 @@ import kr.ac.pusan.feedback.common.enums.Priority;
  * unassign 이 우선한다(Feedback#applyAdminUpdate 참고).
  */
 public record FeedbackUpdateRequest(
+		@NotNull(message = "피드백 버전이 필요합니다.")
+		@PositiveOrZero
+		Long version,
 		FeedbackStatus status,
 		FeedbackCategory category,
 		Priority priority,

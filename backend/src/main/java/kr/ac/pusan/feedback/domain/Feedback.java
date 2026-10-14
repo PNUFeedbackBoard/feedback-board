@@ -15,6 +15,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import kr.ac.pusan.feedback.common.enums.AuthorType;
 import kr.ac.pusan.feedback.common.enums.FeedbackCategory;
 import kr.ac.pusan.feedback.common.enums.FeedbackStatus;
@@ -52,6 +53,10 @@ public class Feedback {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	private Long id;
+
+	@Version
+	@Column(name = "version", nullable = false, columnDefinition = "bigint default 0")
+	private long version;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "project_id", nullable = false,

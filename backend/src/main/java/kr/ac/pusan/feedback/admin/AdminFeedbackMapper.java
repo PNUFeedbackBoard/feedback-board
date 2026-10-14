@@ -23,6 +23,7 @@ final class AdminFeedbackMapper {
 	static AdminFeedbackSummary toSummary(Feedback feedback, boolean answered) {
 		return new AdminFeedbackSummary(
 				feedback.getId(),
+				feedback.getVersion(),
 				feedback.getProject().getCode(),
 				feedback.getProject().getName(),
 				feedback.getTitle(),
@@ -41,10 +42,12 @@ final class AdminFeedbackMapper {
 
 	static AdminFeedbackDetail toDetail(Feedback feedback, Answer answer) {
 		AnswerResponse answerResponse = answer == null ? null
-				: new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
+				: new AnswerResponse(answer.getId(), answer.getVersion(), answer.getContent(),
+						answer.getCreatedAt(), answer.getUpdatedAt(), feedback.getVersion());
 
 		return new AdminFeedbackDetail(
 				feedback.getId(),
+				feedback.getVersion(),
 				feedback.getProject().getCode(),
 				feedback.getProject().getName(),
 				feedback.getTitle(),

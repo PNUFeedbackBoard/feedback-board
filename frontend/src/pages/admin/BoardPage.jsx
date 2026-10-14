@@ -10,6 +10,7 @@ import {
 	useSensors,
 } from '@dnd-kit/core'
 import {
+	getAdminFeedback,
 	getAdminFeedbacks,
 	togglePriorityRequest,
 	updateAdminFeedback,
@@ -95,7 +96,8 @@ export default function BoardPage() {
 	 */
 	function commitChange(id, changes) {
 		if (!canEdit) return
-		const before = state.items
+		const before = state.items.find((item) => item.id === id)
+		if (!before) return
 		// unassign 은 요청에만 쓰는 값이다. 화면에는 담당자를 비운 모습으로 옮긴다.
 		const { unassign, ...rest } = changes
 		const local = unassign ? { ...rest, assigneeId: null, assigneeName: null } : rest
@@ -105,7 +107,7 @@ export default function BoardPage() {
 		}))
 		setNotice('')
 
-		updateAdminFeedback(id, changes)
+		updateAdminFeedback(id, { version: before.version, ...changes })
 			// 담당자 이름처럼 서버만 아는 값은 응답으로 채운다.
 			.then((updated) =>
 				setState((prev) => ({
@@ -114,8 +116,12 @@ export default function BoardPage() {
 				})),
 			)
 			.catch((error) => {
-				setState((prev) => ({ ...prev, items: before }))
+				setState((prev) => ({
+					...prev,
+					items: prev.items.map((item) => (item.id === id ? before : item)),
+				}))
 				setNotice(`바꾸지 못했습니다. ${error.message}`)
+				refreshItem(id)
 			})
 	}
 
@@ -141,23 +147,35 @@ export default function BoardPage() {
 
 	async function requestPriority(id) {
 		if (!canRequestPriority || priorityBusy) return
+		const current = state.items.find((item) => item.id === id)
+		if (!current) return
 		setPriorityBusy(true)
 		setNotice('')
 		try {
-			const result = await togglePriorityRequest(id)
+			const result = await togglePriorityRequest(id, current.version)
 			setState((prev) => ({
 				...prev,
 				items: prev.items.map((item) =>
 					item.id === id
-						? { ...item, priorityRequested: result.priorityRequested, priority: result.priority }
+						? { ...item, version: result.version, priorityRequested: result.priorityRequested, priority: result.priority }
 						: item,
 				),
 			}))
 		} catch (error) {
 			setNotice(`우선 처리 요청을 저장하지 못했습니다. ${error.message}`)
+			refreshItem(id)
 		} finally {
 			setPriorityBusy(false)
 		}
+	}
+
+	function refreshItem(id) {
+		getAdminFeedback(id)
+			.then((latest) => setState((prev) => ({
+				...prev,
+				items: prev.items.map((item) => (item.id === id ? { ...item, ...latest } : item)),
+			})))
+			.catch(() => {})
 	}
 
 	function handleDragEnd(event) {
@@ -260,12 +278,12 @@ export default function BoardPage() {
 				<AnswerDialog
 					feedback={writing}
 					onCancel={() => setWriting(null)}
-					onDone={(markedDone) => {
+					onDone={({ markedDone, version }) => {
 						// 답변 뒤에도 카드는 그 자리에 두고 표시만 최신화한다. 완료로 표시했으면 완료 열로 옮겨진다.
 						setState((prev) => ({
 							...prev,
 							items: prev.items.map((item) => item.id === writing.id
-								? { ...item, answered: true, status: markedDone ? 'DONE' : item.status }
+								? { ...item, version, answered: true, status: markedDone ? 'DONE' : item.status }
 								: item),
 						}))
 						setWriting(null)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext, useParams } from 'react-router-dom'
-import { getAdminFeedbacks, togglePriorityRequest, updateAdminFeedback } from '../../api/endpoints.js'
+import { getAdminFeedback, getAdminFeedbacks, togglePriorityRequest, updateAdminFeedback } from '../../api/endpoints.js'
 import AnswerDialog from './AnswerDialog.jsx'
 import DetailPanel from './DetailPanel.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
@@ -74,37 +74,52 @@ export default function AnswersPage() {
 	/** 수정 권한이 있을 때 상세 패널에서 바꾼 값을 저장하고 카드에 반영한다. 목록이라 카드는 빠지지 않는다. */
 	async function commitChange(id, changes) {
 		if (!canAnswer) return
+		const current = state.items.find((item) => item.id === id)
+		if (!current) return
 		setNotice('')
 		try {
-			const updated = await updateAdminFeedback(id, changes)
+			const updated = await updateAdminFeedback(id, { version: current.version, ...changes })
 			setState((prev) => ({
 				...prev,
 				items: prev.items.map((item) => (item.id === id ? { ...item, ...updated } : item)),
 			}))
 		} catch (error) {
 			setNotice(`바꾸지 못했습니다. ${error.message}`)
+			refreshItem(id)
 		}
 	}
 
 	async function requestPriority(id) {
 		if (!canRequestPriority || priorityBusy) return
+		const current = state.items.find((item) => item.id === id)
+		if (!current) return
 		setPriorityBusy(true)
 		setNotice('')
 		try {
-			const result = await togglePriorityRequest(id)
+			const result = await togglePriorityRequest(id, current.version)
 			setState((prev) => ({
 				...prev,
 				items: prev.items.map((item) =>
 					item.id === id
-						? { ...item, priorityRequested: result.priorityRequested, priority: result.priority }
+						? { ...item, version: result.version, priorityRequested: result.priorityRequested, priority: result.priority }
 						: item,
 				),
 			}))
 		} catch (error) {
 			setNotice(`우선 처리 요청을 저장하지 못했습니다. ${error.message}`)
+			refreshItem(id)
 		} finally {
 			setPriorityBusy(false)
 		}
+	}
+
+	function refreshItem(id) {
+		getAdminFeedback(id)
+			.then((latest) => setState((prev) => ({
+				...prev,
+				items: prev.items.map((item) => (item.id === id ? { ...item, ...latest } : item)),
+			})))
+			.catch(() => {})
 	}
 
 	if (state.projectCode !== projectCode) return <p className="board__notice">불러오는 중…</p>
@@ -172,13 +187,14 @@ export default function AnswersPage() {
 				<AnswerDialog
 					feedback={writing}
 					onCancel={() => setWriting(null)}
-					onDone={(markedDone) => {
+					onDone={({ markedDone, version }) => {
 						// 전체 목록이므로 답변 뒤에도 카드를 유지하고 표시만 최신화한다.
 						setState((prev) => ({
 							...prev,
 							items: prev.items.map((item) => item.id === writing.id
 								? {
 									...item,
+									version,
 									answered: true,
 									status: markedDone ? 'DONE' : item.status,
 								}

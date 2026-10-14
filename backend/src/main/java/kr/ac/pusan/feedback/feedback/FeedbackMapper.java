@@ -5,7 +5,6 @@ import kr.ac.pusan.feedback.domain.Answer;
 import kr.ac.pusan.feedback.domain.Feedback;
 import kr.ac.pusan.feedback.domain.Project;
 import kr.ac.pusan.feedback.domain.User;
-import kr.ac.pusan.feedback.feedback.dto.AnswerResponse;
 import kr.ac.pusan.feedback.feedback.dto.MyFeedbackDetail;
 import kr.ac.pusan.feedback.feedback.dto.MyFeedbackSummary;
 import kr.ac.pusan.feedback.feedback.dto.ProjectResponse;
@@ -34,10 +33,6 @@ public final class FeedbackMapper {
 				feedback.getProject().getName(), feedback.getTitle(), feedback.getContent(),
 				feedback.getCategory(), feedback.getStatus(), feedback.getReportedPriority(),
 				feedback.getCreatedAt(), answerView);
-	}
-
-	public static AnswerResponse answer(Answer answer) {
-		return new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
 	}
 
 	public static AdminUserResponse user(User user) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext, useParams } from 'react-router-dom'
 import {
+	getAdminFeedback,
 	getAdminFeedbacks,
 	togglePriorityRequest,
 	updateAdminFeedback,
@@ -87,10 +88,18 @@ export default function IntakePage() {
 	 */
 	async function moveAll(ids, status, assigneeId) {
 		if (!canEdit || bulkBusy) return
+		const versionedItems = ids.map((id) => {
+			const item = state.items.find((candidate) => candidate.id === id)
+			return item ? { id, version: item.version } : null
+		})
+		if (versionedItems.some((item) => item === null)) {
+			setNotice('선택한 항목이 최신 목록에 없습니다. 목록을 다시 확인해 주세요.')
+			return
+		}
 		setBulkBusy(true)
 		setNotice('')
 		try {
-			await updateAdminFeedbacks(ids, {
+			await updateAdminFeedbacks(versionedItems, {
 				status,
 				...(assigneeId !== undefined
 					? assigneeId == null
@@ -107,16 +116,28 @@ export default function IntakePage() {
 			if (ids.includes(openedId)) setOpenedId(null)
 		} catch (error) {
 			setNotice(`옮기지 못했습니다. ${error.message}`)
+			reloadPage()
 		} finally {
 			setBulkBusy(false)
 		}
 	}
 
+	function reloadPage() {
+		getAdminFeedbacks({ ...filters, project: projectCode, status: 'RECEIVED', page, size: PAGE_SIZE })
+			.then((result) => {
+				setState({ projectCode, items: result.items, totalCount: result.totalCount, message: '' })
+				setPicked([])
+			})
+			.catch(() => {})
+	}
+
 	async function commitChange(id, changes) {
 		if (!canEdit) return
+		const current = state.items.find((item) => item.id === id)
+		if (!current) return
 		setNotice('')
 		try {
-			const updated = await updateAdminFeedback(id, changes)
+			const updated = await updateAdminFeedback(id, { version: current.version, ...changes })
 			setState((prev) => {
 				const staysInIntake = updated.status === 'RECEIVED'
 				return {
@@ -130,28 +151,47 @@ export default function IntakePage() {
 			if (updated.status !== 'RECEIVED') setOpenedId(null)
 		} catch (error) {
 			setNotice(`바꾸지 못했습니다. ${error.message}`)
+			refreshItem(id)
 		}
 	}
 
 	async function requestPriority(id) {
 		if (!canRequestPriority || priorityBusy) return
+		const current = state.items.find((item) => item.id === id)
+		if (!current) return
 		setPriorityBusy(true)
 		setNotice('')
 		try {
-			const result = await togglePriorityRequest(id)
+			const result = await togglePriorityRequest(id, current.version)
 			setState((prev) => ({
 				...prev,
 				items: prev.items.map((item) =>
 					item.id === id
-						? { ...item, priorityRequested: result.priorityRequested, priority: result.priority }
+						? { ...item, version: result.version, priorityRequested: result.priorityRequested, priority: result.priority }
 						: item,
 				),
 			}))
 		} catch (error) {
 			setNotice(`우선 처리 요청을 저장하지 못했습니다. ${error.message}`)
+			refreshItem(id)
 		} finally {
 			setPriorityBusy(false)
 		}
+	}
+
+	function refreshItem(id) {
+		getAdminFeedback(id).then((latest) => {
+			setState((prev) => {
+				const staysInIntake = latest.status === 'RECEIVED'
+				return {
+					...prev,
+					items: staysInIntake
+						? prev.items.map((item) => (item.id === id ? { ...item, ...latest } : item))
+						: prev.items.filter((item) => item.id !== id),
+					totalCount: staysInIntake ? prev.totalCount : Math.max(0, prev.totalCount - 1),
+				}
+			})
+		}).catch(() => {})
 	}
 
 	/** 처리 중으로 갈 때만 담당자를 묻는다. 일이 시작되는 시점이기 때문이다. */

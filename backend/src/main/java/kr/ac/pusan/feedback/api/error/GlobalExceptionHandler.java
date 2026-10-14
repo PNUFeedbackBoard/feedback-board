@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -99,6 +100,15 @@ public class GlobalExceptionHandler {
 			HttpServletRequest request
 	) {
 		return error(HttpStatus.CONFLICT, "DATA_CONFLICT", "요청이 현재 데이터 상태와 충돌합니다.", request, List.of());
+	}
+
+	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+	ResponseEntity<ApiErrorResponse> handleOptimisticLock(
+			ObjectOptimisticLockingFailureException exception,
+			HttpServletRequest request
+	) {
+		return error(HttpStatus.CONFLICT, "STALE_VERSION",
+				"다른 사용자가 먼저 변경했습니다. 최신 내용을 확인한 뒤 다시 시도해 주세요.", request, List.of());
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)

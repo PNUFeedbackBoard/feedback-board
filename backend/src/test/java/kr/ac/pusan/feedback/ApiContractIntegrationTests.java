@@ -88,23 +88,34 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(get("/api/admin/dashboard").session(viewer)).andExpect(status().isOk());
 		mockMvc.perform(get("/api/admin/feedbacks").session(viewer)).andExpect(status().isOk());
 		mockMvc.perform(get("/api/admin/feedbacks/1").session(viewer)).andExpect(status().isOk());
-		mockMvc.perform(post("/api/admin/feedbacks/1/priority-request").with(csrf()).session(viewer))
+		mockMvc.perform(post("/api/admin/feedbacks/1/priority-request").with(csrf())
+						.session(viewer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"version\":" + feedbackVersion(viewer, 1) + "}"))
 				.andExpect(status().isOk());
 
 		mockMvc.perform(patch("/api/admin/feedbacks/1").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"status\":\"IN_PROGRESS\"}"))
+						.content("{\"version\":" + feedbackVersion(developer, 1)
+								+ ",\"status\":\"IN_PROGRESS\"}"))
 				.andExpect(status().isOk());
 		mockMvc.perform(patch("/api/admin/feedbacks/bulk").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"ids\":[1],\"status\":\"IN_PROGRESS\"}"))
+						.content("{\"items\":[{\"id\":1,\"version\":" + feedbackVersion(developer, 1)
+								+ "}],\"status\":\"IN_PROGRESS\"}"))
 				.andExpect(status().isOk());
+		JsonNode answerTarget = feedbackDetail(developer, 1);
+		String answerVersion = answerTarget.path("answer").isNull()
+				? "null"
+				: answerTarget.path("answer").path("version").asText();
 		mockMvc.perform(put("/api/admin/feedbacks/1/answer").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"content\":\"확인했습니다.\",\"markDone\":false}"))
+						.content("{\"feedbackVersion\":" + answerTarget.path("version").asLong()
+								+ ",\"answerVersion\":" + answerVersion
+								+ ",\"content\":\"확인했습니다.\",\"markDone\":false}"))
 				.andExpect(status().isOk());
 		mockMvc.perform(get("/api/admin/users").session(developer)).andExpect(status().isOk());
 		mockMvc.perform(patch("/api/admin/users/4").with(csrf())
@@ -153,7 +164,8 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/feedbacks/" + id).with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"status\":\"IN_PROGRESS\",\"assigneeId\":" + developerId + "}"))
+						.content("{\"version\":" + feedbackVersion(developer, id)
+								+ ",\"status\":\"IN_PROGRESS\",\"assigneeId\":" + developerId + "}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("IN_PROGRESS"))
 				.andExpect(jsonPath("$.assigneeId").value(developerId))
@@ -162,7 +174,8 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(put("/api/admin/feedbacks/" + id + "/answer").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"content\":\"연결 상태를 확인했습니다.\",\"markDone\":true}"))
+						.content("{\"feedbackVersion\":" + feedbackVersion(developer, id)
+								+ ",\"answerVersion\":null,\"content\":\"연결 상태를 확인했습니다.\",\"markDone\":true}"))
 				.andExpect(status().isOk());
 
 		mockMvc.perform(get("/api/me/feedbacks/" + id).session(user))
@@ -186,7 +199,7 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/feedbacks/bulk").with(csrf())
 						.session(session)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"ids\":[1],\"status\":\"DONE\"}"))
+						.content("{\"items\":[{\"id\":1,\"version\":0}],\"status\":\"DONE\"}"))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
 	}
@@ -197,11 +210,15 @@ class ApiContractIntegrationTests {
 		MockHttpSession developer = login("dev");
 		long firstId = createFeedback(developer, "일괄 변경 첫 번째");
 		long secondId = createFeedback(developer, "일괄 변경 두 번째");
+		long firstVersion = feedbackVersion(developer, firstId);
+		long secondVersion = feedbackVersion(developer, secondId);
 
 		mockMvc.perform(patch("/api/admin/feedbacks/bulk").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"ids\":[" + firstId + "," + secondId + "],\"status\":\"IN_PROGRESS\"}"))
+						.content("{\"items\":[{\"id\":" + firstId + ",\"version\":" + firstVersion
+								+ "},{\"id\":" + secondId + ",\"version\":" + secondVersion
+								+ "}],\"status\":\"IN_PROGRESS\"}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.updatedIds.length()").value(2));
 
@@ -215,18 +232,99 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/feedbacks/" + firstId).with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"status\":\"RECEIVED\"}"))
+						.content("{\"version\":" + feedbackVersion(developer, firstId)
+								+ ",\"status\":\"RECEIVED\"}"))
 				.andExpect(status().isOk());
 
 		mockMvc.perform(patch("/api/admin/feedbacks/bulk").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"ids\":[" + firstId + ",999999999],\"status\":\"DONE\"}"))
+						.content("{\"items\":[{\"id\":" + firstId + ",\"version\":"
+								+ feedbackVersion(developer, firstId)
+								+ "},{\"id\":999999999,\"version\":0}],\"status\":\"DONE\"}"))
 				.andExpect(status().isNotFound());
 
 		mockMvc.perform(get("/api/admin/feedbacks/" + firstId).session(developer))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("RECEIVED"));
+	}
+
+	@Test
+	@Transactional
+	void staleFeedbackVersionsReturnConflictWithoutOverwritingNewerChanges() throws Exception {
+		MockHttpSession developer = login("dev");
+		long firstId = createFeedback(developer, "버전 충돌 첫 번째");
+		long secondId = createFeedback(developer, "버전 충돌 두 번째");
+		long staleFirstVersion = feedbackVersion(developer, firstId);
+		long secondVersion = feedbackVersion(developer, secondId);
+
+		mockMvc.perform(patch("/api/admin/feedbacks/" + firstId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"version\":" + staleFirstVersion + ",\"category\":\"BUG\"}"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(patch("/api/admin/feedbacks/" + firstId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"version\":" + staleFirstVersion + ",\"priority\":\"HIGH\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("CONFLICT"));
+
+		mockMvc.perform(patch("/api/admin/feedbacks/bulk").with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"items\":[{\"id\":" + firstId + ",\"version\":" + staleFirstVersion
+								+ "},{\"id\":" + secondId + ",\"version\":" + secondVersion
+								+ "}],\"status\":\"DONE\"}"))
+				.andExpect(status().isConflict());
+
+		mockMvc.perform(get("/api/admin/feedbacks/" + firstId).session(developer))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.category").value("BUG"))
+				.andExpect(jsonPath("$.priority").value("NORMAL"));
+		mockMvc.perform(get("/api/admin/feedbacks/" + secondId).session(developer))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("RECEIVED"));
+	}
+
+	@Test
+	@Transactional
+	void staleAnswerVersionCannotOverwriteANewerAnswer() throws Exception {
+		MockHttpSession developer = login("dev");
+		long id = createFeedback(developer, "답변 버전 충돌");
+		long feedbackVersion = feedbackVersion(developer, id);
+
+		String firstBody = mockMvc.perform(put("/api/admin/feedbacks/" + id + "/answer").with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"feedbackVersion\":" + feedbackVersion
+								+ ",\"answerVersion\":null,\"content\":\"첫 답변\",\"markDone\":false}"))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		JsonNode firstAnswer = objectMapper.readTree(firstBody);
+
+		String secondBody = mockMvc.perform(put("/api/admin/feedbacks/" + id + "/answer").with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"feedbackVersion\":" + firstAnswer.path("feedbackVersion").asLong()
+								+ ",\"answerVersion\":" + firstAnswer.path("version").asLong()
+								+ ",\"content\":\"최신 답변\",\"markDone\":false}"))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		JsonNode secondAnswer = objectMapper.readTree(secondBody);
+
+		mockMvc.perform(put("/api/admin/feedbacks/" + id + "/answer").with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"feedbackVersion\":" + secondAnswer.path("feedbackVersion").asLong()
+								+ ",\"answerVersion\":" + firstAnswer.path("version").asLong()
+								+ ",\"content\":\"오래된 답변\",\"markDone\":false}"))
+				.andExpect(status().isConflict());
+
+		mockMvc.perform(get("/api/admin/feedbacks/" + id).session(developer))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.answer.content").value("최신 답변"));
 	}
 
 	@Test
@@ -295,6 +393,41 @@ class ApiContractIntegrationTests {
 	}
 
 	@Test
+	@Transactional
+	void roleAndStatusChangesApplyToExistingSessionsOnTheNextRequest() throws Exception {
+		MockHttpSession developer = login("dev");
+		MockHttpSession viewer = login("viewer");
+		MockHttpSession user = login("user");
+		long viewerId = currentUserId(viewer);
+		long userId = currentUserId(user);
+
+		mockMvc.perform(patch("/api/admin/users/" + viewerId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"USER\"}"))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/api/admin/dashboard").session(viewer))
+				.andExpect(status().isForbidden());
+
+		mockMvc.perform(patch("/api/admin/users/" + userId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"VIEWER\"}"))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/api/admin/dashboard").session(user))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(patch("/api/admin/users/" + viewerId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"DISABLED\"}"))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/api/me").session(viewer))
+				.andExpect(status().isUnauthorized());
+		assertThat(viewer.isInvalid()).isTrue();
+	}
+
+	@Test
 	void adminFeedbackListUsesRequestedPageSize() throws Exception {
 		MockHttpSession developer = login("dev");
 
@@ -327,11 +460,22 @@ class ApiContractIntegrationTests {
 				.andReturn().getResponse().getContentAsString();
 		long id = objectMapper.readTree(createBody).path("id").asLong();
 
-		mockMvc.perform(post("/api/admin/feedbacks/" + id + "/priority-request").with(csrf())
-						.session(viewer))
+		long version = feedbackVersion(viewer, id);
+		String priorityBody = mockMvc.perform(post("/api/admin/feedbacks/" + id + "/priority-request").with(csrf())
+						.session(viewer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"version\":" + version + "}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.priorityRequested").value(true))
-				.andExpect(jsonPath("$.priority").value("HIGH"));
+				.andExpect(jsonPath("$.priority").value("HIGH"))
+				.andReturn().getResponse().getContentAsString();
+		assertThat(objectMapper.readTree(priorityBody).path("version").asLong()).isGreaterThan(version);
+
+		mockMvc.perform(post("/api/admin/feedbacks/" + id + "/priority-request").with(csrf())
+						.session(viewer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"version\":" + version + "}"))
+				.andExpect(status().isConflict());
 
 		mockMvc.perform(get("/api/admin/feedbacks")
 						.session(viewer)
@@ -356,6 +500,17 @@ class ApiContractIntegrationTests {
 				.andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
 		return objectMapper.readTree(body).path("id").asLong();
+	}
+
+	private JsonNode feedbackDetail(MockHttpSession session, long id) throws Exception {
+		String body = mockMvc.perform(get("/api/admin/feedbacks/" + id).session(session))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		return objectMapper.readTree(body);
+	}
+
+	private long feedbackVersion(MockHttpSession session, long id) throws Exception {
+		return feedbackDetail(session, id).path("version").asLong();
 	}
 
 	private long createFeedback(MockHttpSession session, String title) throws Exception {

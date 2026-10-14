@@ -20,6 +20,7 @@ import kr.ac.pusan.feedback.feedback.dto.AnswerResponse;
  */
 public record AdminFeedbackDetail(
 		Long id,
+		long version,
 		String projectCode,
 		String projectName,
 		String title,

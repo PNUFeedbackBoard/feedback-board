@@ -94,7 +94,7 @@ export function getAdminFeedback(id) {
  * 상태·유형·중요도 변경. 보낸 필드만 바뀐다.
  * 열람자가 호출하면 403 이 온다. (기획 9장)
  * @param {number | string} id 피드백 번호
- * @param {object} body FeedbackUpdateRequest — { status, category, priority, assigneeId, unassign }
+ * @param {object} body FeedbackUpdateRequest — { version, status, category, priority, assigneeId, unassign }
  *   전부 생략 가능. assigneeId 는 DEVELOPER·ACTIVE 계정이 아니면 400. 담당자 해제는
  *   assigneeId 대신 unassign: true 를 보낸다(기획 8·9장).
  * @returns {Promise<object>} AdminFeedbackDetail
@@ -105,19 +105,19 @@ export function updateAdminFeedback(id, body) {
 
 /**
  * 여러 피드백의 상태·담당자를 원자적으로 변경한다. 하나라도 실패하면 전부 반영되지 않는다.
- * @param {Array<number>} ids 피드백 번호 목록(최대 100건)
+ * @param {Array<object>} items 피드백 번호와 마지막 조회 버전 목록 — { id, version }[] (최대 100건)
  * @param {object} changes { status, assigneeId, unassign }
  * @returns {Promise<object>} FeedbackBulkUpdateResponse — { updatedIds }
  */
-export function updateAdminFeedbacks(ids, changes) {
-  return patch('/admin/feedbacks/bulk', { ids, ...changes })
+export function updateAdminFeedbacks(items, changes) {
+  return patch('/admin/feedbacks/bulk', { items, ...changes })
 }
 
 /**
  * 답변 등록과 수정. 피드백 1건당 답변은 1건이므로 등록·수정을 하나의 PUT 으로 처리한다.
  * @param {number | string} id 피드백 번호
- * @param {object} body AnswerUpsertRequest — { content, markDone }
- * @returns {Promise<object>} AnswerResponse — { id, content, createdAt, updatedAt }
+ * @param {object} body AnswerUpsertRequest — { feedbackVersion, answerVersion, content, markDone }
+ * @returns {Promise<object>} AnswerResponse — { id, version, content, createdAt, updatedAt, feedbackVersion }
  */
 export function upsertAnswer(id, body) {
   return put(`/admin/feedbacks/${id}/answer`, body)
@@ -146,10 +146,11 @@ export function updateAdminUser(id, body) {
 /**
  * 우선 처리 요청 토글. 다시 부르면 해제된다. (기획 4-4)
  * @param {number | string} id 피드백 번호
- * @returns {Promise<object>} PriorityRequestResponse — { id, priorityRequested, priority }
+ * @param {number} version 마지막으로 조회한 피드백 버전
+ * @returns {Promise<object>} PriorityRequestResponse — { id, version, priorityRequested, priority }
  */
-export function togglePriorityRequest(id) {
-  return post(`/admin/feedbacks/${id}/priority-request`)
+export function togglePriorityRequest(id, version) {
+  return post(`/admin/feedbacks/${id}/priority-request`, { version })
 }
 
 // ── 개발 전용 ───────────────────────────────────────────────────────
