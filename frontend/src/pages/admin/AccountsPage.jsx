@@ -25,13 +25,17 @@ export default function AccountsPage() {
 	}, [])
 
 	async function update(id, changes) {
+		const current = users?.find((user) => user.id === id)
+		if (!current) return
 		setBusyId(id)
 		setMessage('')
 		try {
-			const changed = await updateAdminUser(id, changes)
+			const changed = await updateAdminUser(id, { version: current.version, ...changes })
 			setUsers((current) => current.map((user) => (user.id === id ? changed : user)))
 		} catch (error) {
 			setMessage(error.message)
+			// 충돌 여부와 관계없이 서버의 최신 계정 상태로 다시 맞춘다.
+			getAdminUsers().then(setUsers).catch(() => {})
 		} finally {
 			setBusyId(null)
 		}

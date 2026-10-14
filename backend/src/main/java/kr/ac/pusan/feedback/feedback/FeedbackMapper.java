@@ -36,7 +36,7 @@ public final class FeedbackMapper {
 	}
 
 	public static AdminUserResponse user(User user) {
-		return new AdminUserResponse(user.getId(), user.getEmail(), user.getName(),
+		return new AdminUserResponse(user.getId(), user.getVersion(), user.getEmail(), user.getName(),
 				user.getRole(), user.getStatus(), user.getCreatedAt());
 	}
 

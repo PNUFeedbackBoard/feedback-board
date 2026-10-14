@@ -213,6 +213,7 @@ Windows는 `.\gradlew.bat test`
 ```bash
 cd frontend
 npm run lint
+npm test
 npm run build
 ```
 
@@ -289,7 +290,7 @@ docker compose down
 `.github/workflows/ci.yml` 이 `develop` · `main` 으로 push하거나 PR을 만들 때 자동 실행된다.
 
 - 백엔드: Java 21로 Gradle 테스트
-- 프론트엔드: Node.js 24로 의존성 설치, Oxlint, Vite 빌드
+- 프론트엔드: Node.js 24로 의존성 설치, Oxlint, Vitest, Vite 빌드
 
 CI는 `bash gradlew` 로 실행하므로 **실행 권한 문제가 CI에서는 드러나지 않는다.**
 "CI는 통과하는데 내 맥에서만 안 되는" 경우 3번의 `chmod +x gradlew` 를 확인한다.

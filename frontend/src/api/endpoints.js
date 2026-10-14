@@ -125,7 +125,7 @@ export function upsertAnswer(id, body) {
 
 /**
  * 계정 목록.
- * @returns {Promise<Array>} AdminUserResponse[] — { id, email, name, role, status, createdAt }
+ * @returns {Promise<Array>} AdminUserResponse[] — { id, version, email, name, role, status, createdAt }
  */
 export function getAdminUsers() {
   return get('/admin/users')
@@ -134,7 +134,7 @@ export function getAdminUsers() {
 /**
  * 계정 승인과 역할 변경.
  * @param {number | string} id 계정 번호
- * @param {object} body AdminUserUpdateRequest — { role, status }
+ * @param {object} body AdminUserUpdateRequest — { version, role, status }
  * @returns {Promise<object>} AdminUserResponse
  */
 export function updateAdminUser(id, body) {

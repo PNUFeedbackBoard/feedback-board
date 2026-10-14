@@ -121,7 +121,8 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/users/4").with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"role\":\"VIEWER\",\"status\":\"ACTIVE\"}"))
+						.content("{\"version\":" + userVersion(developer, 4)
+								+ ",\"role\":\"VIEWER\",\"status\":\"ACTIVE\"}"))
 				.andExpect(status().isOk());
 	}
 
@@ -375,7 +376,8 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/users/" + developerId).with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"role\":\"USER\"}"))
+						.content("{\"version\":" + userVersion(developer, developerId)
+								+ ",\"role\":\"USER\"}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value(
 						"현재 로그인한 개발자 계정의 권한이나 상태는 직접 변경할 수 없습니다."));
@@ -383,7 +385,8 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/users/" + developerId).with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"status\":\"DISABLED\"}"))
+						.content("{\"version\":" + userVersion(developer, developerId)
+								+ ",\"status\":\"DISABLED\"}"))
 				.andExpect(status().isBadRequest());
 
 		mockMvc.perform(get("/api/me").session(developer))
@@ -404,7 +407,8 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/users/" + viewerId).with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"role\":\"USER\"}"))
+						.content("{\"version\":" + userVersion(developer, viewerId)
+								+ ",\"role\":\"USER\"}"))
 				.andExpect(status().isOk());
 		mockMvc.perform(get("/api/admin/dashboard").session(viewer))
 				.andExpect(status().isForbidden());
@@ -412,7 +416,8 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/users/" + userId).with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"role\":\"VIEWER\"}"))
+						.content("{\"version\":" + userVersion(developer, userId)
+								+ ",\"role\":\"VIEWER\"}"))
 				.andExpect(status().isOk());
 		mockMvc.perform(get("/api/admin/dashboard").session(user))
 				.andExpect(status().isOk());
@@ -420,11 +425,41 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(patch("/api/admin/users/" + viewerId).with(csrf())
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"status\":\"DISABLED\"}"))
+						.content("{\"version\":" + userVersion(developer, viewerId)
+								+ ",\"status\":\"DISABLED\"}"))
 				.andExpect(status().isOk());
 		mockMvc.perform(get("/api/me").session(viewer))
 				.andExpect(status().isUnauthorized());
 		assertThat(viewer.isInvalid()).isTrue();
+	}
+
+	@Test
+	@Transactional
+	void staleAccountVersionCannotOverwriteANewerRoleChange() throws Exception {
+		MockHttpSession developer = login("dev");
+		MockHttpSession user = login("user");
+		long userId = currentUserId(user);
+		long staleVersion = userVersion(developer, userId);
+
+		String changedBody = mockMvc.perform(patch("/api/admin/users/" + userId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"version\":" + staleVersion + ",\"role\":\"VIEWER\"}"))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		assertThat(objectMapper.readTree(changedBody).path("version").asLong()).isGreaterThan(staleVersion);
+
+		mockMvc.perform(patch("/api/admin/users/" + userId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"version\":" + staleVersion + ",\"status\":\"DISABLED\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"다른 사용자가 먼저 변경했습니다. 최신 내용을 확인한 뒤 다시 시도해 주세요."));
+
+		JsonNode latest = adminUser(developer, userId);
+		assertThat(latest.path("role").asText()).isEqualTo("VIEWER");
+		assertThat(latest.path("status").asText()).isEqualTo("ACTIVE");
 	}
 
 	@Test
@@ -511,6 +546,20 @@ class ApiContractIntegrationTests {
 
 	private long feedbackVersion(MockHttpSession session, long id) throws Exception {
 		return feedbackDetail(session, id).path("version").asLong();
+	}
+
+	private JsonNode adminUser(MockHttpSession session, long id) throws Exception {
+		String body = mockMvc.perform(get("/api/admin/users").session(session))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		return StreamSupport.stream(objectMapper.readTree(body).spliterator(), false)
+				.filter(user -> user.path("id").asLong() == id)
+				.findFirst()
+				.orElseThrow();
+	}
+
+	private long userVersion(MockHttpSession session, long id) throws Exception {
+		return adminUser(session, id).path("version").asLong();
 	}
 
 	private long createFeedback(MockHttpSession session, String title) throws Exception {

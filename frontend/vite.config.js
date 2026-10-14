@@ -7,6 +7,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    test: {
+      environment: 'jsdom',
+      setupFiles: './src/test/setup.js',
+      clearMocks: true,
+    },
     server: {
       port: 5173,
       // 화면(5173)에서 /api 로 보낸 요청을 서버(8080)로 넘긴다.

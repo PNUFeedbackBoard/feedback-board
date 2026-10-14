@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import kr.ac.pusan.feedback.admin.dto.AdminUserResponse;
 import kr.ac.pusan.feedback.admin.dto.AdminUserUpdateRequest;
 import kr.ac.pusan.feedback.auth.AppUserPrincipal;
@@ -55,16 +56,27 @@ public class AdminUserController {
 	}
 
 	@Operation(summary = "계정 승인·역할 변경",
-			description = "개발자 전용이다. 보낸 필드만 바꾼다. status 를 ACTIVE 로 보내면 승인, DISABLED 로 보내면 비활성화다.")
+			description = "개발자 전용이다. version은 필수이며 보낸 필드만 바꾼다. "
+					+ "status 를 ACTIVE 로 보내면 승인, DISABLED 로 보내면 비활성화다.")
 	@PatchMapping("/{id}")
 	@Transactional
 	public AdminUserResponse update(
 			@PathVariable Long id,
-			@RequestBody AdminUserUpdateRequest request,
+			@Valid @RequestBody AdminUserUpdateRequest request,
 			@CurrentUser AppUserPrincipal currentUser
 	) {
-		User user = userRepository.findById(id)
+		// 모든 계정 관리 변경이 같은 행 집합을 먼저 잠근다. 서로 다른 개발자를 동시에
+		// 강등하는 요청도 직렬화되어 마지막 활성 개발자 검사를 우회할 수 없다.
+		List<User> lockedUsers = userRepository.findAllForAccountUpdate();
+		User user = lockedUsers.stream()
+				.filter(candidate -> candidate.getId().equals(id))
+				.findFirst()
 				.orElseThrow(() -> new NoSuchElementException("계정을 찾을 수 없습니다."));
+		if (user.getVersion() != request.version()) {
+			throw new ResponseStatusException(
+					HttpStatus.CONFLICT,
+					"다른 사용자가 먼저 변경했습니다. 최신 내용을 확인한 뒤 다시 시도해 주세요.");
+		}
 		Role nextRole = request.role() == null ? user.getRole() : request.role();
 		UserStatus nextStatus = request.status() == null ? user.getStatus() : request.status();
 		boolean removesActiveDeveloper = user.getRole() == Role.DEVELOPER
@@ -77,13 +89,17 @@ public class AdminUserController {
 					"현재 로그인한 개발자 계정의 권한이나 상태는 직접 변경할 수 없습니다.");
 		}
 		if (removesActiveDeveloper
-				&& userRepository.countByRoleAndStatus(Role.DEVELOPER, UserStatus.ACTIVE) <= 1) {
+				&& lockedUsers.stream().filter(AdminUserController::isActiveDeveloper).count() <= 1) {
 			throw new ResponseStatusException(
 					HttpStatus.BAD_REQUEST,
 					"마지막 활성 개발자 계정은 강등하거나 비활성화할 수 없습니다.");
 		}
 		user.update(request.role(), request.status());
-		return FeedbackMapper.user(user);
+		return FeedbackMapper.user(userRepository.saveAndFlush(user));
+	}
+
+	private static boolean isActiveDeveloper(User user) {
+		return user.getRole() == Role.DEVELOPER && user.getStatus() == UserStatus.ACTIVE;
 	}
 
 	private int statusRank(UserStatus status) {

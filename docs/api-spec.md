@@ -61,6 +61,8 @@ Swagger에서는 `/api/auth/csrf`의 token을 Authorize에 입력한다.
 
 관리용 피드백 목록·상세 응답에는 `version`이 포함된다. 변경 요청은 마지막으로 읽은 `version`과 함께 `status`, `category`, `priority`, `assigneeId`, `unassign` 중 필요한 값을 보낸다. 담당자를 지정할 때는 활성 개발자 계정의 `assigneeId`를 보내고, 해제할 때는 `unassign: true`를 보낸다.
 
+계정 목록 응답에도 `version`이 포함되며 계정 변경 요청은 `{ "version": 숫자, "role": 역할, "status": 상태 }` 형식이다. `role`과 `status`는 필요한 필드만 보낸다. 모든 계정 변경은 DB 잠금으로 직렬화되어 서로 다른 개발자를 동시에 강등하더라도 마지막 활성 개발자가 사라지지 않는다.
+
 일괄 변경 본문은 `items: [{ id, version }]`(1~100건)와 `status`, `assigneeId`, `unassign`을 받는다. 선택한 번호가 하나라도 없거나 버전이 오래됐거나 요청이 잘못되면 전체 요청이 실패하며 일부만 반영되지 않는다.
 
 답변 등록·수정은 `feedbackVersion`과 기존 답변의 `answerVersion`을 함께 보낸다. 새 답변이면 `answerVersion`은 `null`이다. 우선 처리 요청도 `{ "version": 숫자 }` 본문을 보낸다. 다른 화면이나 사용자가 먼저 변경해 버전이 달라졌다면 서버는 `409 Conflict`를 반환하며, 화면은 최신 상세를 다시 읽는다.
