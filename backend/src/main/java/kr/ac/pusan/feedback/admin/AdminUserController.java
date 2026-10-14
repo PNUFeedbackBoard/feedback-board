@@ -3,24 +3,29 @@ package kr.ac.pusan.feedback.admin;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.ac.pusan.feedback.admin.dto.AdminUserResponse;
 import kr.ac.pusan.feedback.admin.dto.AdminUserUpdateRequest;
+import kr.ac.pusan.feedback.auth.AppUserPrincipal;
+import kr.ac.pusan.feedback.auth.CurrentUser;
+import kr.ac.pusan.feedback.common.enums.Role;
 import kr.ac.pusan.feedback.common.enums.UserStatus;
 import kr.ac.pusan.feedback.domain.User;
 import kr.ac.pusan.feedback.domain.repository.UserRepository;
 import kr.ac.pusan.feedback.feedback.FeedbackMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 계정 관리 API. 기획안 3-2, 6-5, 9장.
@@ -53,9 +58,30 @@ public class AdminUserController {
 			description = "개발자 전용이다. 보낸 필드만 바꾼다. status 를 ACTIVE 로 보내면 승인, DISABLED 로 보내면 비활성화다.")
 	@PatchMapping("/{id}")
 	@Transactional
-	public AdminUserResponse update(@PathVariable Long id, @RequestBody AdminUserUpdateRequest request) {
+	public AdminUserResponse update(
+			@PathVariable Long id,
+			@RequestBody AdminUserUpdateRequest request,
+			@CurrentUser AppUserPrincipal currentUser
+	) {
 		User user = userRepository.findById(id)
 				.orElseThrow(() -> new NoSuchElementException("계정을 찾을 수 없습니다."));
+		Role nextRole = request.role() == null ? user.getRole() : request.role();
+		UserStatus nextStatus = request.status() == null ? user.getStatus() : request.status();
+		boolean removesActiveDeveloper = user.getRole() == Role.DEVELOPER
+				&& user.getStatus() == UserStatus.ACTIVE
+				&& (nextRole != Role.DEVELOPER || nextStatus != UserStatus.ACTIVE);
+
+		if (removesActiveDeveloper && user.getId().equals(currentUser.getId())) {
+			throw new ResponseStatusException(
+					HttpStatus.BAD_REQUEST,
+					"현재 로그인한 개발자 계정의 권한이나 상태는 직접 변경할 수 없습니다.");
+		}
+		if (removesActiveDeveloper
+				&& userRepository.countByRoleAndStatus(Role.DEVELOPER, UserStatus.ACTIVE) <= 1) {
+			throw new ResponseStatusException(
+					HttpStatus.BAD_REQUEST,
+					"마지막 활성 개발자 계정은 강등하거나 비활성화할 수 없습니다.");
+		}
 		user.update(request.role(), request.status());
 		return FeedbackMapper.user(user);
 	}

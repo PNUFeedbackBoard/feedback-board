@@ -1,7 +1,7 @@
 import './login-buttons.css'
 
-/** 로그인 시안의 두 버튼. 인증과 이동은 페이지에서 주입한다. */
-export default function LoginButtons({ onGoogleLogin, onGuestLogin, busy = false, disabled = false, googleDisabled = false }) {
+/** 사용자·관리자 Google 로그인과 비회원 진입. 인증과 이동은 페이지에서 주입한다. */
+export default function LoginButtons({ onGoogleLogin, onAdminGoogleLogin, onGuestLogin, busy = false, disabled = false, googleDisabled = false }) {
   return (
     <div className="login-buttons" aria-busy={busy}>
       <div className="login-buttons__option">
@@ -15,6 +15,16 @@ export default function LoginButtons({ onGoogleLogin, onGuestLogin, busy = false
           <span>{busy ? '로그인 중…' : 'Google 로그인'}</span>
         </button>
         <p className="login-buttons__school-note">부산대학교 이메일(@pusan.ac.kr) 계정만 사용할 수 있습니다.</p>
+        {onAdminGoogleLogin && (
+          <button
+            className="login-buttons__admin-link"
+            type="button"
+            onClick={onAdminGoogleLogin}
+            disabled={busy || disabled || googleDisabled}
+          >
+            관리자·열람자 가입 요청
+          </button>
+        )}
       </div>
       <div className="login-buttons__guest">
         <button className="login-button" type="button" onClick={onGuestLogin} disabled={busy || disabled} aria-describedby="guest-login-warning">

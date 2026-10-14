@@ -30,6 +30,8 @@ import kr.ac.pusan.feedback.admin.dto.AdminFeedbackDetail;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackPage;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackSummary;
 import kr.ac.pusan.feedback.admin.dto.AnswerUpsertRequest;
+import kr.ac.pusan.feedback.admin.dto.FeedbackBulkUpdateRequest;
+import kr.ac.pusan.feedback.admin.dto.FeedbackBulkUpdateResponse;
 import kr.ac.pusan.feedback.admin.dto.FeedbackUpdateRequest;
 import kr.ac.pusan.feedback.admin.dto.PriorityRequestResponse;
 import kr.ac.pusan.feedback.auth.AppUserPrincipal;
@@ -162,6 +164,34 @@ public class AdminFeedbackController {
 
 		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
 		return AdminFeedbackMapper.toDetail(feedback, answer);
+	}
+
+	@Operation(summary = "여러 피드백의 상태·담당자 일괄 변경",
+			description = "개발자 전용이다. 선택한 피드백을 한 트랜잭션에서 모두 변경한다. "
+					+ "번호가 하나라도 없거나 요청이 올바르지 않으면 어떤 피드백도 바꾸지 않는다.")
+	@PatchMapping("/bulk")
+	@Transactional
+	public FeedbackBulkUpdateResponse bulkUpdate(@Valid @RequestBody FeedbackBulkUpdateRequest request) {
+		List<Long> ids = request.ids().stream().distinct().toList();
+		if (ids.size() != request.ids().size()) {
+			throw new IllegalArgumentException("같은 피드백을 중복해서 선택할 수 없습니다.");
+		}
+		if (request.status() == null && request.assigneeId() == null && !request.unassign()) {
+			throw new IllegalArgumentException("변경할 상태나 담당자를 입력해 주세요.");
+		}
+
+		User assignee = request.unassign() ? null : resolveAssignee(request.assigneeId());
+		List<Feedback> feedbacks = feedbackRepository.findAllById(ids);
+		if (feedbacks.size() != ids.size()) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "선택한 피드백 중 찾을 수 없는 항목이 있습니다.");
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+		feedbacks.forEach(feedback -> feedback.applyAdminUpdate(
+				request.status(), null, null, assignee, request.unassign(), now));
+		feedbackRepository.saveAll(feedbacks);
+
+		return new FeedbackBulkUpdateResponse(ids);
 	}
 
 	/** assigneeId 가 null 이면 담당자를 바꾸지 않는다(null 반환). 보낸 id가 DEVELOPER·ACTIVE 가 아니면 400. */

@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react'
-import { getAdminUsers, updateAdminUser } from '../../api/endpoints.js'
+import { getAdminUsers, getMe, updateAdminUser } from '../../api/endpoints.js'
 import { ROLE, USER_STATUS, labelOf, toOptions } from '../../constants/enums.js'
 import '../page-shell.css'
 
 export default function AccountsPage() {
 	const [users, setUsers] = useState(null)
+	const [me, setMe] = useState(null)
 	const [busyId, setBusyId] = useState(null)
 	const [message, setMessage] = useState('')
 
 	useEffect(() => {
 		let cancelled = false
-		getAdminUsers()
-			.then((found) => !cancelled && setUsers(found))
+		Promise.all([getAdminUsers(), getMe()])
+			.then(([found, currentUser]) => {
+				if (!cancelled) {
+					setUsers(found)
+					setMe(currentUser)
+				}
+			})
 			.catch((error) => !cancelled && setMessage(error.message))
 		return () => {
 			cancelled = true
@@ -50,18 +56,18 @@ export default function AccountsPage() {
 							<tbody>
 								{users.map((user) => (
 									<tr key={user.id}>
-										<td><strong>{user.name}</strong><br /><span className="app-page__muted">{user.email}</span></td>
+										<td><strong>{user.name}{user.id === me?.id ? ' (현재 계정)' : ''}</strong><br /><span className="app-page__muted">{user.email}</span></td>
 										<td>{formatDay(user.createdAt)}</td>
 										<td>
-											<select value={user.role} onChange={(event) => update(user.id, { role: event.target.value })} disabled={busyId === user.id} aria-label={`${user.name} 역할`}>
+											<select value={user.role} onChange={(event) => update(user.id, { role: event.target.value })} disabled={busyId === user.id || user.id === me?.id} aria-label={`${user.name} 역할`}>
 												{toOptions(ROLE).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
 											</select>
 										</td>
 										<td>{labelOf(USER_STATUS, user.status)}</td>
 										<td>
 											<div className="app-actions">
-												{user.status !== 'ACTIVE' && <button className="app-button" type="button" disabled={busyId === user.id} onClick={() => update(user.id, { status: 'ACTIVE' })}>승인/활성화</button>}
-												{user.status !== 'DISABLED' && <button className="app-button app-button--danger" type="button" disabled={busyId === user.id} onClick={() => update(user.id, { status: 'DISABLED' })}>비활성화</button>}
+												{user.status !== 'ACTIVE' && <button className="app-button" type="button" disabled={busyId === user.id || user.id === me?.id} onClick={() => update(user.id, { status: 'ACTIVE' })}>승인/활성화</button>}
+												{user.status !== 'DISABLED' && <button className="app-button app-button--danger" type="button" disabled={busyId === user.id || user.id === me?.id} onClick={() => update(user.id, { status: 'DISABLED' })}>비활성화</button>}
 											</div>
 										</td>
 									</tr>

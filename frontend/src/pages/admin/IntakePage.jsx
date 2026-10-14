@@ -4,6 +4,7 @@ import {
 	getAdminFeedbacks,
 	togglePriorityRequest,
 	updateAdminFeedback,
+	updateAdminFeedbacks,
 } from '../../api/endpoints.js'
 import { FEEDBACK_STATUS, labelOf } from '../../constants/enums.js'
 import AssigneeDialog from './AssigneeDialog.jsx'
@@ -49,6 +50,7 @@ export default function IntakePage() {
 	const [notice, setNotice] = useState('')
 	const [openedId, setOpenedId] = useState(null)
 	const [priorityBusy, setPriorityBusy] = useState(false)
+	const [bulkBusy, setBulkBusy] = useState(false)
 
 	useEffect(() => {
 		let cancelled = false
@@ -76,36 +78,38 @@ export default function IntakePage() {
 	}
 
 	/**
-	 * 골라낸 건들을 다른 상태로 보낸다. 먼저 화면에서 빼고 서버에 알린다.
-	 * 하나라도 실패하면 전부 되돌린다. 일부만 옮겨진 채로 두면 무엇이 남았는지 알 수 없다.
+	 * 골라낸 건들을 서버의 단일 트랜잭션으로 다른 상태에 보낸다. 성공 응답을 받은 뒤에만
+	 * 화면에서 제거하므로 실패했을 때 오래된 화면 스냅샷으로 되돌릴 필요가 없다.
 	 *
 	 * @param {number | null} [assigneeId] AssigneeDialog 가 돌려주는 개발자 계정 id.
 	 *   id 가 있으면 지정하고, null 이면 해제(unassign: true)로 PATCH 에 함께 싣는다.
 	 *   status 변경과 담당자 변경을 요청 하나로 합친다 — PATCH 가 둘 다 받으므로 나눌 이유가 없다.
 	 */
-	function moveAll(ids, status, assigneeId) {
-		if (!canEdit) return
-		const before = state.items
-		const beforeTotalCount = state.totalCount
-		setState((prev) => ({
-			...prev,
-			items: prev.items.filter((item) => !ids.includes(item.id)),
-			totalCount: Math.max(0, prev.totalCount - ids.length),
-		}))
-		setPicked((prev) => prev.filter((id) => !ids.includes(id)))
+	async function moveAll(ids, status, assigneeId) {
+		if (!canEdit || bulkBusy) return
+		setBulkBusy(true)
 		setNotice('')
-
-		Promise.all(ids.map((id) => updateAdminFeedback(id, {
-			status,
-			...(assigneeId !== undefined
-				? assigneeId == null
-					? { unassign: true }
-					: { assigneeId }
-				: {}),
-		}))).catch((error) => {
-			setState((prev) => ({ ...prev, items: before, totalCount: beforeTotalCount }))
+		try {
+			await updateAdminFeedbacks(ids, {
+				status,
+				...(assigneeId !== undefined
+					? assigneeId == null
+						? { unassign: true }
+						: { assigneeId }
+					: {}),
+			})
+			setState((prev) => ({
+				...prev,
+				items: prev.items.filter((item) => !ids.includes(item.id)),
+				totalCount: Math.max(0, prev.totalCount - ids.length),
+			}))
+			setPicked((prev) => prev.filter((id) => !ids.includes(id)))
+			if (ids.includes(openedId)) setOpenedId(null)
+		} catch (error) {
 			setNotice(`옮기지 못했습니다. ${error.message}`)
-		})
+		} finally {
+			setBulkBusy(false)
+		}
 	}
 
 	async function commitChange(id, changes) {
@@ -152,6 +156,7 @@ export default function IntakePage() {
 
 	/** 처리 중으로 갈 때만 담당자를 묻는다. 일이 시작되는 시점이기 때문이다. */
 	function requestMove(ids, status) {
+		if (bulkBusy) return
 		if (status === 'IN_PROGRESS') {
 			const title =
 				ids.length === 1
@@ -195,8 +200,9 @@ export default function IntakePage() {
 							type="button"
 							className="intake__primary"
 							onClick={() => requestMove(picked, 'IN_PROGRESS')}
+							disabled={bulkBusy}
 						>
-							처리 시작
+							{bulkBusy ? '처리 중…' : '처리 시작'}
 						</button>
 					</div>
 				</div>
@@ -228,6 +234,7 @@ export default function IntakePage() {
 									<select
 										className="intake__select"
 										value=""
+										disabled={bulkBusy}
 										onChange={(event) => requestMove([item.id], event.target.value)}
 									>
 										<option value="" disabled>

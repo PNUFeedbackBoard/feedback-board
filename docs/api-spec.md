@@ -1,6 +1,6 @@
 # API 명세
 
-프런트엔드와 백엔드가 공유하는 제품 API 계약이다. 아래 12개 API는 Swagger에 노출되며 실제 DB 데이터를 조회·저장한다.
+프런트엔드와 백엔드가 공유하는 제품 API 계약이다. 아래 13개 API는 Swagger에 노출되며 실제 DB 데이터를 조회·저장한다.
 
 ## 사용자 API
 
@@ -19,6 +19,7 @@
 | `GET` | `/api/admin/feedbacks` | `DEVELOPER`, `VIEWER` | 필터·정렬·페이징 목록 |
 | `GET` | `/api/admin/feedbacks/{id}` | `DEVELOPER`, `VIEWER` | 관리 상세 |
 | `PATCH` | `/api/admin/feedbacks/{id}` | `DEVELOPER` | 상태·유형·중요도·담당자 변경 |
+| `PATCH` | `/api/admin/feedbacks/bulk` | `DEVELOPER` | 여러 피드백의 상태·담당자를 원자적으로 변경 |
 | `PUT` | `/api/admin/feedbacks/{id}/answer` | `DEVELOPER` | 답변 등록·수정 |
 | `POST` | `/api/admin/feedbacks/{id}/priority-request` | `VIEWER` | 우선 처리 요청 토글 |
 | `GET` | `/api/admin/users` | `DEVELOPER` | 계정 목록 |
@@ -54,7 +55,10 @@ Swagger에서는 `/api/auth/csrf`의 token을 Authorize에 입력한다.
 - 관리 데이터 변경: `DEVELOPER`
 - 우선 처리 요청: `VIEWER`
 - `VIEWER`가 피드백 변경 API를 호출하면 403
+- 개발자는 현재 로그인한 자기 계정을 강등·비활성화할 수 없고, 마지막 활성 개발자도 제거할 수 없음
 
 관리 목록은 `project`, `status`, `category`, `sort`, `from`, `to`, `authorType`, `answered`, `priorityRequested`, `page`, `size` 쿼리를 지원한다. 어떤 정렬에서도 우선 처리 요청이 먼저 나오며 `size`는 1~100이다.
 
 피드백 변경 본문은 `status`, `category`, `priority`, `assigneeId`, `unassign` 중 필요한 값만 보낸다. 담당자를 지정할 때는 활성 개발자 계정의 `assigneeId`를 보내고, 해제할 때는 `unassign: true`를 보낸다.
+
+일괄 변경 본문은 `ids`(1~100건)와 `status`, `assigneeId`, `unassign`을 받는다. 선택한 번호가 하나라도 없거나 요청이 잘못되면 전체 요청이 실패하며 일부만 반영되지 않는다.

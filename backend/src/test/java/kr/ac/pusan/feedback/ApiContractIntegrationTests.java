@@ -38,7 +38,7 @@ class ApiContractIntegrationTests {
 	ObjectMapper objectMapper;
 
 	@Test
-	void openApiExposesExactlyTwelveProductOperations() throws Exception {
+	void openApiExposesExactlyThirteenProductOperations() throws Exception {
 		String body = mockMvc.perform(get("/v3/api-docs"))
 				.andExpect(status().isOk())
 				.andReturn()
@@ -58,13 +58,13 @@ class ApiContractIntegrationTests {
 			}
 		}
 
-		assertThat(operationCount).isEqualTo(12);
+		assertThat(operationCount).isEqualTo(13);
 		assertThat(paths.has("/api/dev/login")).isFalse();
 		assertThat(paths.has("/api/me")).isFalse();
 	}
 
 	@Test
-	void allTwelveProductOperationsReturnOkWithRequiredRoles() throws Exception {
+	void allThirteenProductOperationsReturnOkWithRequiredRoles() throws Exception {
 		MockHttpSession user = login("user");
 		MockHttpSession viewer = login("viewer");
 		MockHttpSession developer = login("dev");
@@ -95,6 +95,11 @@ class ApiContractIntegrationTests {
 						.session(developer)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"status\":\"IN_PROGRESS\"}"))
+				.andExpect(status().isOk());
+		mockMvc.perform(patch("/api/admin/feedbacks/bulk").with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"ids\":[1],\"status\":\"IN_PROGRESS\"}"))
 				.andExpect(status().isOk());
 		mockMvc.perform(put("/api/admin/feedbacks/1/answer").with(csrf())
 						.session(developer)
@@ -178,6 +183,50 @@ class ApiContractIntegrationTests {
 						.content("{\"status\":\"DONE\"}"))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+		mockMvc.perform(patch("/api/admin/feedbacks/bulk").with(csrf())
+						.session(session)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"ids\":[1],\"status\":\"DONE\"}"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+	}
+
+	@Test
+	@Transactional
+	void bulkFeedbackUpdateChangesAllItemsOrNone() throws Exception {
+		MockHttpSession developer = login("dev");
+		long firstId = createFeedback(developer, "일괄 변경 첫 번째");
+		long secondId = createFeedback(developer, "일괄 변경 두 번째");
+
+		mockMvc.perform(patch("/api/admin/feedbacks/bulk").with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"ids\":[" + firstId + "," + secondId + "],\"status\":\"IN_PROGRESS\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.updatedIds.length()").value(2));
+
+		mockMvc.perform(get("/api/admin/feedbacks/" + firstId).session(developer))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+		mockMvc.perform(get("/api/admin/feedbacks/" + secondId).session(developer))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+
+		mockMvc.perform(patch("/api/admin/feedbacks/" + firstId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"RECEIVED\"}"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(patch("/api/admin/feedbacks/bulk").with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"ids\":[" + firstId + ",999999999],\"status\":\"DONE\"}"))
+				.andExpect(status().isNotFound());
+
+		mockMvc.perform(get("/api/admin/feedbacks/" + firstId).session(developer))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("RECEIVED"));
 	}
 
 	@Test
@@ -218,6 +267,31 @@ class ApiContractIntegrationTests {
 		mockMvc.perform(get("/api/me").session(session))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.role").value("DEVELOPER"));
+	}
+
+	@Test
+	void developerCannotDemoteOrDisableCurrentAccount() throws Exception {
+		MockHttpSession developer = login("dev");
+		long developerId = currentUserId(developer);
+
+		mockMvc.perform(patch("/api/admin/users/" + developerId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"USER\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value(
+						"현재 로그인한 개발자 계정의 권한이나 상태는 직접 변경할 수 없습니다."));
+
+		mockMvc.perform(patch("/api/admin/users/" + developerId).with(csrf())
+						.session(developer)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"status\":\"DISABLED\"}"))
+				.andExpect(status().isBadRequest());
+
+		mockMvc.perform(get("/api/me").session(developer))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.role").value("DEVELOPER"))
+				.andExpect(jsonPath("$.status").value("ACTIVE"));
 	}
 
 	@Test
@@ -279,6 +353,24 @@ class ApiContractIntegrationTests {
 
 	private long currentUserId(MockHttpSession session) throws Exception {
 		String body = mockMvc.perform(get("/api/me").session(session))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		return objectMapper.readTree(body).path("id").asLong();
+	}
+
+	private long createFeedback(MockHttpSession session, String title) throws Exception {
+		String body = mockMvc.perform(post("/api/feedbacks").with(csrf())
+						.session(session)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "projectCode": "aipms",
+								  "category": "ETC",
+								  "reportedPriority": "NORMAL",
+								  "title": "%s",
+								  "content": "일괄 변경의 트랜잭션 동작을 확인합니다."
+								}
+								""".formatted(title)))
 				.andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
 		return objectMapper.readTree(body).path("id").asLong();

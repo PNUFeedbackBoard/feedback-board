@@ -104,6 +104,16 @@ export function updateAdminFeedback(id, body) {
 }
 
 /**
+ * 여러 피드백의 상태·담당자를 원자적으로 변경한다. 하나라도 실패하면 전부 반영되지 않는다.
+ * @param {Array<number>} ids 피드백 번호 목록(최대 100건)
+ * @param {object} changes { status, assigneeId, unassign }
+ * @returns {Promise<object>} FeedbackBulkUpdateResponse — { updatedIds }
+ */
+export function updateAdminFeedbacks(ids, changes) {
+  return patch('/admin/feedbacks/bulk', { ids, ...changes })
+}
+
+/**
  * 답변 등록과 수정. 피드백 1건당 답변은 1건이므로 등록·수정을 하나의 PUT 으로 처리한다.
  * @param {number | string} id 피드백 번호
  * @param {object} body AnswerUpsertRequest — { content, markDone }

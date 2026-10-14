@@ -22,4 +22,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 	/** 우선 처리 요청 알림(기획안 7장) 수신 대상 — 개발자 전원. B가 6단계에 추가했다. */
 	List<User> findAllByRoleAndStatus(Role role, UserStatus status);
+
+	/** 계정 관리에서 마지막 활성 개발자가 사라지는 변경을 막을 때 쓴다. */
+	long countByRoleAndStatus(Role role, UserStatus status);
 }
