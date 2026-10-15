@@ -213,6 +213,7 @@ Windows는 `.\gradlew.bat test`
 ```bash
 cd frontend
 npm run lint
+npm test
 npm run build
 ```
 

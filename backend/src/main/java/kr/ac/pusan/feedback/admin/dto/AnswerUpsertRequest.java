@@ -1,6 +1,8 @@
 package kr.ac.pusan.feedback.admin.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -8,11 +10,19 @@ import jakarta.validation.constraints.Size;
  *
  * <p>답변은 피드백 1건당 1건이므로 등록과 수정을 같은 요청으로 처리한다(기획안 6-4).
  * markDone 이 true 면 답변과 함께 상태를 DONE 으로 바꾼다.
+ * feedbackVersion 은 필수다. 기존 답변을 수정할 때는 상세 응답의 answer.version도 함께 보낸다.
  *
  * <p>길이 제약은 피드백 본문(기획안 5-3)의 최대값만 맞췄다. 최소 길이는 두지 않았다 —
  * "확인했습니다"처럼 짧은 답도 정상적인 답변이라 10자 이상 같은 제약을 걸 이유가 없었다.
  */
 public record AnswerUpsertRequest(
+		@NotNull(message = "피드백 버전이 필요합니다.")
+		@PositiveOrZero
+		Long feedbackVersion,
+
+		@PositiveOrZero
+		Long answerVersion,
+
 		@NotBlank(message = "답변 내용을 입력해 주세요.")
 		@Size(max = 2000, message = "답변은 2,000자 이하로 입력해 주세요.")
 		String content,

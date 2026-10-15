@@ -12,6 +12,7 @@ import kr.ac.pusan.feedback.common.enums.UserStatus;
  */
 public record AdminUserResponse(
 		Long id,
+		long version,
 		String email,
 		String name,
 		Role role,

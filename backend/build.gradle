@@ -47,3 +47,9 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// 로컬 OAuth 자격 증명 파일은 bootRun에서는 쓸 수 있지만 배포 JAR에는 절대 포함하지 않는다.
+// .gitignore만으로는 processResources가 복사한 파일이 bootJar에 들어가는 것을 막지 못한다.
+tasks.withType(org.gradle.api.tasks.bundling.AbstractArchiveTask).configureEach {
+	exclude 'application-local.properties', 'application-local.yml', 'application-secret.yml'
+}

@@ -10,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import kr.ac.pusan.feedback.common.enums.Role;
 import kr.ac.pusan.feedback.common.enums.UserStatus;
 import lombok.AccessLevel;
@@ -33,6 +34,10 @@ public class User {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	private Long id;
+
+	@Version
+	@Column(name = "version", nullable = false, columnDefinition = "bigint default 0")
+	private long version;
 
 	@Column(name = "email", nullable = false, unique = true, length = 255)
 	private String email;

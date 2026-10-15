@@ -1,6 +1,6 @@
 import LogoutButton from '../../components/common/LogoutButton.jsx'
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useMatch } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, useMatch } from 'react-router-dom'
 import { ExternalLink } from 'lucide-react'
 import { getMe, getProjects } from '../../api/endpoints.js'
 import iniLogo from '../../assets/ini-logo-optimized.png'
@@ -26,18 +26,43 @@ export default function AdminLayout() {
 	const projectMatch = useMatch('/admin/:projectCode/:tab')
 	const projectCode = projectMatch?.params.projectCode ?? null
 
-	const [me, setMe] = useState(null)
+	const [auth, setAuth] = useState({ phase: 'loading', me: null, message: '' })
 	const [projects, setProjects] = useState([])
+	const [projectsMessage, setProjectsMessage] = useState('')
 
 	useEffect(() => {
-		// 로그인하지 않았으면 401 이 온다. 화면을 막지 않고 헤더에만 안내를 띄운다.
+		let cancelled = false
 		getMe()
-			.then(setMe)
-			.catch(() => setMe(null))
-		getProjects()
-			.then(setProjects)
-			.catch(() => setProjects([]))
+			.then((found) => {
+				if (cancelled) return
+				setAuth({ phase: 'ready', me: found, message: '' })
+				if (found.status !== 'ACTIVE' || !['DEVELOPER', 'VIEWER'].includes(found.role)) return
+				getProjects()
+					.then((items) => !cancelled && setProjects(items))
+					.catch((error) => !cancelled && setProjectsMessage(error.message))
+			})
+			.catch((error) => {
+				if (cancelled) return
+				setAuth({
+					phase: error.status === 401 ? 'unauthenticated' : 'error',
+					me: null,
+					message: error.message,
+				})
+			})
+		return () => {
+			cancelled = true
+		}
 	}, [])
+
+	if (auth.phase === 'loading') return <RouteStatus>계정 권한을 확인하는 중…</RouteStatus>
+	if (auth.phase === 'unauthenticated') return <Navigate to="/" replace />
+	if (auth.phase === 'error') return <RouteStatus alert>{auth.message}</RouteStatus>
+
+	const me = auth.me
+	if (me.status === 'PENDING') return <Navigate to="/admin/pending" replace />
+	if (me.status !== 'ACTIVE') return <Navigate to="/" replace />
+	if (me.role === 'USER') return <Navigate to="/home" replace />
+	if (!['DEVELOPER', 'VIEWER'].includes(me.role)) return <Navigate to="/" replace />
 
 	const currentProject = projects.find((project) => project.code === projectCode)
 	const currentSiteUrl = safeHttpUrl(currentProject?.siteUrl)
@@ -101,11 +126,24 @@ export default function AdminLayout() {
 				</nav>
 			)}
 
-			<main className="admin-body"><Outlet context={{ me }} /></main>
+			<main className="admin-body">
+				{projectsMessage && <p className="app-alert" role="alert">{projectsMessage}</p>}
+				<Outlet context={{ me }} />
+			</main>
 
 			<ProjectDisc projects={projects} projectCode={projectCode} />
 
 		</div>
+	)
+}
+
+function RouteStatus({ alert = false, children }) {
+	return (
+		<main className="app-page">
+			<div className="app-page__inner">
+				<p className={alert ? 'app-alert' : 'app-card'} role={alert ? 'alert' : 'status'}>{children}</p>
+			</div>
+		</main>
 	)
 }
 

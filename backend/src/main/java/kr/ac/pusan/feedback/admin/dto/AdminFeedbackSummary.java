@@ -23,6 +23,7 @@ import kr.ac.pusan.feedback.common.enums.Priority;
  */
 public record AdminFeedbackSummary(
 		Long id,
+		long version,
 		String projectCode,
 		String projectName,
 		String title,

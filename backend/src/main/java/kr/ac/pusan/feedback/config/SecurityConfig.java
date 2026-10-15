@@ -22,14 +22,17 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.ac.pusan.feedback.api.error.ApiErrorResponse;
+import kr.ac.pusan.feedback.auth.AccountStateRefreshFilter;
 import kr.ac.pusan.feedback.auth.AuthController;
 import kr.ac.pusan.feedback.auth.GoogleOAuth2SuccessHandler;
+import kr.ac.pusan.feedback.domain.repository.UserRepository;
 
 /**
  * 보안 경로 패턴. 기획안 9장(접근 권한), 13-4(공유 파일), 13-5(0-1단계 산출물).
@@ -62,16 +65,19 @@ public class SecurityConfig {
 	private final String frontendUrl;
 	private final ObjectProvider<ClientRegistrationRepository> clientRegistrations;
 	private final GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler;
+	private final UserRepository userRepository;
 
 	SecurityConfig(
 			ObjectMapper objectMapper,
 			ObjectProvider<ClientRegistrationRepository> clientRegistrations,
 			GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler,
+			UserRepository userRepository,
 			@org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:5173}") String frontendUrl
 	) {
 		this.objectMapper = objectMapper;
 		this.clientRegistrations = clientRegistrations;
 		this.googleOAuth2SuccessHandler = googleOAuth2SuccessHandler;
+		this.userRepository = userRepository;
 		this.frontendUrl = frontendUrl;
 	}
 
@@ -129,6 +135,9 @@ public class SecurityConfig {
 
 						// --- API 가 아닌 요청(정적 파일, 프론트 화면)은 공개한다 -------------------
 						.anyRequest().permitAll())
+
+				// 세션의 역할·상태 스냅샷을 인가 전에 DB 최신값으로 교체한다.
+				.addFilterAfter(new AccountStateRefreshFilter(userRepository), SecurityContextHolderFilter.class)
 
 				// 로그아웃은 데모·구글 로그인 공통이다. 세션만 없애고 204 로 답한다 —
 				// DevLoginController#logout 과 같은 모양이라 프론트가 둘을 구분해 처리할 필요가 없다.

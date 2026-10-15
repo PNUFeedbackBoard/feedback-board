@@ -10,6 +10,7 @@ import kr.ac.pusan.feedback.common.enums.Priority;
  */
 public record PriorityRequestResponse(
 		Long id,
+		long version,
 		boolean priorityRequested,
 		Priority priority
 ) {

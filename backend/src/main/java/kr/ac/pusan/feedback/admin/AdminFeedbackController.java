@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,12 +27,17 @@ import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.validation.Valid;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackDetail;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackPage;
 import kr.ac.pusan.feedback.admin.dto.AdminFeedbackSummary;
 import kr.ac.pusan.feedback.admin.dto.AnswerUpsertRequest;
+import kr.ac.pusan.feedback.admin.dto.FeedbackBulkUpdateRequest;
+import kr.ac.pusan.feedback.admin.dto.FeedbackBulkUpdateResponse;
 import kr.ac.pusan.feedback.admin.dto.FeedbackUpdateRequest;
+import kr.ac.pusan.feedback.admin.dto.PriorityRequestRequest;
 import kr.ac.pusan.feedback.admin.dto.PriorityRequestResponse;
 import kr.ac.pusan.feedback.auth.AppUserPrincipal;
 import kr.ac.pusan.feedback.auth.CurrentUser;
@@ -69,16 +76,19 @@ public class AdminFeedbackController {
 	private final AnswerRepository answerRepository;
 	private final UserRepository userRepository;
 	private final NotificationService notificationService;
+	private final EntityManager entityManager;
 
 	AdminFeedbackController(
 			FeedbackRepository feedbackRepository,
 			AnswerRepository answerRepository,
 			UserRepository userRepository,
-			NotificationService notificationService) {
+			NotificationService notificationService,
+			EntityManager entityManager) {
 		this.feedbackRepository = feedbackRepository;
 		this.answerRepository = answerRepository;
 		this.userRepository = userRepository;
 		this.notificationService = notificationService;
+		this.entityManager = entityManager;
 	}
 
 	@Operation(summary = "관리용 피드백 목록 조회",
@@ -139,14 +149,15 @@ public class AdminFeedbackController {
 	}
 
 	@Operation(summary = "상태·유형·중요도·담당자 변경",
-			description = "개발자 전용이다. 보낸 필드만 바꾼다. 작성자가 고른 reportedPriority 는 바꿀 수 없다. "
+			description = "개발자 전용이다. version은 필수이며, 보낸 필드만 바꾼다. 작성자가 고른 reportedPriority 는 바꿀 수 없다. "
 					+ "assigneeId 는 기획에 없던 기능으로, DEVELOPER·ACTIVE 계정이 아니면 400 이다. "
 					+ "담당자를 해제하려면 assigneeId 대신 unassign 을 true 로 보낸다.")
 	@PatchMapping("/{id}")
 	@Transactional
-	public AdminFeedbackDetail update(@PathVariable Long id, @RequestBody FeedbackUpdateRequest request) {
+	public AdminFeedbackDetail update(@PathVariable Long id, @Valid @RequestBody FeedbackUpdateRequest request) {
 		Feedback feedback = feedbackRepository.findDetailById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+		assertFeedbackVersion(feedback, request.version());
 
 		// unassign이 true면 assigneeId는 보든 말든 무시한다 — 조회·검증(400)까지 할 필요가 없다.
 		User assignee = request.unassign() ? null : resolveAssignee(request.assigneeId());
@@ -158,10 +169,45 @@ public class AdminFeedbackController {
 		// 돌려줄 수 있는데, 그 인스턴스는 project·author·assignee가 초기화 안 된 지연 로딩 프록시라서
 		// toDetail()에서 LazyInitializationException이 난다. findDetailById로 이미 JOIN FETCH 해 둔
 		// feedback을 그대로 쓰면 이 문제가 없다. (변경 사항은 save() 호출만으로 DB에 반영된다.)
-		feedbackRepository.save(feedback);
+		feedbackRepository.saveAndFlush(feedback);
 
 		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
 		return AdminFeedbackMapper.toDetail(feedback, answer);
+	}
+
+	@Operation(summary = "여러 피드백의 상태·담당자 일괄 변경",
+			description = "개발자 전용이다. 선택한 피드백을 한 트랜잭션에서 모두 변경한다. "
+					+ "번호가 하나라도 없거나 요청이 올바르지 않으면 어떤 피드백도 바꾸지 않는다.")
+	@PatchMapping("/bulk")
+	@Transactional
+	public FeedbackBulkUpdateResponse bulkUpdate(@Valid @RequestBody FeedbackBulkUpdateRequest request) {
+		List<Long> ids = request.items().stream()
+				.map(FeedbackBulkUpdateRequest.FeedbackVersion::id)
+				.distinct()
+				.toList();
+		if (ids.size() != request.items().size()) {
+			throw new IllegalArgumentException("같은 피드백을 중복해서 선택할 수 없습니다.");
+		}
+		if (request.status() == null && request.assigneeId() == null && !request.unassign()) {
+			throw new IllegalArgumentException("변경할 상태나 담당자를 입력해 주세요.");
+		}
+
+		User assignee = request.unassign() ? null : resolveAssignee(request.assigneeId());
+		List<Feedback> feedbacks = feedbackRepository.findAllById(ids);
+		if (feedbacks.size() != ids.size()) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "선택한 피드백 중 찾을 수 없는 항목이 있습니다.");
+		}
+		Map<Long, Long> expectedVersions = request.items().stream().collect(Collectors.toMap(
+				FeedbackBulkUpdateRequest.FeedbackVersion::id,
+				FeedbackBulkUpdateRequest.FeedbackVersion::version));
+		feedbacks.forEach(feedback -> assertFeedbackVersion(feedback, expectedVersions.get(feedback.getId())));
+
+		LocalDateTime now = LocalDateTime.now();
+		feedbacks.forEach(feedback -> feedback.applyAdminUpdate(
+				request.status(), null, null, assignee, request.unassign(), now));
+		feedbackRepository.saveAllAndFlush(feedbacks);
+
+		return new FeedbackBulkUpdateResponse(ids);
 	}
 
 	/** assigneeId 가 null 이면 담당자를 바꾸지 않는다(null 반환). 보낸 id가 DEVELOPER·ACTIVE 가 아니면 400. */
@@ -176,7 +222,8 @@ public class AdminFeedbackController {
 	}
 
 	@Operation(summary = "답변 등록·수정",
-			description = "개발자 전용이다. 피드백 1건당 답변 1건이다. markDone 이 true 면 상태를 DONE 으로 함께 바꾼다. "
+			description = "개발자 전용이다. feedbackVersion과 기존 답변의 answerVersion을 검사한다. "
+					+ "피드백 1건당 답변 1건이며, markDone 이 true 면 상태를 DONE 으로 함께 바꾼다. "
 					+ "비회원 피드백은 답변 대상이 아니라 400 이다.")
 	@PutMapping("/{id}/answer")
 	@Transactional
@@ -186,6 +233,8 @@ public class AdminFeedbackController {
 			@CurrentUser AppUserPrincipal currentUser) {
 		Feedback feedback = feedbackRepository.findDetailById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+		assertFeedbackVersion(feedback, request.feedbackVersion());
+		entityManager.lock(feedback, LockModeType.OPTIMISTIC);
 
 		// 비회원(AuthorType.GUEST) 피드백은 답변 대상이 아니다(기획안 6-4).
 		if (feedback.getAuthorType() == AuthorType.GUEST) {
@@ -199,6 +248,7 @@ public class AdminFeedbackController {
 		LocalDateTime now = LocalDateTime.now();
 		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
 		boolean firstAnswer = answer == null;
+		assertAnswerVersion(answer, request.answerVersion());
 
 		if (firstAnswer) {
 			answer = Answer.builder()
@@ -211,36 +261,39 @@ public class AdminFeedbackController {
 		} else {
 			answer.changeContent(request.content(), now);
 		}
-		answer = answerRepository.save(answer);
-
 		if (firstAnswer) {
 			feedback.recordFirstAnswerIfAbsent(now);
 		}
 		if (request.markDone()) {
 			feedback.applyAdminUpdate(FeedbackStatus.DONE, null, null, null, false, now);
 		}
-		feedbackRepository.save(feedback);
+		feedbackRepository.saveAndFlush(feedback);
+		answer = answerRepository.saveAndFlush(answer);
 
 		// 답변을 수정한 경우에는 보내지 않는다(기획안 7장) — 첫 등록일 때만 호출한다.
 		if (firstAnswer) {
 			notificationService.notifyAnswerRegistered(feedback);
 		}
 
-		return new AnswerResponse(answer.getId(), answer.getContent(), answer.getCreatedAt(), answer.getUpdatedAt());
+		return new AnswerResponse(answer.getId(), answer.getVersion(), answer.getContent(),
+				answer.getCreatedAt(), answer.getUpdatedAt(), feedback.getVersion());
 	}
 
 	@Operation(summary = "우선 처리 요청 토글",
-			description = "열람자 전용이다. 요청하면 중요도가 HIGH 로 올라가고 목록 최상단에 고정된다. 다시 호출하면 해제된다.")
+			description = "열람자 전용이다. version은 필수다. 요청하면 중요도가 HIGH 로 올라가고 목록 최상단에 고정된다. 다시 호출하면 해제된다.")
 	@PostMapping("/{id}/priority-request")
 	@Transactional
 	public PriorityRequestResponse priorityRequest(
 			@PathVariable Long id,
+			@Valid @RequestBody PriorityRequestRequest request,
 			@CurrentUser AppUserPrincipal currentUser) {
 		Feedback feedback = feedbackRepository.findDetailById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+		assertFeedbackVersion(feedback, request.version());
 		User requester = userRepository.findById(currentUser.getId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 계정을 찾을 수 없습니다."));
 		feedback.togglePriorityRequest(requester);
+		feedbackRepository.saveAndFlush(feedback);
 
 		// 요청을 거는 순간에만 보낸다(기획안 7장) — 해제할 때는 보내지 않는다.
 		if (feedback.isPriorityRequested()) {
@@ -248,7 +301,26 @@ public class AdminFeedbackController {
 			notificationService.notifyPriorityRequested(feedback, developers);
 		}
 
-		return new PriorityRequestResponse(feedback.getId(), feedback.isPriorityRequested(), feedback.getPriority());
+		return new PriorityRequestResponse(
+				feedback.getId(), feedback.getVersion(), feedback.isPriorityRequested(), feedback.getPriority());
+	}
+
+	private static void assertFeedbackVersion(Feedback feedback, Long expectedVersion) {
+		if (expectedVersion == null || feedback.getVersion() != expectedVersion) {
+			throw staleVersion();
+		}
+	}
+
+	private static void assertAnswerVersion(Answer answer, Long expectedVersion) {
+		if ((answer == null && expectedVersion != null)
+				|| (answer != null && (expectedVersion == null || answer.getVersion() != expectedVersion))) {
+			throw staleVersion();
+		}
+	}
+
+	private static ResponseStatusException staleVersion() {
+		return new ResponseStatusException(HttpStatus.CONFLICT,
+				"다른 사용자가 먼저 변경했습니다. 최신 내용을 확인한 뒤 다시 시도해 주세요.");
 	}
 
 	private static void validatePage(int page, int size) {

@@ -46,6 +46,21 @@
   text-align: center;
   word-break: keep-all;
 }
+.login-buttons__admin-link {
+  justify-self: center;
+  padding: 0.25rem 0.4rem;
+  border: 0;
+  background: transparent;
+  color: var(--login-button-text);
+  font: inherit;
+  font-size: var(--login-note-font);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+.login-buttons__admin-link:hover:not(:disabled) { text-decoration-thickness: 0.12em; }
+.login-buttons__admin-link:focus-visible { outline: var(--login-focus-width) solid var(--login-button-focus); outline-offset: 0.15rem; }
+.login-buttons__admin-link:disabled { opacity: 0.65; cursor: wait; }
 .login-buttons__warning {
   margin: 0;
   color: var(--login-warning-color);

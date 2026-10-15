@@ -128,6 +128,7 @@ export default function LoginPage() {
 					)}
 					<LoginButtons
 						onGoogleLogin={() => startGoogleLogin('user', sourceSite)}
+						onAdminGoogleLogin={() => startGoogleLogin('admin')}
 						onGuestLogin={() => setGuestNotice(true)}
 						disabled={!sourceContext.ready}
 						googleDisabled={!googleReady}

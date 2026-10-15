@@ -15,6 +15,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import kr.ac.pusan.feedback.common.enums.AuthorType;
 import kr.ac.pusan.feedback.common.enums.FeedbackCategory;
 import kr.ac.pusan.feedback.common.enums.FeedbackStatus;
@@ -52,6 +53,10 @@ public class Feedback {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	private Long id;
+
+	@Version
+	@Column(name = "version", nullable = false, columnDefinition = "bigint default 0")
+	private long version;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "project_id", nullable = false,
@@ -189,17 +194,21 @@ public class Feedback {
 	 *   <li>{@code unassign} 이 false 이고 assignee 도 null — 담당자를 바꾸지 않는다</li>
 	 * </ul>
 	 *
-	 * <p>상태가 처음으로 DONE·REJECTED 가 되는 순간 closedAt 을 기록한다. 이미 종료된 건에
-	 * 상태를 다시 바꿔도(예: DONE → REJECTED) closedAt 은 최초 종료 시각을 유지한다.
+	 * <p>진행 상태에서 DONE·REJECTED 로 바뀌는 순간 closedAt 을 기록한다. 종료 상태끼리
+	 * 바꿀 때(예: DONE → REJECTED)는 기존 종료 시각을 유지한다. 종료된 피드백을 다시 열면
+	 * closedAt 을 비우고, 이후 다시 종료할 때 새 종료 시각을 기록한다.
 	 */
 	public void applyAdminUpdate(FeedbackStatus status, FeedbackCategory category, Priority priority,
 			User assignee, boolean unassign, LocalDateTime now) {
 		if (status != null) {
-			this.status = status;
-			boolean closed = status == FeedbackStatus.DONE || status == FeedbackStatus.REJECTED;
-			if (closed && this.closedAt == null) {
+			boolean wasClosed = isClosed(this.status);
+			boolean willBeClosed = isClosed(status);
+			if (!wasClosed && willBeClosed) {
 				this.closedAt = now;
+			} else if (wasClosed && !willBeClosed) {
+				this.closedAt = null;
 			}
+			this.status = status;
 		}
 		if (category != null) {
 			this.category = category;
@@ -212,6 +221,10 @@ public class Feedback {
 		} else if (assignee != null) {
 			this.assignee = assignee;
 		}
+	}
+
+	private static boolean isClosed(FeedbackStatus status) {
+		return status == FeedbackStatus.DONE || status == FeedbackStatus.REJECTED;
 	}
 
 	/**
