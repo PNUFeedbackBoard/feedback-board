@@ -221,6 +221,7 @@ class ApiContractIntegrationTests {
 	void developerCanHideFeedbackWithoutDeletingTheUsersCopy() throws Exception {
 		MockHttpSession user = login("user");
 		MockHttpSession developer = login("dev");
+		MockHttpSession viewer = login("viewer");
 		long id = createFeedback(user, "관리자 목록 숨김 테스트");
 		long version = feedbackVersion(developer, id);
 
@@ -231,7 +232,14 @@ class ApiContractIntegrationTests {
 
 		mockMvc.perform(get("/api/admin/feedbacks").session(developer))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.items[?(@.id == " + id + ")]").doesNotExist());
+				.andExpect(jsonPath("$.items[?(@.id == " + id + ")]").doesNotExist())
+				.andExpect(jsonPath("$.hiddenCount").isNumber());
+		mockMvc.perform(get("/api/admin/feedbacks").session(developer).param("hidden", "true"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[?(@.id == " + id + ")]").isNotEmpty());
+		mockMvc.perform(get("/api/admin/feedbacks").session(viewer).param("hidden", "true"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
 		mockMvc.perform(get("/api/me/feedbacks/" + id).session(user))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.title").value("관리자 목록 숨김 테스트"));

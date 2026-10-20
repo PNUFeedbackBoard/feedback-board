@@ -52,6 +52,15 @@ const STATUS_COLOR = {
 	REJECTED: 'var(--color-chart-rejected)',
 }
 
+/* 차트 가장자리에서 좌우로 뒤집히지 않고 포인터를 즉시 따라가는 공통 툴팁 설정. */
+const TOOLTIP_PROPS = {
+	allowEscapeViewBox: { x: true, y: true },
+	cursor: false,
+	isAnimationActive: false,
+	offset: 12,
+	wrapperStyle: { pointerEvents: 'none', transition: 'none' },
+}
+
 export default function DashboardPage() {
 	const navigate = useNavigate()
 	const [data, setData] = useState(null)
@@ -144,7 +153,7 @@ export default function DashboardPage() {
 								<CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
 								<XAxis dataKey="name" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={0} />
 								<YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} allowDecimals={false} />
-								<Tooltip content={<ChartTooltip labels={FEEDBACK_STATUS} unit="건" />} cursor={{ fill: 'var(--color-surface-sunken)' }} />
+								<Tooltip {...TOOLTIP_PROPS} content={<ChartTooltip labels={FEEDBACK_STATUS} unit="건" />} />
 								{STACK_ORDER.map((status, index) => (
 									<Bar
 										key={status}
@@ -182,7 +191,7 @@ export default function DashboardPage() {
 										<Cell key={slice.category} fill={CATEGORY_COLOR[slice.category]} />
 									))}
 								</Pie>
-								<Tooltip content={<ChartTooltip labels={FEEDBACK_CATEGORY} unit="건" />} />
+								<Tooltip {...TOOLTIP_PROPS} content={<ChartTooltip labels={FEEDBACK_CATEGORY} unit="건" />} />
 							</PieChart>
 						</ResponsiveContainer>
 
@@ -210,7 +219,7 @@ export default function DashboardPage() {
 							<CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
 							<XAxis dataKey="date" tickLine={false} axisLine={false} tick={AXIS_TICK} tickFormatter={shortDay} minTickGap={24} />
 							<YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} allowDecimals={false} />
-							<Tooltip content={<ChartTooltip unit="건" />} cursor={{ stroke: 'var(--color-chart-axis)' }} />
+							<Tooltip {...TOOLTIP_PROPS} content={<ChartTooltip unit="건" />} />
 							{/* 시리즈가 하나뿐이라 범례를 두지 않는다. 제목이 이름을 대신한다. */}
 							<Line
 								type="monotone"

@@ -96,7 +96,8 @@ public class AdminFeedbackController {
 	@Operation(summary = "관리용 피드백 목록 조회",
 			description = "필터는 사이트·상태·유형·기간·회원 여부·답변 유무·우선 처리 요청 여부이고 "
 					+ "정렬은 PRIORITY·LATEST·OLDEST 다. "
-					+ "어떤 정렬을 골라도 우선 처리 요청 항목이 최상단에 고정된다.")
+					+ "어떤 정렬을 골라도 우선 처리 요청 항목이 최상단에 고정된다. "
+					+ "hidden=true인 숨김 보관함은 개발자만 조회할 수 있다.")
 	@GetMapping
 	@Transactional(readOnly = true)
 	public AdminFeedbackPage feedbacks(
@@ -109,9 +110,15 @@ public class AdminFeedbackController {
 			@RequestParam(required = false) AuthorType authorType,
 			@RequestParam(required = false) Boolean answered,
 			@RequestParam(required = false) Boolean priorityRequested,
+			@RequestParam(defaultValue = "false") boolean hidden,
+			@RequestParam(defaultValue = "false") boolean includeHiddenCount,
 			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "20") int size) {
+			@RequestParam(defaultValue = "20") int size,
+			@CurrentUser AppUserPrincipal currentUser) {
 		validatePage(page, size);
+		if (hidden && currentUser.getRole() != Role.DEVELOPER) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "숨김 보관함은 개발자만 볼 수 있습니다.");
+		}
 		if (from != null && to != null && from.isAfter(to)) {
 			throw new IllegalArgumentException("시작일은 종료일보다 늦을 수 없습니다.");
 		}
@@ -125,7 +132,7 @@ public class AdminFeedbackController {
 		FeedbackSort effectiveSort = sort == null ? FeedbackSort.LATEST : sort;
 		Page<Feedback> matched = feedbackRepository.searchForAdmin(
 				project, status, category, authorType, fromInclusive, toExclusive, answered, priorityRequested,
-				effectiveSort.name(), PageRequest.of(page, size));
+				hidden, effectiveSort.name(), PageRequest.of(page, size));
 
 		// answeredIds는 필터링용이 아니라 DTO의 answered 필드를 채우는 표시용이다 — 건마다 따로
 		// 조회하면 N+1이 나니 한 번에 구한다.
@@ -136,7 +143,10 @@ public class AdminFeedbackController {
 				.toList();
 
 		// totalCount 는 이번 페이지 건수가 아니라 필터 조건 전체 건수다(AdminFeedbackPage 계약).
-		return new AdminFeedbackPage(items, matched.getTotalElements());
+		long hiddenCount = currentUser.getRole() == Role.DEVELOPER && (includeHiddenCount || hidden)
+				? feedbackRepository.countHiddenForAdmin(project)
+				: 0;
+		return new AdminFeedbackPage(items, matched.getTotalElements(), hiddenCount);
 	}
 
 	@Operation(summary = "관리용 피드백 상세 조회",

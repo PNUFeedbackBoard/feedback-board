@@ -83,10 +83,6 @@
 	box-shadow: none;
 }
 
-.board .card[data-priority-requested='true'] {
-	border-left: 3px solid var(--color-selected);
-}
-
 .board .card__title {
 	min-height: 0;
 	font-size: 0.96rem;

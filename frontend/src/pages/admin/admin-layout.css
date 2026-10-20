@@ -4,11 +4,7 @@
 	flex-direction: column;
 	min-height: 100vh;
 	overflow-x: hidden;
-	background:
-		radial-gradient(circle at 8% 22%, rgb(96 165 250 / 11%), transparent 29%),
-		radial-gradient(circle at 90% 68%, rgb(99 102 241 / 8%), transparent 31%),
-		radial-gradient(circle at 46% 108%, rgb(37 99 235 / 7%), transparent 34%),
-		var(--color-bg);
+	background: #f4f6f9;
 	color: var(--color-text);
 	font-family: var(--font-family);
 	font-size: var(--font-size-body);
@@ -16,19 +12,8 @@
 	letter-spacing: -0.012em;
 }
 
-/* Colour that remains visible through the translucent project disc. */
 .admin-shell::before {
-	content: '';
-	position: absolute;
-	right: 50%;
-	bottom: -120px;
-	z-index: 0;
-	width: min(720px, 100vw);
-	height: 180px;
-	transform: translateX(50%);
-	background: radial-gradient(ellipse at center, rgb(96 165 250 / 12%), transparent 68%);
-	filter: blur(42px);
-	pointer-events: none;
+	content: none;
 }
 
 /* ── Header ───────────────────────────────────────────────── */
@@ -43,8 +28,7 @@
 	min-height: 72px;
 	padding: 0 clamp(20px, 4vw, 56px);
 	border-bottom: 1px solid var(--color-border);
-	background: var(--color-surface-veil);
-	backdrop-filter: var(--blur-veil);
+	background: #fff;
 }
 
 .admin-brand {
@@ -154,8 +138,7 @@
 	top: 73px;
 	z-index: 9;
 	border-bottom: 1px solid var(--color-border);
-	background: var(--color-surface-veil);
-	backdrop-filter: var(--blur-veil);
+	background: #fff;
 }
 
 .admin-tabs__inner {

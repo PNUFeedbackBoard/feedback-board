@@ -44,7 +44,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 	@Query(value = """
 			SELECT f FROM Feedback f
 			JOIN f.project p
-			WHERE f.hiddenAt IS NULL
+			WHERE ((:hidden = false AND f.hiddenAt IS NULL) OR (:hidden = true AND f.hiddenAt IS NOT NULL))
 			  AND (:projectCode IS NULL OR p.code = :projectCode)
 			  AND (:status IS NULL OR f.status = :status)
 			  AND (:category IS NULL OR f.category = :category)
@@ -73,7 +73,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 			""", countQuery = """
 			SELECT COUNT(f) FROM Feedback f
 			JOIN f.project p
-			WHERE f.hiddenAt IS NULL
+			WHERE ((:hidden = false AND f.hiddenAt IS NULL) OR (:hidden = true AND f.hiddenAt IS NOT NULL))
 			  AND (:projectCode IS NULL OR p.code = :projectCode)
 			  AND (:status IS NULL OR f.status = :status)
 			  AND (:category IS NULL OR f.category = :category)
@@ -96,8 +96,18 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 			@Param("toExclusive") LocalDateTime toExclusive,
 			@Param("answered") Boolean answered,
 			@Param("priorityRequested") Boolean priorityRequested,
+			@Param("hidden") boolean hidden,
 			@Param("sort") String sort,
 			Pageable pageable);
+
+	/** 프로젝트별 숨김 보관함의 전체 건수. 목록 필터와 무관하게 하단 진입점에 표시한다. */
+	@Query("""
+			SELECT COUNT(f) FROM Feedback f
+			JOIN f.project p
+			WHERE f.hiddenAt IS NOT NULL
+			  AND (:projectCode IS NULL OR p.code = :projectCode)
+			""")
+	long countHiddenForAdmin(@Param("projectCode") String projectCode);
 
 	/** 관리용 상세 조회. project·author·assignee 를 함께 읽어 컨트롤러에서 지연 로딩 예외가 나지 않게 한다. */
 	@Query("""

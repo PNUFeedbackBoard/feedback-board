@@ -31,7 +31,8 @@ const feedback = {
 
 describe('AnswersPage feedback hiding', () => {
   beforeEach(() => {
-    getAdminFeedbacks.mockResolvedValue({ items: [feedback], totalCount: 1 })
+    vi.clearAllMocks()
+    getAdminFeedbacks.mockResolvedValue({ items: [feedback], totalCount: 1, hiddenCount: 0 })
     hideAdminFeedback.mockResolvedValue(null)
   })
 
@@ -45,7 +46,23 @@ describe('AnswersPage feedback hiding', () => {
 
     await waitFor(() => expect(hideAdminFeedback).toHaveBeenCalledWith(47, 3))
     expect(screen.queryByText(feedback.title)).not.toBeInTheDocument()
-    expect(screen.getByText('피드백을 관리자 목록에서 숨겼습니다.')).toBeInTheDocument()
+    expect(screen.queryByText('피드백을 관리자 목록에서 숨겼습니다.')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '숨겨진 피드백: 1건' })).toBeInTheDocument()
+  })
+
+  it('개발자만 화면 아래의 숨김 건수에서 보관함을 연다', async () => {
+    const user = userEvent.setup()
+    getAdminFeedbacks
+      .mockResolvedValueOnce({ items: [], totalCount: 0, hiddenCount: 1 })
+      .mockResolvedValueOnce({ items: [feedback], totalCount: 1, hiddenCount: 1 })
+    renderPage('DEVELOPER')
+
+    await user.click(await screen.findByRole('button', { name: '숨겨진 피드백: 1건' }))
+
+    await waitFor(() => expect(getAdminFeedbacks).toHaveBeenLastCalledWith(expect.objectContaining({ hidden: true })))
+    expect(await screen.findByText(feedback.title)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '일반 피드백 목록으로' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '숨기기' })).not.toBeInTheDocument()
   })
 
   it('열람자에게는 숨김 조작을 노출하지 않는다', async () => {
@@ -53,6 +70,7 @@ describe('AnswersPage feedback hiding', () => {
 
     expect(await screen.findByText(feedback.title)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '숨기기' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/숨겨진 피드백:/)).not.toBeInTheDocument()
   })
 })
 

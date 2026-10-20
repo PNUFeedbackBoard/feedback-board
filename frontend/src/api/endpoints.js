@@ -70,10 +70,11 @@ export function getDashboard() {
 /**
  * 관리용 피드백 목록.
  * @param {object} [params] 필터와 정렬.
- *   { project, status, category, sort, from, to, authorType, answered, priorityRequested, page, size }
+ *   { project, status, category, sort, from, to, authorType, answered, priorityRequested,
+ *     hidden, includeHiddenCount, page, size }
  *   sort 는 FEEDBACK_SORT 의 키(PRIORITY | LATEST | OLDEST)를 쓴다.
  *   비어 있는 값은 client.js 가 쿼리에서 알아서 빼준다.
- * @returns {Promise<object>} AdminFeedbackPage — { items, totalCount }
+ * @returns {Promise<object>} AdminFeedbackPage — { items, totalCount, hiddenCount }
  */
 export function getAdminFeedbacks(params) {
   return get('/admin/feedbacks', { params })
