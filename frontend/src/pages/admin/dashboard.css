@@ -193,6 +193,15 @@
 	font-size: var(--font-size-label);
 }
 
+.dash__project-chart .recharts-bar-rectangle {
+	cursor: pointer;
+}
+
+.dash__project-chart .recharts-bar-rectangle:focus-visible {
+	outline: 2px solid var(--color-selected);
+	outline-offset: 2px;
+}
+
 /* ── Legends and charts ───────────────────────────────────── */
 
 .dash__legend {

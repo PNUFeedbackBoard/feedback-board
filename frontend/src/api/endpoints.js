@@ -8,7 +8,7 @@
  * 백엔드 계약을 화면에서 직접 반복하지 않도록 모든 요청을 이 파일로 모은다.
  */
 
-import { get, patch, post, put } from './client.js'
+import { del, get, patch, post, put } from './client.js'
 
 // ── 공개 ────────────────────────────────────────────────────────────
 
@@ -101,6 +101,16 @@ export function getAdminFeedback(id) {
  */
 export function updateAdminFeedback(id, body) {
   return patch(`/admin/feedbacks/${id}`, body)
+}
+
+/**
+ * 사용자 원문은 보존하고 관리자 목록·대시보드에서 숨긴다.
+ * @param {number | string} id 피드백 번호
+ * @param {number} version 마지막으로 조회한 피드백 버전
+ * @returns {Promise<null>}
+ */
+export function hideAdminFeedback(id, version) {
+  return del(`/admin/feedbacks/${id}`, { params: { version } })
 }
 
 /**

@@ -128,6 +128,10 @@ public class Feedback {
 	@Column(name = "closed_at")
 	private LocalDateTime closedAt;
 
+	/** 관리자 목록에서 숨긴 시각. 원문과 사용자 문의 내역은 보존한다. */
+	@Column(name = "hidden_at")
+	private LocalDateTime hiddenAt;
+
 	private Feedback(Project project, User author, AuthorType authorType, String title, String content,
 			FeedbackCategory category, Priority reportedPriority, LocalDateTime now) {
 		this.project = project;
@@ -236,6 +240,11 @@ public class Feedback {
 		if (this.firstAnsweredAt == null) {
 			this.firstAnsweredAt = now;
 		}
+	}
+
+	/** 개발자가 관리자 작업 목록에서 숨긴다. 사용자 본인의 문의 기록은 삭제하지 않는다. */
+	public void hideFromAdmin(LocalDateTime now) {
+		this.hiddenAt = now;
 	}
 
 	/** 열람자의 우선 처리 요청을 토글한다. 해제는 요청자 본인만 할 수 있다. */

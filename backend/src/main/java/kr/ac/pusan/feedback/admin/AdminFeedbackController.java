@@ -14,6 +14,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -173,6 +175,19 @@ public class AdminFeedbackController {
 
 		Answer answer = answerRepository.findByFeedbackId(id).orElse(null);
 		return AdminFeedbackMapper.toDetail(feedback, answer);
+	}
+
+	@Operation(summary = "관리자 목록에서 피드백 숨김",
+			description = "개발자 전용이다. 원문과 사용자의 문의 내역은 보존하고 관리자 목록과 대시보드 집계에서 제외한다.")
+	@DeleteMapping("/{id}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	@Transactional
+	public void hide(@PathVariable Long id, @RequestParam Long version) {
+		Feedback feedback = feedbackRepository.findDetailById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."));
+		assertFeedbackVersion(feedback, version);
+		feedback.hideFromAdmin(LocalDateTime.now());
+		feedbackRepository.saveAndFlush(feedback);
 	}
 
 	@Operation(summary = "여러 피드백의 상태·담당자 일괄 변경",

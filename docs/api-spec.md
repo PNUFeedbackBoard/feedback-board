@@ -1,6 +1,6 @@
 # API 명세
 
-프런트엔드와 백엔드가 공유하는 제품 API 계약이다. 아래 13개 API는 Swagger에 노출되며 실제 DB 데이터를 조회·저장한다.
+프런트엔드와 백엔드가 공유하는 제품 API 계약이다. 아래 14개 API는 Swagger에 노출되며 실제 DB 데이터를 조회·저장한다.
 
 ## 사용자 API
 
@@ -19,6 +19,7 @@
 | `GET` | `/api/admin/feedbacks` | `DEVELOPER`, `VIEWER` | 필터·정렬·페이징 목록 |
 | `GET` | `/api/admin/feedbacks/{id}` | `DEVELOPER`, `VIEWER` | 관리 상세 |
 | `PATCH` | `/api/admin/feedbacks/{id}` | `DEVELOPER` | 상태·유형·중요도·담당자 변경 |
+| `DELETE` | `/api/admin/feedbacks/{id}?version={version}` | `DEVELOPER` | 사용자 원문은 보존하고 관리자 목록·집계에서 숨김 |
 | `PATCH` | `/api/admin/feedbacks/bulk` | `DEVELOPER` | 여러 피드백의 상태·담당자를 원자적으로 변경 |
 | `PUT` | `/api/admin/feedbacks/{id}/answer` | `DEVELOPER` | 답변 등록·수정 |
 | `POST` | `/api/admin/feedbacks/{id}/priority-request` | `VIEWER` | 우선 처리 요청 토글 |
@@ -27,7 +28,7 @@
 
 ## 인증 보조 API
 
-화면이 서버가 판정한 현재 계정과 역할을 조회할 수 있도록 `GET /api/me`를 제공한다. 이 인증 보조 API와 아래 개발 전용 API는 제품 API 12개를 보여 주는 Swagger 목록에서는 숨긴다.
+화면이 서버가 판정한 현재 계정과 역할을 조회할 수 있도록 `GET /api/me`를 제공한다. 이 인증 보조 API와 아래 개발 전용 API는 제품 API 14개를 보여 주는 Swagger 목록에서는 숨긴다.
 
 구글 로그인 보조 API(모든 프로필, Swagger 제품 목록에는 숨김):
 

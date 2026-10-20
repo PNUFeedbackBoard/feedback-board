@@ -8,6 +8,7 @@
     linear-gradient(125deg, rgb(255 255 255 / 68%), rgb(239 235 224 / 48%)),
     #f5f2e9;
   color: #302f38;
+  font-family: var(--font-family);
 }
 
 .write-feedback-page__inner {
@@ -52,7 +53,7 @@
   gap: 7px;
   margin: 0 0 12px;
   color: #7771a6;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-family);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -67,7 +68,7 @@
 .write-feedback-heading h1 {
   margin: 0;
   color: #34313a;
-  font-family: Georgia, 'Noto Serif KR', 'Batang', serif;
+  font-family: var(--font-family);
   font-size: clamp(2.15rem, 5vw, 3.3rem);
   font-weight: 700;
   letter-spacing: -0.055em;
@@ -127,7 +128,7 @@
   padding-bottom: 13px;
   border-bottom: 1px dashed #d2cabb;
   color: #999187;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-family);
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.13em;
@@ -147,7 +148,7 @@
   border: 1px solid #aaa4bd;
   border-radius: 50%;
   color: #69648f;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-family);
   font-size: 0.77rem;
   font-weight: 800;
 }
@@ -174,7 +175,7 @@
 .feedback-form-section__heading h2 {
   margin: 0;
   color: #464248;
-  font-family: Georgia, 'Noto Serif KR', 'Batang', serif;
+  font-family: var(--font-family);
   font-size: 1.35rem;
   letter-spacing: -0.035em;
 }
@@ -495,7 +496,7 @@
 .feedback-receipt__eyebrow {
   margin: 0 0 10px;
   color: #7771a6;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-family);
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -504,7 +505,7 @@
 .feedback-receipt h1 {
   margin: 0 0 12px;
   color: #3c3940;
-  font-family: Georgia, 'Noto Serif KR', 'Batang', serif;
+  font-family: var(--font-family);
   font-size: clamp(1.75rem, 5vw, 2.45rem);
   letter-spacing: -0.045em;
 }
@@ -535,7 +536,7 @@
 .feedback-receipt__number strong {
   margin: 3px 0;
   color: #5f5a8d;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-family);
   font-size: 2rem;
   letter-spacing: 0.04em;
 }
@@ -581,7 +582,7 @@
   border: 1px solid #cec7bd;
   border-radius: 50%;
   background: #f8f5ec;
-  font-family: Georgia, serif;
+  font-family: var(--font-family);
 }
 
 .feedback-receipt__steps .is-complete {
@@ -600,7 +601,7 @@
   justify-content: center;
   gap: 7px;
   width: min(100%, 430px);
-  margin: 42px auto 0;
+  margin: 64px auto 0;
   border: 1px solid #d6d1df;
   border-radius: 3px;
   padding: 11px 13px;
@@ -633,7 +634,7 @@
   padding-top: 19px;
   border-top: 1px dashed #d2cabb;
   color: #aaa39a;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-family);
   font-size: 0.55rem;
   letter-spacing: 0.13em;
 }

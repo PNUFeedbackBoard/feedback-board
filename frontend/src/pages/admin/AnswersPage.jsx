@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext, useParams } from 'react-router-dom'
-import { getAdminFeedback, getAdminFeedbacks, togglePriorityRequest, updateAdminFeedback } from '../../api/endpoints.js'
+import { getAdminFeedback, getAdminFeedbacks, hideAdminFeedback, togglePriorityRequest, updateAdminFeedback } from '../../api/endpoints.js'
 import AnswerDialog from './AnswerDialog.jsx'
 import DetailPanel from './DetailPanel.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
@@ -36,6 +36,7 @@ export default function AnswersPage() {
 	const [openedId, setOpenedId] = useState(null)
 	const [notice, setNotice] = useState('')
 	const [priorityBusy, setPriorityBusy] = useState(false)
+	const [hidingId, setHidingId] = useState(null)
 
 	useEffect(() => {
 		let cancelled = false
@@ -122,6 +123,34 @@ export default function AnswersPage() {
 			.catch(() => {})
 	}
 
+	async function hideItem(item) {
+		if (!canAnswer || hidingId !== null) return
+		const confirmed = window.confirm(
+			'이 피드백을 관리자 목록에서 숨길까요? 사용자 문의 내역과 원문은 삭제되지 않습니다.',
+		)
+		if (!confirmed) return
+
+		setHidingId(item.id)
+		setNotice('')
+		try {
+			await hideAdminFeedback(item.id, item.version)
+			setState((prev) => ({
+				...prev,
+				items: prev.items.filter((candidate) => candidate.id !== item.id),
+				totalCount: Math.max(0, prev.totalCount - 1),
+			}))
+			if (openedId === item.id) setOpenedId(null)
+			if (writing?.id === item.id) setWriting(null)
+			if (state.items.length === 1 && page > 0) setPage(page - 1)
+			setNotice('피드백을 관리자 목록에서 숨겼습니다.')
+		} catch (error) {
+			setNotice(`숨기지 못했습니다. ${error.message}`)
+			refreshItem(item.id)
+		} finally {
+			setHidingId(null)
+		}
+	}
+
 	if (state.projectCode !== projectCode) return <p className="board__notice">불러오는 중…</p>
 	if (state.message) return <p className="board__notice">{state.message}</p>
 
@@ -160,18 +189,28 @@ export default function AnswersPage() {
 								onOpen={() => setOpenedId(item.id)}
 								action={
 									<div className="intake__row">
-										{isGuest ? (
-											<span className="intake__muted">비회원 · 답변 대상 아님</span>
-										) : canAnswer ? (
-											<button
-												type="button"
-												className="intake__start"
-												onClick={() => setWriting(item)}
-											>
-												{item.answered ? '답변 수정' : '답변하기'}
-											</button>
-										) : (
-											<span className="intake__muted">개발자만 답변 가능</span>
+										{isGuest && <span className="intake__muted">비회원 · 답변 대상 아님</span>}
+										{!isGuest && !canAnswer && <span className="intake__muted">개발자만 답변 가능</span>}
+										{canAnswer && (
+											<div className="intake__row-actions">
+												{!isGuest && (
+													<button
+														type="button"
+														className="intake__start"
+														onClick={() => setWriting(item)}
+													>
+														{item.answered ? '답변 수정' : '답변하기'}
+													</button>
+												)}
+												<button
+													type="button"
+													className="intake__hide"
+													disabled={hidingId !== null}
+													onClick={() => hideItem(item)}
+												>
+													{hidingId === item.id ? '숨기는 중…' : '숨기기'}
+												</button>
+											</div>
 										)}
 									</div>
 								}

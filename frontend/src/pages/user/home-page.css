@@ -10,6 +10,7 @@
     linear-gradient(125deg, rgb(255 255 255 / 68%), rgb(239 235 224 / 48%)),
     #f5f2e9;
   color: #302f38;
+  font-family: var(--font-family);
 }
 
 .my-feedback-page__inner {
@@ -32,7 +33,7 @@
   gap: 7px;
   margin: 0 0 12px;
   color: #7771a6;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-family);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -47,7 +48,7 @@
 .my-feedback-heading h1 {
   margin: 0 0 7px;
   color: #34313a;
-  font-family: Georgia, 'Noto Serif KR', 'Batang', serif;
+  font-family: var(--font-family);
   font-size: clamp(2.15rem, 5vw, 3.45rem);
   font-weight: 700;
   letter-spacing: -0.055em;
@@ -65,12 +66,16 @@
 }
 
 .my-feedback-page .current-user-badge {
-  border-color: rgb(113 105 142 / 20%);
-  background:
-    linear-gradient(rgb(255 255 255 / 58%), rgb(248 245 235 / 66%)),
-    #f8f4e9;
-  box-shadow: 0 5px 16px rgb(65 58 48 / 8%);
+  border-color: #cfc8bb;
+  border-left: 3px solid #7774b3;
+  border-radius: 4px;
+  background: #fbf8ef;
+  box-shadow: none;
   backdrop-filter: none;
+}
+
+.my-feedback-page .current-user-badge__avatar {
+  border-radius: 3px;
 }
 
 .my-feedback-page .app-button {
@@ -217,7 +222,7 @@
   bottom: 10px;
   color: rgb(98 89 72 / 23%);
   content: 'MY FEEDBACK ARCHIVE';
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-family);
   font-size: 0.62rem;
   letter-spacing: 0.16em;
 }
@@ -358,7 +363,7 @@
   display: block;
   overflow: hidden;
   color: #48454a;
-  font-family: Georgia, 'Noto Serif KR', 'Batang', serif;
+  font-family: var(--font-family);
   font-size: clamp(0.95rem, 2vw, 1.09rem);
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -425,7 +430,7 @@
   border: 1px solid #d8d1c5;
   border-radius: 50%;
   color: #7771a6;
-  font-family: Georgia, serif;
+  font-family: var(--font-family);
   font-size: 1rem;
   transition: transform 160ms ease, background 160ms ease;
 }
@@ -479,7 +484,7 @@
 .feedback-filter-empty > span {
   margin-bottom: 8px;
   color: #9891b8;
-  font-family: Georgia, serif;
+  font-family: var(--font-family);
   font-size: 2.5rem;
 }
 
@@ -512,7 +517,7 @@
   border: 1px dashed #aaa3bc;
   border-radius: 50%;
   color: #7771a6;
-  font-family: Georgia, serif;
+  font-family: var(--font-family);
   font-size: 1.65rem;
 }
 
