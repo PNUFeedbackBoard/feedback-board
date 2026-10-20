@@ -92,7 +92,6 @@ export default function WritePage() {
 						</Link>
 						<p className="write-feedback-heading__eyebrow"><FilePenLine aria-hidden="true" /> NEW FEEDBACK</p>
 						<h1>새 문의 작성</h1>
-						<p>불편했던 순간과 바라는 개선점을 편하게 들려주세요.</p>
 					</div>
 					{currentUser && (
 						<div className="app-header__aside write-feedback-header__aside">
