@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { House } from 'lucide-react'
+import { ChevronUp, House } from 'lucide-react'
 import './project-disc.css'
+
+const ONBOARDING_STORAGE_KEY = 'feedback-board:project-disc-onboarding:v1'
 
 /**
  * 하단 프로젝트 전환 디스크. 기획 6-1
@@ -49,6 +51,11 @@ export default function ProjectDisc({ projects, projectCode }) {
 	const navigate = useNavigate()
 	const [open, setOpen] = useState(false)
 	const [turn, setTurn] = useState(0)
+	const [showOnboarding, setShowOnboarding] = useState(shouldShowOnboarding)
+
+	useEffect(() => {
+		if (showOnboarding) rememberOnboardingWasShown()
+	}, [showOnboarding])
 
 	/**
 	 * 홈도 슬롯 하나다. 기획 6-1 의 "슬롯 하나는 홈 진입점으로 사용한다".
@@ -120,6 +127,14 @@ export default function ProjectDisc({ projects, projectCode }) {
 				if (!event.currentTarget.contains(event.relatedTarget)) close()
 			}}
 		>
+			{showOnboarding && (
+				<aside className="disc-onboarding" aria-label="프로젝트 메뉴 안내">
+					<strong>프로젝트를 빠르게 이동해 보세요</strong>
+					<p>아래 원판에 마우스를 올리면 전체 현황과 각 프로젝트로 바로 이동할 수 있어요.</p>
+					<button type="button" onClick={() => setShowOnboarding(false)}>알겠어요</button>
+				</aside>
+			)}
+
 			{/*
 			 * 마우스를 감지하는 고정 영역. 원과 슬롯은 떠오르면서 자리를 옮기기 때문에,
 			 * 커서 밑에서 빠져나가는 순간 pointerout 이 나 다시 가라앉고, 가라앉으면 또 커서 밑에
@@ -138,6 +153,7 @@ export default function ProjectDisc({ projects, projectCode }) {
 
 			{/* 화면 아래로 잘리는 원. 접혀 있을 때는 조금 더 가라앉는다. */}
 			<div className="disc__surface" />
+			<ChevronUp className="disc__idle-arrow" size={34} strokeWidth={1.6} aria-hidden="true" />
 
 			<nav className="disc__slots" aria-label="프로젝트 전환">
 				{slots.map((slot, index) => {
@@ -171,6 +187,22 @@ export default function ProjectDisc({ projects, projectCode }) {
 			</nav>
 		</div>
 	)
+}
+
+function shouldShowOnboarding() {
+	try {
+		return window.localStorage.getItem(ONBOARDING_STORAGE_KEY) !== 'shown'
+	} catch {
+		return true
+	}
+}
+
+function rememberOnboardingWasShown() {
+	try {
+		window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'shown')
+	} catch {
+		// 저장소를 사용할 수 없는 브라우저에서도 안내 기능 자체는 유지한다.
+	}
 }
 
 function ProjectLogo({ slot }) {
