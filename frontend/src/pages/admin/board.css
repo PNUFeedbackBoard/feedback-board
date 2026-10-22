@@ -26,8 +26,9 @@
 }
 
 .board__toolbar select {
-	min-height: 34px;
-	padding: 7px 30px 7px 9px;
+	height: var(--admin-control-height);
+	box-sizing: border-box;
+	padding: 0 30px 0 9px;
 	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
@@ -94,16 +95,17 @@
 }
 
 .board .card__action .intake__start {
-	border: 1px solid var(--color-selected);
+	border: 1px solid var(--admin-action-border);
 	border-radius: 3px;
-	background: var(--color-surface);
-	color: var(--color-selected);
+	background: var(--admin-action-surface);
+	color: var(--admin-action-text);
 	box-shadow: none;
 }
 
 .board .card__action .intake__start:hover {
-	background: var(--color-selected);
-	color: var(--color-surface);
+	border-color: #929eaf;
+	background: var(--admin-action-hover);
+	color: #29364b;
 }
 
 .board__column-head {

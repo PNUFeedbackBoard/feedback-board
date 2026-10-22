@@ -37,7 +37,9 @@
 }
 
 .answers__sort select {
-	padding: 7px 30px 7px 10px;
+	height: var(--admin-control-height);
+	box-sizing: border-box;
+	padding: 0 30px 0 10px;
 	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
@@ -90,11 +92,16 @@
 }
 
 .intake__start {
-	padding: 7px 11px;
-	border: 1px solid var(--color-selected);
+	display: inline-flex;
+	height: var(--admin-control-height);
+	box-sizing: border-box;
+	align-items: center;
+	justify-content: center;
+	padding: 0 var(--admin-control-padding-x);
+	border: 1px solid var(--admin-action-border);
 	border-radius: var(--radius-sm);
-	background: var(--color-surface);
-	color: var(--color-selected);
+	background: var(--admin-action-surface);
+	color: var(--admin-action-text);
 	font-family: var(--font-family);
 	font-size: var(--font-size-small);
 	font-weight: var(--font-weight-medium);
@@ -105,8 +112,9 @@
 }
 
 .intake__start:hover {
-	background: var(--color-selected);
-	color: var(--color-surface);
+	border-color: #929eaf;
+	background: var(--admin-action-hover);
+	color: #29364b;
 }
 
 .intake__row-actions {
@@ -118,7 +126,12 @@
 }
 
 .intake__hide {
-	padding: 7px 11px;
+	display: inline-flex;
+	height: var(--admin-control-height);
+	box-sizing: border-box;
+	align-items: center;
+	justify-content: center;
+	padding: 0 var(--admin-control-padding-x);
 	border: 1px solid #c7cfdb;
 	border-radius: var(--radius-sm);
 	background: #fff;
@@ -168,7 +181,12 @@
 
 .intake__primary,
 .intake__ghost {
-	padding: 7px 12px;
+	display: inline-flex;
+	height: var(--admin-control-height);
+	box-sizing: border-box;
+	align-items: center;
+	justify-content: center;
+	padding: 0 var(--admin-control-padding-x);
 	border-radius: var(--radius-sm);
 	font-family: var(--font-family);
 	font-size: var(--font-size-small);
@@ -198,7 +216,9 @@
 }
 
 .intake__select {
-	padding: 6px 8px;
+	height: var(--admin-control-height);
+	box-sizing: border-box;
+	padding: 0 30px 0 10px;
 	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);

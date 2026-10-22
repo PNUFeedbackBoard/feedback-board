@@ -159,7 +159,7 @@ export default function DetailPanel({
 
 			{/* 비회원 글은 답변 대상이 아니다(기획 6-4). */}
 			{canEdit && onAnswer && item.authorType === 'MEMBER' && (
-				<button type="button" className="panel__priority" onClick={onAnswer}>
+				<button type="button" className="panel__priority panel__priority--answer" onClick={onAnswer}>
 					{item.answered ? '답변 수정' : '답변하기'}
 				</button>
 			)}
