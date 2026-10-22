@@ -157,11 +157,17 @@
 	gap: 12px;
 }
 
-.admin-tabs__project > span {
+.admin-tabs__label {
 	color: var(--color-selected);
 	font-size: 9px;
 	font-weight: var(--font-weight-bold);
 	letter-spacing: 0.22em;
+}
+
+.admin-tabs__project-logo {
+	width: 30px;
+	height: 30px;
+	border-color: var(--color-border);
 }
 
 .admin-tabs__project strong {
@@ -316,7 +322,7 @@
 		height: 40px;
 	}
 
-	.admin-tabs__project > span {
+	.admin-tabs__label {
 		display: none;
 	}
 

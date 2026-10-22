@@ -15,6 +15,7 @@ import {
 	YAxis,
 } from 'recharts'
 import { getDashboard } from '../../api/endpoints.js'
+import ProjectLogo from '../../components/common/ProjectLogo.jsx'
 import {
 	BOARD_COLUMN_STATUSES,
 	FEEDBACK_CATEGORY,
@@ -320,7 +321,10 @@ function FeedbackRows({ items, empty, onOpen }) {
 					<button type="button" className="dash__row-button" onClick={() => onOpen(item.id)}>
 						<StatusBadge status={item.status} />
 						<span className="dash__row-title">{item.title}</span>
-						<span className="dash__row-meta">{item.projectName}</span>
+						<span className="dash__row-meta">
+							<ProjectLogo projectCode={item.projectCode} projectName={item.projectName} />
+							{item.projectName}
+						</span>
 					</button>
 				</li>
 			))}

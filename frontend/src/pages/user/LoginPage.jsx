@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getAuthConfig, getMe, getProjects, startGoogleLogin } from '../../api/endpoints.js'
 import '../page-shell.css'
 import LoginButtons from '../../components/common/LoginButtons.jsx'
+import ProjectLogo from '../../components/common/ProjectLogo.jsx'
 import iniLogo from '../../assets/ini-logo-optimized.png'
 import './site-logo.css'
 
@@ -121,9 +122,12 @@ export default function LoginPage() {
 					</p>
 					{sourceContext.project && (
 						<div className="login-source-context" role="status">
-							<span>피드백 대상</span>
-							<strong>{sourceContext.project.name}</strong>
-							<small>로그인 후 해당 서비스가 자동으로 선택됩니다.</small>
+							<ProjectLogo project={sourceContext.project} className="login-source-context__logo" />
+							<div className="login-source-context__copy">
+								<span>피드백 대상</span>
+								<strong>{sourceContext.project.name}</strong>
+								<small>로그인 후 해당 서비스가 자동으로 선택됩니다.</small>
+							</div>
 						</div>
 					)}
 					<LoginButtons

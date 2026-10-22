@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronUp, House } from 'lucide-react'
+import ProjectLogo from '../../components/common/ProjectLogo.jsx'
 import './project-disc.css'
 
 const ONBOARDING_STORAGE_KEY = 'feedback-board:project-disc-onboarding:v1'
@@ -67,6 +68,7 @@ export default function ProjectDisc({ projects, projectCode }) {
 		const middle = Math.floor(projects.length / 2)
 		const toSlot = (project) => ({
 			key: project.code,
+			code: project.code,
 			name: project.name,
 			logoUrl: project.logoUrl,
 			to: `/admin/${project.code}/board`,
@@ -178,7 +180,7 @@ export default function ProjectDisc({ projects, projectCode }) {
 							title={slot.name}
 						>
 							<span className="disc__logo" data-slot={slot.home ? 'home' : index % 5} aria-hidden="true">
-								<ProjectLogo slot={slot} />
+								{slot.home ? <House size={22} strokeWidth={2} /> : <ProjectLogo project={slot} />}
 							</span>
 							<span className="disc__name">{slot.name}</span>
 						</button>
@@ -203,13 +205,4 @@ function rememberOnboardingWasShown() {
 	} catch {
 		// 저장소를 사용할 수 없는 브라우저에서도 안내 기능 자체는 유지한다.
 	}
-}
-
-function ProjectLogo({ slot }) {
-	const [failedUrl, setFailedUrl] = useState(null)
-	if (slot.home) return <House size={22} strokeWidth={2} />
-	if (slot.logoUrl && failedUrl !== slot.logoUrl) {
-		return <img src={slot.logoUrl} alt="" onError={() => setFailedUrl(slot.logoUrl)} />
-	}
-	return slot.name.slice(0, 1)
 }

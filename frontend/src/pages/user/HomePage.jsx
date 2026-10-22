@@ -5,6 +5,7 @@ import { getMe, getMyFeedbacks } from '../../api/endpoints.js'
 import CategoryTag from '../../components/common/CategoryTag.jsx'
 import CurrentUserBadge from '../../components/common/CurrentUserBadge.jsx'
 import LogoutButton from '../../components/common/LogoutButton.jsx'
+import ProjectLogo from '../../components/common/ProjectLogo.jsx'
 import PriorityChip from '../../components/common/PriorityChip.jsx'
 import StatusBadge from '../../components/common/StatusBadge.jsx'
 import { FEEDBACK_STATUS } from '../../constants/enums.js'
@@ -132,6 +133,7 @@ export default function HomePage() {
 									index={index + 1}
 									key={project.code}
 									label={project.name}
+									projectCode={project.code}
 									onClick={() => changeProject(project.code)}
 								/>
 							))}
@@ -191,7 +193,12 @@ const FeedbackPaperCard = memo(function FeedbackPaperCard({ item }) {
 			<Link className="feedback-paper-card" to={`/my/${item.id}`}>
 				<div className="feedback-paper-card__body">
 					<p className="feedback-paper-card__site">
-						<span aria-hidden="true" /> {item.projectName}
+						<ProjectLogo
+							projectCode={item.projectCode}
+							projectName={item.projectName}
+							className="feedback-paper-card__project-logo"
+						/>
+						{item.projectName}
 					</p>
 					<strong className="feedback-paper-card__title">{item.title}</strong>
 					<p className="feedback-paper-card__date">
@@ -214,7 +221,7 @@ const FeedbackPaperCard = memo(function FeedbackPaperCard({ item }) {
 	)
 })
 
-function ProjectTab({ active, count, index, label, onClick }) {
+function ProjectTab({ active, count, index, label, projectCode, onClick }) {
 	return (
 		<button
 			aria-controls="feedback-project-panel"
@@ -226,6 +233,7 @@ function ProjectTab({ active, count, index, label, onClick }) {
 			role="tab"
 			type="button"
 		>
+			{projectCode && <ProjectLogo projectCode={projectCode} projectName={label} className="feedback-bookmark__logo" />}
 			<span className="feedback-bookmark__label">{label}</span>
 			<span className="feedback-bookmark__count" aria-hidden="true">{count}</span>
 		</button>

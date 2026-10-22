@@ -4,6 +4,7 @@ import { Navigate, NavLink, Outlet, useMatch } from 'react-router-dom'
 import { ExternalLink } from 'lucide-react'
 import { getMe, getProjects } from '../../api/endpoints.js'
 import iniLogo from '../../assets/ini-logo-optimized.png'
+import ProjectLogo from '../../components/common/ProjectLogo.jsx'
 import { ROLE, labelOf } from '../../constants/enums.js'
 import ProjectDisc from './ProjectDisc.jsx'
 import '../../styles/tokens.css'
@@ -98,7 +99,8 @@ export default function AdminLayout() {
 				<nav className="admin-tabs" aria-label="프로젝트 메뉴">
 					<div className="admin-tabs__inner">
 						<span className="admin-tabs__project">
-							<span>PROJECT</span>
+							<span className="admin-tabs__label">PROJECT</span>
+							<ProjectLogo project={currentProject} projectCode={projectCode} className="admin-tabs__project-logo" />
 							<strong>{currentProject?.name ?? projectCode}</strong>
 							{currentSiteUrl && (
 								<a

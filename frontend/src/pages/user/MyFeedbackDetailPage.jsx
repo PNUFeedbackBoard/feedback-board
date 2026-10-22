@@ -4,6 +4,7 @@ import { getMe, getMyFeedback } from '../../api/endpoints.js'
 import CategoryTag from '../../components/common/CategoryTag.jsx'
 import CurrentUserBadge from '../../components/common/CurrentUserBadge.jsx'
 import LogoutButton from '../../components/common/LogoutButton.jsx'
+import ProjectLogo from '../../components/common/ProjectLogo.jsx'
 import PriorityChip from '../../components/common/PriorityChip.jsx'
 import StatusBadge from '../../components/common/StatusBadge.jsx'
 import '../page-shell.css'
@@ -48,7 +49,10 @@ export default function MyFeedbackDetailPage() {
 								<h1>{detail.title}</h1>
 							</div>
 							<div className="detail-meta">
-								<span>{detail.projectName}</span>
+								<span className="detail-meta__project">
+									<ProjectLogo projectCode={detail.projectCode} projectName={detail.projectName} />
+									{detail.projectName}
+								</span>
 								<CategoryTag category={detail.category} />
 								<StatusBadge status={detail.status} />
 								<PriorityChip priority={detail.reportedPriority} />

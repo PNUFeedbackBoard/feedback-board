@@ -302,6 +302,17 @@
   font-size: 14px;
 }
 
+.detail-meta__project {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.detail-meta__project .project-logo {
+	width: 24px;
+	height: 24px;
+}
+
 .detail-content,
 .answer-box {
   white-space: pre-wrap;

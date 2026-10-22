@@ -325,9 +325,17 @@
 }
 
 .dash__row-meta {
+	display: inline-flex;
 	flex-shrink: 0;
+	align-items: center;
+	gap: 6px;
 	color: var(--color-text-subtle);
 	font-size: var(--font-size-label);
+}
+
+.dash__row-meta .project-logo {
+	width: 22px;
+	height: 22px;
 }
 
 @media (max-width: 1120px) {

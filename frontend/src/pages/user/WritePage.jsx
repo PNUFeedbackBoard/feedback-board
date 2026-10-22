@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { createFeedback, getMe, getProjects } from '../../api/endpoints.js'
 import CurrentUserBadge from '../../components/common/CurrentUserBadge.jsx'
 import LogoutButton from '../../components/common/LogoutButton.jsx'
+import ProjectLogo from '../../components/common/ProjectLogo.jsx'
 import { FEEDBACK_CATEGORY, PRIORITY, toOptions } from '../../constants/enums.js'
 import '../page-shell.css'
 import './write-page.css'
@@ -58,6 +59,10 @@ export default function WritePage() {
 	const fixedProject = useMemo(
 		() => projects.find((project) => project.code === requestedSite),
 		[projects, requestedSite],
+	)
+	const selectedProject = useMemo(
+		() => projects.find((project) => project.code === form.projectCode),
+		[form.projectCode, projects],
 	)
 
 	function setField(field, value) {
@@ -125,7 +130,7 @@ export default function WritePage() {
 								<p className="paper-notice" role="status">대상 서비스를 확인하는 중…</p>
 							) : fixedProject && !projectChoiceOpen ? (
 								<div className="paper-source-service" role="status">
-									<div className="paper-source-service__mark" aria-hidden="true"><CheckCircle2 /></div>
+									<div className="paper-source-service__mark" aria-hidden="true"><ProjectLogo project={fixedProject} /></div>
 									<div className="paper-source-service__summary">
 										<span>연결된 서비스</span>
 										<strong>{fixedProject.name}</strong>
@@ -147,6 +152,12 @@ export default function WritePage() {
 											{projects.map((project) => <option key={project.code} value={project.code}>{project.name}</option>)}
 										</select>
 									</label>
+									{selectedProject && (
+										<div className="paper-selected-service" aria-live="polite">
+											<ProjectLogo project={selectedProject} />
+											<span>{selectedProject.name}</span>
+										</div>
+									)}
 									{fixedProject && (
 										<button
 											className="paper-text-button paper-text-button--restore"

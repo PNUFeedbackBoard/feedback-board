@@ -1,0 +1,26 @@
+.project-logo {
+	display: inline-grid;
+	width: 2rem;
+	height: 2rem;
+	flex: 0 0 auto;
+	place-items: center;
+	overflow: hidden;
+	border: 1px solid rgb(91 89 130 / 14%);
+	border-radius: 4px;
+	background: #fff;
+}
+
+.project-logo img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transform: scale(1.3);
+}
+
+.project-logo--fallback {
+	background: #eef0f8;
+	color: #65688e;
+	font-size: 0.8em;
+	font-weight: 800;
+}
