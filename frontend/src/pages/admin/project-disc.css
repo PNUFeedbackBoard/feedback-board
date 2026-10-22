@@ -237,23 +237,15 @@
 		background var(--duration-fast) ease;
 }
 
-.disc__logo img {
-	width: 100%;
-	height: 100%;
-	padding: 7px;
-	object-fit: contain;
-}
-
 .disc__logo .project-logo {
 	width: 100%;
 	height: 100%;
-	border: 0;
-	background: transparent;
+	--project-logo-color: #716f79;
 }
 
-.disc__logo .project-logo img {
-	padding: 0;
-	object-fit: cover;
+.disc__logo .project-logo__glyph {
+	width: 58%;
+	height: 58%;
 }
 
 .disc__logo[data-slot='home'] { background: rgb(255 255 255 / 52%); color: var(--color-text-muted); }

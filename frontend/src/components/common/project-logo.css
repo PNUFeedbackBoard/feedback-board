@@ -4,23 +4,18 @@
 	height: 2rem;
 	flex: 0 0 auto;
 	place-items: center;
-	overflow: hidden;
-	border: 1px solid rgb(91 89 130 / 14%);
-	border-radius: 4px;
-	background: #fff;
+	color: var(--project-logo-color, #74717c);
 }
 
-.project-logo img {
+.project-logo__glyph {
 	display: block;
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-	transform: scale(1.3);
+	width: 72%;
+	height: 72%;
 }
 
 .project-logo--fallback {
-	background: #eef0f8;
-	color: #65688e;
+	border: 1px solid currentColor;
+	border-radius: 50%;
 	font-size: 0.8em;
 	font-weight: 800;
 }

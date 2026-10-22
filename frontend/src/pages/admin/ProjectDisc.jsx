@@ -70,7 +70,6 @@ export default function ProjectDisc({ projects, projectCode }) {
 			key: project.code,
 			code: project.code,
 			name: project.name,
-			logoUrl: project.logoUrl,
 			to: `/admin/${project.code}/board`,
 		})
 

@@ -197,7 +197,7 @@
 
 .paper-source-service {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
   gap: 15px;
   border: 1px solid #d0cad0;
@@ -210,12 +210,9 @@
 
 .paper-source-service__mark {
   display: grid;
-	width: 42px;
-	height: 42px;
+	width: 34px;
+	height: 34px;
   place-items: center;
-	overflow: hidden;
-	border-radius: 4px;
-	background: #fff;
 }
 
 .paper-source-service__mark .project-logo {
@@ -285,8 +282,8 @@
 }
 
 .paper-selected-service .project-logo {
-	width: 28px;
-	height: 28px;
+	width: 22px;
+	height: 22px;
 }
 
 .paper-field-grid {
@@ -695,7 +692,7 @@
   }
 
   .paper-source-service {
-    grid-template-columns: 42px minmax(0, 1fr);
+    grid-template-columns: 34px minmax(0, 1fr);
   }
 
   .paper-source-service .paper-text-button {

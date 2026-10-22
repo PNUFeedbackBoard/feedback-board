@@ -165,9 +165,8 @@
 }
 
 .admin-tabs__project-logo {
-	width: 30px;
-	height: 30px;
-	border-color: var(--color-border);
+	width: 24px;
+	height: 24px;
 }
 
 .admin-tabs__project strong {

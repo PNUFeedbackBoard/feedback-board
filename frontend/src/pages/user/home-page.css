@@ -189,9 +189,9 @@
 }
 
 .feedback-bookmark__logo {
-	width: 22px;
-	height: 22px;
-	border-color: rgb(255 255 255 / 38%);
+	width: 18px;
+	height: 18px;
+	--project-logo-color: rgb(255 255 255 / 76%);
 }
 
 .feedback-bookmark__count {
@@ -351,9 +351,8 @@
 }
 
 .feedback-paper-card__project-logo {
-	width: 18px;
-	height: 18px;
-	border-color: #ddd8ce;
+	width: 16px;
+	height: 16px;
 }
 
 .feedback-paper-card__title {

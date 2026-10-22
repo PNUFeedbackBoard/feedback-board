@@ -3,19 +3,20 @@ import { describe, expect, it } from 'vitest'
 import ProjectLogo from './ProjectLogo.jsx'
 
 const PROJECTS = [
-	['codeplace', 'codeplace.png'],
-	['aipms', 'aipms.png'],
-	['aicap', 'aicap.png'],
-	['aicms', 'aicms.png'],
-	['srvadm', 'srvadm.png'],
+	'codeplace',
+	'aipms',
+	'aicap',
+	'aicms',
+	'srvadm',
 ]
 
 describe('ProjectLogo', () => {
-	it.each(PROJECTS)('%s 프로젝트에 지정된 아이콘을 사용한다', (code, filename) => {
+	it.each(PROJECTS)('%s 프로젝트에 지정된 단색 아이콘을 사용한다', (code) => {
 		const { container } = render(<ProjectLogo projectCode={code} projectName={code} />)
-		const image = container.querySelector('img')
+		const icon = container.querySelector('svg')
 
-		expect(image?.src).toContain(filename)
+		expect(icon).toHaveAttribute('data-project-logo', code)
+		expect(container.querySelector('img')).not.toBeInTheDocument()
 	})
 
 	it('등록되지 않은 프로젝트는 이름의 첫 글자를 표시한다', () => {
