@@ -32,12 +32,25 @@ describe('ProjectDisc onboarding', () => {
 		expect(container.querySelector('.disc__idle-arrow')).toBeInTheDocument()
 		expect(container.querySelector('.disc')).not.toHaveClass('is-open')
 	})
+
+	it('현재 프로젝트 슬롯을 선택 상태로 표시해 아이콘 색상 변경 대상을 구분한다', () => {
+		window.localStorage.setItem(STORAGE_KEY, 'shown')
+		const { container } = renderDisc(
+			[{ code: 'aicap', name: 'AI역량지원시스템' }],
+			'aicap',
+		)
+		const selectedSlot = screen.getByRole('button', { name: 'AI역량지원시스템' })
+
+		expect(selectedSlot).toHaveClass('is-selected')
+		expect(selectedSlot).toHaveAttribute('aria-current', 'page')
+		expect(container.querySelector('[data-project-logo="aicap"]')).toBeInTheDocument()
+	})
 })
 
-function renderDisc() {
+function renderDisc(projects = [], projectCode = null) {
 	return render(
 		<MemoryRouter>
-			<ProjectDisc projects={[]} projectCode={null} />
+			<ProjectDisc projects={projects} projectCode={projectCode} />
 		</MemoryRouter>,
 	)
 }

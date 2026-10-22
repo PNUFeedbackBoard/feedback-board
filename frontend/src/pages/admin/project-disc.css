@@ -241,6 +241,7 @@
 	width: 100%;
 	height: 100%;
 	--project-logo-color: #716f79;
+	transition: color var(--duration-fast) ease;
 }
 
 .disc__logo .project-logo__glyph {
@@ -307,6 +308,10 @@
 	box-shadow: inset 0 0 0 1px rgb(255 255 255 / 72%);
 	color: var(--color-selected);
 	font-size: var(--font-size-title);
+}
+
+.disc__slot.is-selected .project-logo {
+	--project-logo-color: var(--color-selected);
 }
 
 @media (max-width: 620px) {
