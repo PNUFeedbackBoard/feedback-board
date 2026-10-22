@@ -26,8 +26,9 @@
 }
 
 .board__toolbar select {
-	min-height: 34px;
-	padding: 7px 30px 7px 9px;
+	height: var(--admin-control-height);
+	box-sizing: border-box;
+	padding: 0 30px 0 9px;
 	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
@@ -60,12 +61,51 @@
 	min-height: 280px;
 	padding: var(--board-column-padding);
 	border: 1px solid var(--color-border);
-	border-top: 2px solid var(--color-border-strong);
-	border-radius: var(--radius-md);
-	background: rgb(238 243 251 / 62%);
+	border-top: 1px solid var(--color-border);
+	border-radius: 2px;
+	background: #f8fafc;
 	transition:
 		border-color var(--duration-fast) ease,
 		background var(--duration-fast) ease;
+}
+
+.board .card {
+	min-height: 0;
+	gap: 10px;
+	border-radius: 3px;
+	padding: 16px;
+	box-shadow: none;
+}
+
+.board .card[data-interactive='true']:hover,
+.board .card[data-priority-requested='true'],
+.board .card.is-picked,
+.board .card:focus-within {
+	box-shadow: none;
+}
+
+.board .card__title {
+	min-height: 0;
+	font-size: 0.96rem;
+	line-height: 1.45;
+}
+
+.board .card__footer {
+	padding-top: 14px;
+}
+
+.board .card__action .intake__start {
+	border: 1px solid var(--admin-action-border);
+	border-radius: 3px;
+	background: var(--admin-action-surface);
+	color: var(--admin-action-text);
+	box-shadow: none;
+}
+
+.board .card__action .intake__start:hover {
+	border-color: #929eaf;
+	background: var(--admin-action-hover);
+	color: #29364b;
 }
 
 .board__column-head {
@@ -139,9 +179,9 @@
 .board__rejected {
 	padding: var(--board-column-padding);
 	border: 1px solid var(--color-border);
-	border-top: 2px solid var(--color-border-strong);
-	border-radius: var(--radius-md);
-	background: rgb(238 243 251 / 62%);
+	border-top: 1px solid var(--color-border);
+	border-radius: 2px;
+	background: #f8fafc;
 	transition:
 		border-color var(--duration-fast) ease,
 		background var(--duration-fast) ease;

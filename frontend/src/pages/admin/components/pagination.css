@@ -9,8 +9,10 @@
 }
 
 .pagination button {
+	height: var(--admin-control-height);
+	box-sizing: border-box;
 	min-width: 64px;
-	padding: 7px 11px;
+	padding: 0 var(--admin-control-padding-x);
 	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);

@@ -11,15 +11,17 @@
 }
 
 .assignee-select__control {
+	height: var(--admin-control-height);
+	box-sizing: border-box;
 	min-width: 0;
 	max-width: 160px;
-	padding: 6px 8px;
+	padding: 0 30px 0 10px;
 	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
 	color: var(--color-text);
 	font-family: var(--font-family);
-	font-size: var(--font-size-label);
+	font-size: var(--font-size-small);
 	cursor: pointer;
 }
 

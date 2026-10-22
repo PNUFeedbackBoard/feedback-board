@@ -41,9 +41,9 @@
 
 .login-source-context {
 	display: grid;
-	grid-template-columns: auto 1fr;
-	align-items: baseline;
-	gap: 0.15rem 0.65rem;
+	grid-template-columns: 2.25rem minmax(0, 1fr);
+	align-items: center;
+	gap: 0.75rem;
 	margin: -0.65rem 0 1.4rem;
 	padding: 0.85rem 1rem;
 	border: 1px solid var(--login-panel-border);
@@ -51,20 +51,30 @@
 	background: rgb(246 248 255 / 88%);
 }
 
-.login-source-context span {
+.login-source-context__logo {
+	width: 2.25rem;
+	height: 2.25rem;
+}
+
+.login-source-context__copy {
+	display: grid;
+	min-width: 0;
+	gap: 0.1rem;
+}
+
+.login-source-context__copy span {
 	color: var(--login-note-color);
 	font-size: 0.75rem;
 	font-weight: 800;
 	letter-spacing: 0.04em;
 }
 
-.login-source-context strong {
+.login-source-context__copy strong {
 	color: var(--login-button-text);
 	font-size: 0.95rem;
 }
 
-.login-source-context small {
-	grid-column: 1 / -1;
+.login-source-context__copy small {
 	color: var(--login-note-color);
 	font-size: 0.78rem;
 }

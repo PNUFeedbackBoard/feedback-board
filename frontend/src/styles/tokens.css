@@ -112,6 +112,14 @@
   --ease-spring: cubic-bezier(0.22, 0.8, 0.28, 1);
   --duration-fast: 160ms;
   --duration-base: 260ms;
+
+  /* 관리자 폼과 카드에서 공유하는 조작 크기. */
+  --admin-control-height: 36px;
+  --admin-control-padding-x: 12px;
+  --admin-action-border: #b8c2d1;
+  --admin-action-surface: #f7f8fa;
+  --admin-action-hover: #eceff3;
+  --admin-action-text: #46536a;
 }
 
 /* 제공된 카드/뱃지 시안. 관리자 임시 토큰과 충돌하지 않는 공용 토큰. */

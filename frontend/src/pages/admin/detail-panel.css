@@ -137,8 +137,10 @@
 }
 
 .panel__select {
+	height: var(--admin-control-height);
+	box-sizing: border-box;
 	min-width: 150px;
-	padding: 7px 9px;
+	padding: 0 30px 0 9px;
 	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
@@ -159,7 +161,9 @@
 
 .panel__link {
 	margin-top: auto;
-	padding: 10px 12px;
+	height: var(--admin-control-height);
+	box-sizing: border-box;
+	padding: 0 var(--admin-control-padding-x);
 	border: 1px solid var(--color-selected);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
@@ -171,7 +175,9 @@
 }
 
 .panel__priority {
-	padding: 10px 12px;
+	height: var(--admin-control-height);
+	box-sizing: border-box;
+	padding: 0 var(--admin-control-padding-x);
 	border: 1px solid var(--color-accent);
 	border-radius: var(--radius-sm);
 	background: var(--color-accent-bg);
@@ -189,6 +195,18 @@
 
 .panel__priority:not(:disabled):hover {
 	background: #ffe5e3;
+}
+
+.panel__priority--answer {
+	border-color: var(--admin-action-border);
+	background: var(--admin-action-surface);
+	color: var(--admin-action-text);
+}
+
+.panel__priority--answer:not(:disabled):hover {
+	border-color: #929eaf;
+	background: var(--admin-action-hover);
+	color: #29364b;
 }
 
 .panel__link:hover {

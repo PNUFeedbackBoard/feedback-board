@@ -69,6 +69,84 @@
 	opacity: 0;
 }
 
+.disc__idle-arrow {
+	position: absolute;
+	bottom: 32px;
+	left: 50%;
+	z-index: 3;
+	transform: translateX(-50%);
+	color: var(--color-text-muted);
+	opacity: 0.34;
+	pointer-events: none;
+	transition: opacity var(--duration-fast) ease, transform var(--duration-fast) ease;
+}
+
+.disc.is-open .disc__idle-arrow {
+	transform: translate(-50%, -5px);
+	opacity: 0;
+}
+
+.disc-onboarding {
+	position: absolute;
+	bottom: 136px;
+	left: 50%;
+	z-index: 5;
+	width: min(330px, calc(100vw - 32px));
+	transform: translateX(-50%);
+	border: 1px solid var(--color-border-strong);
+	border-radius: 4px;
+	padding: 14px 16px 12px;
+	background: #fff;
+	box-shadow: 0 10px 24px rgb(24 35 58 / 14%);
+	color: var(--color-text);
+	pointer-events: auto;
+}
+
+.disc-onboarding::after {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	width: 12px;
+	height: 12px;
+	transform: translate(-50%, -6px) rotate(45deg);
+	border-right: 1px solid var(--color-border-strong);
+	border-bottom: 1px solid var(--color-border-strong);
+	background: #fff;
+}
+
+.disc-onboarding strong {
+	display: block;
+	font-size: var(--font-size-small);
+	font-weight: var(--font-weight-bold);
+}
+
+.disc-onboarding p {
+	margin: 6px 0 10px;
+	color: var(--color-text-muted);
+	font-size: var(--font-size-label);
+	line-height: 1.55;
+}
+
+.disc-onboarding button {
+	position: relative;
+	z-index: 1;
+	border: 0;
+	padding: 3px 0;
+	background: transparent;
+	color: var(--color-selected);
+	font: inherit;
+	font-size: var(--font-size-label);
+	font-weight: var(--font-weight-bold);
+	cursor: pointer;
+}
+
+.disc-onboarding button:hover,
+.disc-onboarding button:focus-visible {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
 /* The glass is intentionally thin: page colour should remain visible through it. */
 .disc__surface {
 	position: absolute;
@@ -159,11 +237,16 @@
 		background var(--duration-fast) ease;
 }
 
-.disc__logo img {
+.disc__logo .project-logo {
 	width: 100%;
 	height: 100%;
-	padding: 7px;
-	object-fit: contain;
+	--project-logo-color: #716f79;
+	transition: color var(--duration-fast) ease;
+}
+
+.disc__logo .project-logo__glyph {
+	width: 58%;
+	height: 58%;
 }
 
 .disc__logo[data-slot='home'] { background: rgb(255 255 255 / 52%); color: var(--color-text-muted); }
@@ -227,6 +310,10 @@
 	font-size: var(--font-size-title);
 }
 
+.disc__slot.is-selected .project-logo {
+	--project-logo-color: var(--color-selected);
+}
+
 @media (max-width: 620px) {
 	.disc {
 		--disc-radius: 210px;
@@ -244,6 +331,7 @@
 @media (prefers-reduced-motion: reduce) {
 	.disc__zone,
 	.disc__toggle,
+	.disc__idle-arrow,
 	.disc__surface,
 	.disc__slots,
 	.disc__slot,

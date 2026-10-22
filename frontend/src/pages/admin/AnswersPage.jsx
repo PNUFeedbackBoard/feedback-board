@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext, useParams } from 'react-router-dom'
-import { getAdminFeedback, getAdminFeedbacks, togglePriorityRequest, updateAdminFeedback } from '../../api/endpoints.js'
+import { getAdminFeedback, getAdminFeedbacks, hideAdminFeedback, togglePriorityRequest, updateAdminFeedback } from '../../api/endpoints.js'
 import AnswerDialog from './AnswerDialog.jsx'
 import DetailPanel from './DetailPanel.jsx'
 import FeedbackCard from './components/FeedbackCard.jsx'
@@ -31,11 +31,13 @@ export default function AnswersPage() {
 	const [filters, setFilters] = useState({ sort: 'LATEST' })
 	const [pagination, setPagination] = useState({ projectCode, page: 0 })
 	const page = pagination.projectCode === projectCode ? pagination.page : 0
-	const [state, setState] = useState({ projectCode: null, items: [], totalCount: 0, message: '' })
+	const [showHidden, setShowHidden] = useState(false)
+	const [state, setState] = useState({ projectCode: null, hidden: false, items: [], totalCount: 0, hiddenCount: 0, message: '' })
 	const [writing, setWriting] = useState(null)
 	const [openedId, setOpenedId] = useState(null)
 	const [notice, setNotice] = useState('')
 	const [priorityBusy, setPriorityBusy] = useState(false)
+	const [hidingId, setHidingId] = useState(null)
 
 	useEffect(() => {
 		let cancelled = false
@@ -50,22 +52,38 @@ export default function AnswersPage() {
 			from: filters.from,
 			to: filters.to,
 			sort: filters.sort,
+			hidden: showHidden,
+			includeHiddenCount: true,
 			page,
 			size: PAGE_SIZE,
 		})
 			.then((result) => {
 				if (!cancelled) {
-					setState({ projectCode, items: result.items, totalCount: result.totalCount, message: '' })
+					setState({
+						projectCode,
+						hidden: showHidden,
+						items: result.items,
+						totalCount: result.totalCount,
+						hiddenCount: result.hiddenCount ?? 0,
+						message: '',
+					})
 				}
 			})
 			.catch((error) => {
-				if (!cancelled) setState({ projectCode, items: [], totalCount: 0, message: error.message })
+				if (!cancelled) setState({
+					projectCode,
+					hidden: showHidden,
+					items: [],
+					totalCount: 0,
+					hiddenCount: 0,
+					message: error.message,
+				})
 			})
 
 		return () => {
 			cancelled = true
 		}
-	}, [projectCode, filters, page])
+	}, [projectCode, filters, page, showHidden])
 
 	function setPage(nextPage) {
 		setPagination({ projectCode, page: nextPage })
@@ -122,7 +140,35 @@ export default function AnswersPage() {
 			.catch(() => {})
 	}
 
-	if (state.projectCode !== projectCode) return <p className="board__notice">불러오는 중…</p>
+	async function hideItem(item) {
+		if (!canAnswer || hidingId !== null) return
+		const confirmed = window.confirm(
+			'이 피드백을 관리자 목록에서 숨길까요? 사용자 문의 내역과 원문은 삭제되지 않습니다.',
+		)
+		if (!confirmed) return
+
+		setHidingId(item.id)
+		setNotice('')
+		try {
+			await hideAdminFeedback(item.id, item.version)
+			setState((prev) => ({
+				...prev,
+				items: prev.items.filter((candidate) => candidate.id !== item.id),
+				totalCount: Math.max(0, prev.totalCount - 1),
+				hiddenCount: prev.hiddenCount + 1,
+			}))
+			if (openedId === item.id) setOpenedId(null)
+			if (writing?.id === item.id) setWriting(null)
+			if (state.items.length === 1 && page > 0) setPage(page - 1)
+		} catch (error) {
+			setNotice(`숨기지 못했습니다. ${error.message}`)
+			refreshItem(item.id)
+		} finally {
+			setHidingId(null)
+		}
+	}
+
+	if (state.projectCode !== projectCode || state.hidden !== showHidden) return <p className="board__notice">불러오는 중…</p>
 	if (state.message) return <p className="board__notice">{state.message}</p>
 
 	const unanswered = state.items.filter((item) => item.authorType === 'MEMBER' && !item.answered).length
@@ -140,7 +186,7 @@ export default function AnswersPage() {
 
 			{notice && <p className="board__alert">{notice}</p>}
 			<p className="intake__count">
-				전체 <strong>{state.totalCount}</strong>건
+				{showHidden ? '숨김 보관함 ' : '전체 '}<strong>{state.totalCount}</strong>건
 				{unanswered > 0 && <span className="intake__sub"> · 현재 페이지 미답변 {unanswered}건</span>}
 			</p>
 
@@ -158,23 +204,33 @@ export default function AnswersPage() {
 								assignee={item.assigneeName}
 								dimmed={isGuest}
 								onOpen={() => setOpenedId(item.id)}
-								action={
+								action={!showHidden ? (
 									<div className="intake__row">
-										{isGuest ? (
-											<span className="intake__muted">비회원 · 답변 대상 아님</span>
-										) : canAnswer ? (
-											<button
-												type="button"
-												className="intake__start"
-												onClick={() => setWriting(item)}
-											>
-												{item.answered ? '답변 수정' : '답변하기'}
-											</button>
-										) : (
-											<span className="intake__muted">개발자만 답변 가능</span>
+										{isGuest && <span className="intake__muted">비회원 · 답변 대상 아님</span>}
+										{!isGuest && !canAnswer && <span className="intake__muted">개발자만 답변 가능</span>}
+										{canAnswer && (
+											<div className="intake__row-actions">
+												{!isGuest && (
+													<button
+														type="button"
+														className="intake__start"
+														onClick={() => setWriting(item)}
+													>
+														{item.answered ? '답변 수정' : '답변하기'}
+													</button>
+												)}
+												<button
+													type="button"
+													className="intake__hide"
+													disabled={hidingId !== null}
+													onClick={() => hideItem(item)}
+												>
+													{hidingId === item.id ? '숨기는 중…' : '숨기기'}
+												</button>
+											</div>
 										)}
 									</div>
-								}
+								) : undefined}
 							/>
 						)
 					})}
@@ -182,6 +238,24 @@ export default function AnswersPage() {
 			)}
 
 			<Pagination page={page} size={PAGE_SIZE} totalCount={state.totalCount} onChange={setPage} />
+
+			{canAnswer && (
+				<div className="intake__hidden-footer">
+					<button
+						type="button"
+						className="intake__hidden-toggle"
+						onClick={() => {
+							setShowHidden((current) => !current)
+							setPage(0)
+							setOpenedId(null)
+							setWriting(null)
+							setNotice('')
+						}}
+					>
+						{showHidden ? '일반 피드백 목록으로' : `숨겨진 피드백: ${state.hiddenCount}건`}
+					</button>
+				</div>
+			)}
 
 			{canAnswer && writing && (
 				<AnswerDialog
@@ -208,12 +282,12 @@ export default function AnswersPage() {
 			{opened && (
 				<DetailPanel
 					item={opened}
-					canEdit={canAnswer}
-					canRequestPriority={canRequestPriority}
+					canEdit={canAnswer && !showHidden}
+					canRequestPriority={canRequestPriority && !showHidden}
 					priorityBusy={priorityBusy}
 					onChange={(changes) => commitChange(opened.id, changes)}
 					onTogglePriority={() => requestPriority(opened.id)}
-					onAnswer={() => setWriting(opened)}
+					onAnswer={!showHidden ? () => setWriting(opened) : undefined}
 					onClose={() => setOpenedId(null)}
 				/>
 			)}

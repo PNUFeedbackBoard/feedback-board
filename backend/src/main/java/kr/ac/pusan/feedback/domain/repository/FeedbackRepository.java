@@ -44,7 +44,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 	@Query(value = """
 			SELECT f FROM Feedback f
 			JOIN f.project p
-			WHERE (:projectCode IS NULL OR p.code = :projectCode)
+			WHERE ((:hidden = false AND f.hiddenAt IS NULL) OR (:hidden = true AND f.hiddenAt IS NOT NULL))
+			  AND (:projectCode IS NULL OR p.code = :projectCode)
 			  AND (:status IS NULL OR f.status = :status)
 			  AND (:category IS NULL OR f.category = :category)
 			  AND (:authorType IS NULL OR f.authorType = :authorType)
@@ -72,7 +73,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 			""", countQuery = """
 			SELECT COUNT(f) FROM Feedback f
 			JOIN f.project p
-			WHERE (:projectCode IS NULL OR p.code = :projectCode)
+			WHERE ((:hidden = false AND f.hiddenAt IS NULL) OR (:hidden = true AND f.hiddenAt IS NOT NULL))
+			  AND (:projectCode IS NULL OR p.code = :projectCode)
 			  AND (:status IS NULL OR f.status = :status)
 			  AND (:category IS NULL OR f.category = :category)
 			  AND (:authorType IS NULL OR f.authorType = :authorType)
@@ -94,8 +96,18 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 			@Param("toExclusive") LocalDateTime toExclusive,
 			@Param("answered") Boolean answered,
 			@Param("priorityRequested") Boolean priorityRequested,
+			@Param("hidden") boolean hidden,
 			@Param("sort") String sort,
 			Pageable pageable);
+
+	/** 프로젝트별 숨김 보관함의 전체 건수. 목록 필터와 무관하게 하단 진입점에 표시한다. */
+	@Query("""
+			SELECT COUNT(f) FROM Feedback f
+			JOIN f.project p
+			WHERE f.hiddenAt IS NOT NULL
+			  AND (:projectCode IS NULL OR p.code = :projectCode)
+			""")
+	long countHiddenForAdmin(@Param("projectCode") String projectCode);
 
 	/** 관리용 상세 조회. project·author·assignee 를 함께 읽어 컨트롤러에서 지연 로딩 예외가 나지 않게 한다. */
 	@Query("""
@@ -117,42 +129,43 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 	// ------------------------------------------------------------------
 
 	/** 상태별 건수(지표 1). 건수가 0인 상태는 아예 행이 없다 — 컨트롤러가 네 상태를 0으로 채워 넣는다. */
-	@Query("SELECT f.status AS status, COUNT(f) AS count FROM Feedback f GROUP BY f.status")
+	@Query("SELECT f.status AS status, COUNT(f) AS count FROM Feedback f WHERE f.hiddenAt IS NULL GROUP BY f.status")
 	List<StatusCount> countByStatus();
 
 	/** 프로젝트 × 상태 교차 집계(지표 2). 피드백이 0건인 프로젝트는 행이 없다. */
 	@Query("""
 			SELECT p.code AS projectCode, f.status AS status, COUNT(f) AS count
 			FROM Feedback f JOIN f.project p
+			WHERE f.hiddenAt IS NULL
 			GROUP BY p.code, f.status
 			""")
 	List<ProjectStatusCount> countByProjectAndStatus();
 
 	/** 유형별 건수(지표 3). ratio 계산은 컨트롤러에서 전체 건수로 나눠서 한다. */
-	@Query("SELECT f.category AS category, COUNT(f) AS count FROM Feedback f GROUP BY f.category")
+	@Query("SELECT f.category AS category, COUNT(f) AS count FROM Feedback f WHERE f.hiddenAt IS NULL GROUP BY f.category")
 	List<CategoryCount> countByCategory();
 
 	/** 기간별 추이(지표 4)에 쓸 등록 시각 원본. 날짜별로 묶는 건 컨트롤러(자바)가 한다. */
-	@Query("SELECT f.createdAt FROM Feedback f WHERE f.createdAt >= :from")
+	@Query("SELECT f.createdAt FROM Feedback f WHERE f.hiddenAt IS NULL AND f.createdAt >= :from")
 	List<LocalDateTime> findCreatedAtFrom(@Param("from") LocalDateTime from);
 
 	/** 평균 처리 소요 시간(지표 5)의 재료. status 는 호출자가 DONE·REJECTED 를 넘긴다. */
 	@Query("""
 			SELECT f.createdAt AS createdAt, f.closedAt AS closedAt
 			FROM Feedback f
-			WHERE f.status IN :statuses AND f.closedAt IS NOT NULL
+			WHERE f.hiddenAt IS NULL AND f.status IN :statuses AND f.closedAt IS NOT NULL
 			""")
 	List<ProcessingDuration> findProcessingDurations(@Param("statuses") List<FeedbackStatus> statuses);
 
 	/** 이용자 수(지표 6) 중 회원 쪽. 같은 사람이 여러 건 등록해도 한 명으로 센다. */
-	@Query("SELECT COUNT(DISTINCT f.author) FROM Feedback f WHERE f.authorType = :authorType")
+	@Query("SELECT COUNT(DISTINCT f.author) FROM Feedback f WHERE f.hiddenAt IS NULL AND f.authorType = :authorType")
 	long countDistinctAuthorsByAuthorType(@Param("authorType") AuthorType authorType);
 
 	/**
 	 * 이용자 수(지표 6) 중 비회원 쪽. 비회원은 계정이 없어 "같은 사람"을 구분할 방법이 없으므로,
 	 * 건수 자체를 집계한다(기획안 6-2 "비회원은 별도 집계"를 이렇게 해석했다).
 	 */
-	@Query("SELECT COUNT(f) FROM Feedback f WHERE f.authorType = :authorType")
+	@Query("SELECT COUNT(f) FROM Feedback f WHERE f.hiddenAt IS NULL AND f.authorType = :authorType")
 	long countByAuthorType(@Param("authorType") AuthorType authorType);
 
 	/** 우선 처리 요청 목록. 대시보드 하단에 쓴다(기획안 6-2). */
@@ -161,7 +174,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 			JOIN FETCH f.project
 			LEFT JOIN FETCH f.author
 			LEFT JOIN FETCH f.assignee
-			WHERE f.priorityRequested = true
+			WHERE f.hiddenAt IS NULL AND f.priorityRequested = true
 			ORDER BY f.createdAt DESC
 			""")
 	List<Feedback> findPriorityRequested();
@@ -172,6 +185,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 			JOIN FETCH f.project
 			LEFT JOIN FETCH f.author
 			LEFT JOIN FETCH f.assignee
+			WHERE f.hiddenAt IS NULL
 			ORDER BY f.createdAt DESC
 			""")
 	List<Feedback> findRecent(Pageable pageable);

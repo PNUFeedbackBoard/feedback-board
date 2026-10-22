@@ -1,6 +1,6 @@
 # API 명세
 
-프런트엔드와 백엔드가 공유하는 제품 API 계약이다. 아래 13개 API는 Swagger에 노출되며 실제 DB 데이터를 조회·저장한다.
+프런트엔드와 백엔드가 공유하는 제품 API 계약이다. 아래 14개 API는 Swagger에 노출되며 실제 DB 데이터를 조회·저장한다.
 
 ## 사용자 API
 
@@ -16,9 +16,10 @@
 | 메서드 | 경로 | 권한 | 설명 |
 |---|---|---|---|
 | `GET` | `/api/admin/dashboard` | `DEVELOPER`, `VIEWER` | 전체 현황 지표 |
-| `GET` | `/api/admin/feedbacks` | `DEVELOPER`, `VIEWER` | 필터·정렬·페이징 목록 |
+| `GET` | `/api/admin/feedbacks` | `DEVELOPER`, `VIEWER` | 필터·정렬·페이징 목록. `hidden=true` 보관함은 `DEVELOPER`만 조회 |
 | `GET` | `/api/admin/feedbacks/{id}` | `DEVELOPER`, `VIEWER` | 관리 상세 |
 | `PATCH` | `/api/admin/feedbacks/{id}` | `DEVELOPER` | 상태·유형·중요도·담당자 변경 |
+| `DELETE` | `/api/admin/feedbacks/{id}?version={version}` | `DEVELOPER` | 사용자 원문은 보존하고 관리자 목록·집계에서 숨김 |
 | `PATCH` | `/api/admin/feedbacks/bulk` | `DEVELOPER` | 여러 피드백의 상태·담당자를 원자적으로 변경 |
 | `PUT` | `/api/admin/feedbacks/{id}/answer` | `DEVELOPER` | 답변 등록·수정 |
 | `POST` | `/api/admin/feedbacks/{id}/priority-request` | `VIEWER` | 우선 처리 요청 토글 |
@@ -27,7 +28,7 @@
 
 ## 인증 보조 API
 
-화면이 서버가 판정한 현재 계정과 역할을 조회할 수 있도록 `GET /api/me`를 제공한다. 이 인증 보조 API와 아래 개발 전용 API는 제품 API 12개를 보여 주는 Swagger 목록에서는 숨긴다.
+화면이 서버가 판정한 현재 계정과 역할을 조회할 수 있도록 `GET /api/me`를 제공한다. 이 인증 보조 API와 아래 개발 전용 API는 제품 API 14개를 보여 주는 Swagger 목록에서는 숨긴다.
 
 구글 로그인 보조 API(모든 프로필, Swagger 제품 목록에는 숨김):
 
@@ -57,7 +58,7 @@ Swagger에서는 `/api/auth/csrf`의 token을 Authorize에 입력한다.
 - `VIEWER`가 피드백 변경 API를 호출하면 403
 - 개발자는 현재 로그인한 자기 계정을 강등·비활성화할 수 없고, 마지막 활성 개발자도 제거할 수 없음
 
-관리 목록은 `project`, `status`, `category`, `sort`, `from`, `to`, `authorType`, `answered`, `priorityRequested`, `page`, `size` 쿼리를 지원한다. 어떤 정렬에서도 우선 처리 요청이 먼저 나오며 `size`는 1~100이다.
+관리 목록은 `project`, `status`, `category`, `sort`, `from`, `to`, `authorType`, `answered`, `priorityRequested`, `hidden`, `includeHiddenCount`, `page`, `size` 쿼리를 지원한다. 어떤 정렬에서도 우선 처리 요청이 먼저 나오며 `size`는 1~100이다. 기본값 `hidden=false`는 일반 목록이고, `hidden=true`는 개발자만 접근할 수 있는 숨김 보관함이다. 개발자가 `includeHiddenCount=true`로 요청하면 응답의 `hiddenCount`에 현재 프로젝트의 숨긴 전체 건수를 제공하며, 불필요한 집계 쿼리를 피하기 위해 기본값은 0이다.
 
 관리용 피드백 목록·상세 응답에는 `version`이 포함된다. 변경 요청은 마지막으로 읽은 `version`과 함께 `status`, `category`, `priority`, `assigneeId`, `unassign` 중 필요한 값을 보낸다. 담당자를 지정할 때는 활성 개발자 계정의 `assigneeId`를 보내고, 해제할 때는 `unassign: true`를 보낸다.
 

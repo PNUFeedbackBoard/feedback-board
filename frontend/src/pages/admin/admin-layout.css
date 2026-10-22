@@ -4,11 +4,7 @@
 	flex-direction: column;
 	min-height: 100vh;
 	overflow-x: hidden;
-	background:
-		radial-gradient(circle at 8% 22%, rgb(96 165 250 / 11%), transparent 29%),
-		radial-gradient(circle at 90% 68%, rgb(99 102 241 / 8%), transparent 31%),
-		radial-gradient(circle at 46% 108%, rgb(37 99 235 / 7%), transparent 34%),
-		var(--color-bg);
+	background: #f4f6f9;
 	color: var(--color-text);
 	font-family: var(--font-family);
 	font-size: var(--font-size-body);
@@ -16,19 +12,8 @@
 	letter-spacing: -0.012em;
 }
 
-/* Colour that remains visible through the translucent project disc. */
 .admin-shell::before {
-	content: '';
-	position: absolute;
-	right: 50%;
-	bottom: -120px;
-	z-index: 0;
-	width: min(720px, 100vw);
-	height: 180px;
-	transform: translateX(50%);
-	background: radial-gradient(ellipse at center, rgb(96 165 250 / 12%), transparent 68%);
-	filter: blur(42px);
-	pointer-events: none;
+	content: none;
 }
 
 /* ── Header ───────────────────────────────────────────────── */
@@ -43,8 +28,7 @@
 	min-height: 72px;
 	padding: 0 clamp(20px, 4vw, 56px);
 	border-bottom: 1px solid var(--color-border);
-	background: var(--color-surface-veil);
-	backdrop-filter: var(--blur-veil);
+	background: #fff;
 }
 
 .admin-brand {
@@ -88,10 +72,11 @@
 
 .admin-header__title {
 	justify-self: center;
-	color: var(--color-text-muted);
-	font-size: 11px;
-	font-weight: var(--font-weight-medium);
-	letter-spacing: 0.18em;
+	color: var(--color-text);
+	font-family: var(--font-family);
+	font-size: 15px;
+	font-weight: var(--font-weight-bold);
+	letter-spacing: -0.015em;
 }
 
 .admin-header__account {
@@ -108,6 +93,27 @@
 	font-weight: 700;
 	text-decoration: underline;
 	text-underline-offset: 3px;
+}
+
+.admin-header__account .app-button {
+	min-height: 34px;
+	border: 1px solid #b9c5d8;
+	border-radius: 4px;
+	padding: 7px 13px;
+	background: #f7f9fd;
+	color: #33405a;
+	font-family: var(--font-family);
+	font-size: 12px;
+	font-weight: 700;
+	box-shadow: none;
+	cursor: pointer;
+	transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.admin-header__account .app-button:hover {
+	border-color: var(--color-selected);
+	background: var(--color-selected-soft);
+	color: var(--color-selected);
 }
 
 .admin-header__presence {
@@ -132,8 +138,7 @@
 	top: 73px;
 	z-index: 9;
 	border-bottom: 1px solid var(--color-border);
-	background: var(--color-surface-veil);
-	backdrop-filter: var(--blur-veil);
+	background: #fff;
 }
 
 .admin-tabs__inner {
@@ -152,11 +157,16 @@
 	gap: 12px;
 }
 
-.admin-tabs__project > span {
+.admin-tabs__label {
 	color: var(--color-selected);
 	font-size: 9px;
 	font-weight: var(--font-weight-bold);
 	letter-spacing: 0.22em;
+}
+
+.admin-tabs__project-logo {
+	width: 24px;
+	height: 24px;
 }
 
 .admin-tabs__project strong {
@@ -232,6 +242,13 @@
 	min-height: 0;
 	margin: 0 auto;
 	padding: clamp(24px, 3.5vw, 48px) clamp(20px, 4vw, 56px) 128px;
+}
+
+.admin-body .app-button {
+	min-height: var(--admin-control-height);
+	border-radius: var(--radius-sm);
+	padding: 0 var(--admin-control-padding-x);
+	font-size: var(--font-size-small);
 }
 
 /* The overview intentionally reads like an identity page until live metrics arrive. */
@@ -311,7 +328,7 @@
 		height: 40px;
 	}
 
-	.admin-tabs__project > span {
+	.admin-tabs__label {
 		display: none;
 	}
 

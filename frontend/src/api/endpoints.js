@@ -8,7 +8,7 @@
  * 백엔드 계약을 화면에서 직접 반복하지 않도록 모든 요청을 이 파일로 모은다.
  */
 
-import { get, patch, post, put } from './client.js'
+import { del, get, patch, post, put } from './client.js'
 
 // ── 공개 ────────────────────────────────────────────────────────────
 
@@ -70,10 +70,11 @@ export function getDashboard() {
 /**
  * 관리용 피드백 목록.
  * @param {object} [params] 필터와 정렬.
- *   { project, status, category, sort, from, to, authorType, answered, priorityRequested, page, size }
+ *   { project, status, category, sort, from, to, authorType, answered, priorityRequested,
+ *     hidden, includeHiddenCount, page, size }
  *   sort 는 FEEDBACK_SORT 의 키(PRIORITY | LATEST | OLDEST)를 쓴다.
  *   비어 있는 값은 client.js 가 쿼리에서 알아서 빼준다.
- * @returns {Promise<object>} AdminFeedbackPage — { items, totalCount }
+ * @returns {Promise<object>} AdminFeedbackPage — { items, totalCount, hiddenCount }
  */
 export function getAdminFeedbacks(params) {
   return get('/admin/feedbacks', { params })
@@ -101,6 +102,16 @@ export function getAdminFeedback(id) {
  */
 export function updateAdminFeedback(id, body) {
   return patch(`/admin/feedbacks/${id}`, body)
+}
+
+/**
+ * 사용자 원문은 보존하고 관리자 목록·대시보드에서 숨긴다.
+ * @param {number | string} id 피드백 번호
+ * @param {number} version 마지막으로 조회한 피드백 버전
+ * @returns {Promise<null>}
+ */
+export function hideAdminFeedback(id, version) {
+  return del(`/admin/feedbacks/${id}`, { params: { version } })
 }
 
 /**

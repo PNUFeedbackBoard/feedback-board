@@ -3,6 +3,7 @@ package kr.ac.pusan.feedback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -38,7 +39,7 @@ class ApiContractIntegrationTests {
 	ObjectMapper objectMapper;
 
 	@Test
-	void openApiExposesExactlyThirteenProductOperations() throws Exception {
+	void openApiExposesExactlyFourteenProductOperations() throws Exception {
 		String body = mockMvc.perform(get("/v3/api-docs"))
 				.andExpect(status().isOk())
 				.andReturn()
@@ -58,13 +59,14 @@ class ApiContractIntegrationTests {
 			}
 		}
 
-		assertThat(operationCount).isEqualTo(13);
+		assertThat(operationCount).isEqualTo(14);
 		assertThat(paths.has("/api/dev/login")).isFalse();
 		assertThat(paths.has("/api/me")).isFalse();
 	}
 
 	@Test
-	void allThirteenProductOperationsReturnOkWithRequiredRoles() throws Exception {
+	@Transactional
+	void allFourteenProductOperationsReturnOkWithRequiredRoles() throws Exception {
 		MockHttpSession user = login("user");
 		MockHttpSession viewer = login("viewer");
 		MockHttpSession developer = login("dev");
@@ -124,6 +126,10 @@ class ApiContractIntegrationTests {
 						.content("{\"version\":" + userVersion(developer, 4)
 								+ ",\"role\":\"VIEWER\",\"status\":\"ACTIVE\"}"))
 				.andExpect(status().isOk());
+		mockMvc.perform(delete("/api/admin/feedbacks/1").with(csrf())
+						.session(developer)
+						.param("version", String.valueOf(feedbackVersion(developer, 1))))
+				.andExpect(status().isNoContent());
 	}
 
 	@Test
@@ -203,6 +209,40 @@ class ApiContractIntegrationTests {
 						.content("{\"items\":[{\"id\":1,\"version\":0}],\"status\":\"DONE\"}"))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+		mockMvc.perform(delete("/api/admin/feedbacks/1").with(csrf())
+						.session(session)
+						.param("version", "0"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+	}
+
+	@Test
+	@Transactional
+	void developerCanHideFeedbackWithoutDeletingTheUsersCopy() throws Exception {
+		MockHttpSession user = login("user");
+		MockHttpSession developer = login("dev");
+		MockHttpSession viewer = login("viewer");
+		long id = createFeedback(user, "관리자 목록 숨김 테스트");
+		long version = feedbackVersion(developer, id);
+
+		mockMvc.perform(delete("/api/admin/feedbacks/" + id).with(csrf())
+						.session(developer)
+						.param("version", String.valueOf(version)))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/api/admin/feedbacks").session(developer))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[?(@.id == " + id + ")]").doesNotExist())
+				.andExpect(jsonPath("$.hiddenCount").isNumber());
+		mockMvc.perform(get("/api/admin/feedbacks").session(developer).param("hidden", "true"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[?(@.id == " + id + ")]").isNotEmpty());
+		mockMvc.perform(get("/api/admin/feedbacks").session(viewer).param("hidden", "true"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+		mockMvc.perform(get("/api/me/feedbacks/" + id).session(user))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.title").value("관리자 목록 숨김 테스트"));
 	}
 
 	@Test

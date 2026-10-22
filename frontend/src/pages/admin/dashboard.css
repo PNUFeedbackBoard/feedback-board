@@ -101,21 +101,7 @@
 	border-right: 0;
 }
 
-.dash-tile::before {
-	content: '';
-	position: absolute;
-	top: -1px;
-	right: 16px;
-	left: 16px;
-	height: 2px;
-	background: var(--color-selected);
-	opacity: 0;
-	transition: opacity var(--duration-fast) ease;
-}
-
-.dash-tile:hover::before {
-	opacity: 0.7;
-}
+.dash-tile::before { content: none; }
 
 .dash-tile__note {
 	margin-top: auto;
@@ -165,8 +151,8 @@
 	gap: var(--space-4);
 	padding: 20px;
 	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
-	background: rgb(255 255 255 / 92%);
+	border-radius: 3px;
+	background: #fff;
 }
 
 .dash-panel--wide {
@@ -191,6 +177,15 @@
 .dash-panel__caption {
 	color: var(--color-text-subtle);
 	font-size: var(--font-size-label);
+}
+
+.dash__project-chart .recharts-bar-rectangle {
+	cursor: pointer;
+}
+
+.dash__project-chart .recharts-bar-rectangle:focus-visible {
+	outline: 2px solid var(--color-selected);
+	outline-offset: 2px;
 }
 
 /* ── Legends and charts ───────────────────────────────────── */
@@ -251,10 +246,16 @@
 .dash__tip {
 	padding: var(--space-2) var(--space-3);
 	border: 1px solid var(--color-border-strong);
-	border-radius: var(--radius-sm);
+	border-radius: 3px;
 	background: var(--color-surface);
-	box-shadow: var(--shadow-md);
+	box-shadow: 0 4px 12px rgb(27 38 60 / 10%);
 	font-size: var(--font-size-label);
+}
+
+.dash .recharts-tooltip-wrapper {
+	pointer-events: none !important;
+	transition: none !important;
+	will-change: transform;
 }
 
 .dash__tip-head {
@@ -324,9 +325,17 @@
 }
 
 .dash__row-meta {
+	display: inline-flex;
 	flex-shrink: 0;
+	align-items: center;
+	gap: 6px;
 	color: var(--color-text-subtle);
 	font-size: var(--font-size-label);
+}
+
+.dash__row-meta .project-logo {
+	width: 18px;
+	height: 18px;
 }
 
 @media (max-width: 1120px) {

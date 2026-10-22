@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
 	Bar,
 	BarChart,
@@ -14,6 +15,7 @@ import {
 	YAxis,
 } from 'recharts'
 import { getDashboard } from '../../api/endpoints.js'
+import ProjectLogo from '../../components/common/ProjectLogo.jsx'
 import {
 	BOARD_COLUMN_STATUSES,
 	FEEDBACK_CATEGORY,
@@ -51,7 +53,17 @@ const STATUS_COLOR = {
 	REJECTED: 'var(--color-chart-rejected)',
 }
 
+/* 차트 가장자리에서 좌우로 뒤집히지 않고 포인터를 즉시 따라가는 공통 툴팁 설정. */
+const TOOLTIP_PROPS = {
+	allowEscapeViewBox: { x: true, y: true },
+	cursor: false,
+	isAnimationActive: false,
+	offset: 12,
+	wrapperStyle: { pointerEvents: 'none', transition: 'none' },
+}
+
 export default function DashboardPage() {
+	const navigate = useNavigate()
 	const [data, setData] = useState(null)
 	const [message, setMessage] = useState('')
 	const [openedId, setOpenedId] = useState(null)
@@ -75,9 +87,15 @@ export default function DashboardPage() {
 
 	// 프로젝트별 교차 집계를 막대 한 칸씩으로 편다.
 	const projectRows = data.projectStatusCounts.map((row) => ({
+		projectCode: row.projectCode,
 		name: row.projectName,
 		...Object.fromEntries(STACK_ORDER.map((status) => [status, row.counts[status] ?? 0])),
 	}))
+
+	function openProjectFromChart(entry) {
+		const projectCode = entry?.payload?.projectCode ?? entry?.projectCode
+		if (projectCode) navigate(`/admin/${projectCode}/board`)
+	}
 
 	return (
 		<div className="dash">
@@ -128,29 +146,32 @@ export default function DashboardPage() {
 
 			{/* ── 차트 ────────────────────────────────────────────── */}
 			<section className="dash__charts">
-				<Panel title="프로젝트별 현황" caption="상태를 쌓아 올린 막대입니다">
+				<Panel title="프로젝트별 현황" caption="막대를 선택하면 해당 프로젝트의 개발 보드로 이동합니다">
 					<Legend items={STACK_ORDER.map((s) => ({ key: s, label: labelOf(FEEDBACK_STATUS, s), color: STATUS_COLOR[s] }))} />
-					<ResponsiveContainer width="100%" height={240}>
-						<BarChart data={projectRows} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
-							<CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
-							<XAxis dataKey="name" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={0} />
-							<YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} allowDecimals={false} />
-							<Tooltip content={<ChartTooltip labels={FEEDBACK_STATUS} unit="건" />} cursor={{ fill: 'var(--color-surface-sunken)' }} />
-							{STACK_ORDER.map((status, index) => (
-								<Bar
-									key={status}
-									dataKey={status}
-									stackId="status"
-									fill={STATUS_COLOR[status]}
-									// 배경색으로 얇게 둘러 조각 사이에 틈을 만든다. 붙어 있으면 경계가 안 읽힌다.
-									stroke="var(--color-surface)"
-									strokeWidth={2}
-									// 맨 위 조각만 둥글게. 중간까지 둥글면 쌓인 것이 어긋나 보인다.
-									radius={index === STACK_ORDER.length - 1 ? [4, 4, 0, 0] : 0}
-								/>
-							))}
-						</BarChart>
-					</ResponsiveContainer>
+					<div className="dash__project-chart" aria-label="프로젝트별 현황. 막대를 선택하면 해당 프로젝트의 개발 보드로 이동합니다.">
+						<ResponsiveContainer width="100%" height={240}>
+							<BarChart data={projectRows} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
+								<CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
+								<XAxis dataKey="name" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={0} />
+								<YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} allowDecimals={false} />
+								<Tooltip {...TOOLTIP_PROPS} content={<ChartTooltip labels={FEEDBACK_STATUS} unit="건" />} />
+								{STACK_ORDER.map((status, index) => (
+									<Bar
+										key={status}
+										dataKey={status}
+										stackId="status"
+										fill={STATUS_COLOR[status]}
+										// 배경색으로 얇게 둘러 조각 사이에 틈을 만든다. 붙어 있으면 경계가 안 읽힌다.
+										stroke="var(--color-surface)"
+										strokeWidth={2}
+										onClick={openProjectFromChart}
+										// 맨 위 조각만 둥글게. 중간까지 둥글면 쌓인 것이 어긋나 보인다.
+										radius={index === STACK_ORDER.length - 1 ? [4, 4, 0, 0] : 0}
+									/>
+								))}
+							</BarChart>
+						</ResponsiveContainer>
+					</div>
 				</Panel>
 
 				<Panel title="유형별 비율" caption={`전체 ${total}건 기준`}>
@@ -171,7 +192,7 @@ export default function DashboardPage() {
 										<Cell key={slice.category} fill={CATEGORY_COLOR[slice.category]} />
 									))}
 								</Pie>
-								<Tooltip content={<ChartTooltip labels={FEEDBACK_CATEGORY} unit="건" />} />
+								<Tooltip {...TOOLTIP_PROPS} content={<ChartTooltip labels={FEEDBACK_CATEGORY} unit="건" />} />
 							</PieChart>
 						</ResponsiveContainer>
 
@@ -199,7 +220,7 @@ export default function DashboardPage() {
 							<CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
 							<XAxis dataKey="date" tickLine={false} axisLine={false} tick={AXIS_TICK} tickFormatter={shortDay} minTickGap={24} />
 							<YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} allowDecimals={false} />
-							<Tooltip content={<ChartTooltip unit="건" />} cursor={{ stroke: 'var(--color-chart-axis)' }} />
+							<Tooltip {...TOOLTIP_PROPS} content={<ChartTooltip unit="건" />} />
 							{/* 시리즈가 하나뿐이라 범례를 두지 않는다. 제목이 이름을 대신한다. */}
 							<Line
 								type="monotone"
@@ -300,7 +321,10 @@ function FeedbackRows({ items, empty, onOpen }) {
 					<button type="button" className="dash__row-button" onClick={() => onOpen(item.id)}>
 						<StatusBadge status={item.status} />
 						<span className="dash__row-title">{item.title}</span>
-						<span className="dash__row-meta">{item.projectName}</span>
+						<span className="dash__row-meta">
+							<ProjectLogo projectCode={item.projectCode} projectName={item.projectName} />
+							{item.projectName}
+						</span>
 					</button>
 				</li>
 			))}

@@ -1,0 +1,21 @@
+.project-logo {
+	display: inline-grid;
+	width: 2rem;
+	height: 2rem;
+	flex: 0 0 auto;
+	place-items: center;
+	color: var(--project-logo-color, #74717c);
+}
+
+.project-logo__glyph {
+	display: block;
+	width: 72%;
+	height: 72%;
+}
+
+.project-logo--fallback {
+	border: 1px solid currentColor;
+	border-radius: 50%;
+	font-size: 0.8em;
+	font-weight: 800;
+}
